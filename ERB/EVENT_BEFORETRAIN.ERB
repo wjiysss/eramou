@@ -1,0 +1,317 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+;--------------------------------------------------------
+;調教開始時メッセージ
+;--------------------------------------------------------
+@PRITRAIN_MESSAGE
+;調教経験を加算
+CFLAG:10 += 1
+
+;調教テキスト省略設定の場合
+IF (FLAG:6 & 1)
+	PRINTFORML %SAVESTR:TARGET%的第{CFLAG:10}次调教开始了。
+	WAIT
+	RETURN 0
+ENDIF
+
+DRAWLINE
+
+;口上が存在すればそちらを優先
+
+;着衣OFFのとき全裸に
+SIF FLAG:37 == 0
+	CFLAG:40 = 0
+	
+
+;初調教時
+IF CFLAG:10 == 1
+	PRINTFORML %SAVESTR:TARGET%的第一次调教开始了，把她变成棒棒哒性奴隶吧！
+	PRINTL 
+ 
+	IF FLAG:37
+		CALL PRITRAIN_MESSAGE_CLOTHED
+	ELSE
+		CALL PRITRAIN_MESSAGE_NOCLOTHES
+	ENDIF
+
+	IF TALENT:23
+		PRINTFORML 
+		PRINTFORML 然而在%SAVESTR:TARGET%的眼神最深处却好像流淌着期待的光芒。
+	ENDIF
+
+	IF ASSI > 0
+		IF TALENT:ASSI:83
+			PRINTFORML 
+			PRINTFORML 助手%SAVESTR:ASSI%心想着如何才能尽情享受凌辱%SAVESTR:TARGET%的乐趣。
+			PRINTFORML 那猎人看向猎物的眼神已经将她的心思完全暴露了出来。
+		ELSEIF TALENT:ASSI:13
+			PRINTFORML 
+			PRINTFORML 助手%SAVESTR:ASSI%看到%SAVESTR:TARGET%的这个样子，
+			PRINTFORML 在得到%CALLNAME:MASTER%的许可后，轻轻把手放到了%SAVESTR:TARGET%的肩上。
+			SIF TALENT:11
+				PRINTFORML 而%SAVESTR:TARGET%却无情地把手甩开了。
+		ENDIF
+	ENDIF
+
+	WAIT
+	RETURN 1
+ENDIF
+
+PRINTFORML %SAVESTR:TARGET%的第{CFLAG:10}次调教开始了。
+
+S = 0
+
+;崩坏している場合
+IF TALENT:9
+	WAIT
+	PRINTFORM %SAVESTR:TARGET%
+	CALL PRINT_CLOTHTYPE
+	PRINTFORML ，面露痴笑，精神恍惚。
+	PRINTFORML 仔细观察就会发觉%SAVESTR:TARGET%的眼神已经完全失去了生气………
+
+;坦率かおと无いなら顺从4以上、侍奉精神3以上、反抗刻印無しで土下座
+ELSEIF (TALENT:13 || TALENT:14 || TALENT:88) && ABL:10 >= 4 && ABL:16 >= 3 && MARK:3 == 0
+	WAIT
+	PRINTFORM %SAVESTR:TARGET%
+	CALL PRINT_CLOTHTYPE
+	PRINTFORML ，土下座地跪在地上，恭敬地为%CALLNAME:MASTER%带来调教前的问候。
+	IF TALENT:MASTER:83
+		PRINTFORML %CALLNAME:MASTER%把脚踩在%SAVESTR:TARGET%的后脑上，将其动人的脸在地板上摩擦。
+			SIF ABL:21 >= 3
+				PRINTFORML 被这样卑贱地对待%SAVESTR:TARGET%的胯间似乎开始潮湿了……
+	ENDIF
+	S = 1
+;坦率かおと无いなら顺从3以上、反抗刻印1以下で調教前の挨拶
+ELSEIF (TALENT:13 || TALENT:14) && ABL:10 >= 3 && MARK:3 <= 1
+	WAIT
+	PRINTFORM %SAVESTR:TARGET%
+	CALL PRINT_CLOTHTYPE
+	PRINTFORML ，悄悄地看了%CALLNAME:MASTER%一眼，然后低下了头，带来调教前的问候。
+	S = 1
+;その他（口上があればそちらを優先）
+ELSE
+	WAIT
+	CALL PRINT_CLOTHTYPE
+	PRINTFORML 的%SAVESTR:TARGET%被带来了。
+	S = 1
+ENDIF
+
+
+;ズーコの着ぐるみを着てるならここで終了
+IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+	SIF CFLAG:40 == 64
+		PRINTL 貌似，里面是真空的……
+	WAIT
+	S = 0
+	RETURN 0
+ENDIF
+
+;妊娠中
+IF TALENT:153 && CFLAG:110 <= DAY+10
+	IF S == 0
+		CALL PRINT_CLOTHTYPE
+		PRINT 的
+	ENDIF
+	PRINTFORM %SAVESTR:TARGET%	
+	IF TALENT:100
+		PRINTFORML 现在正挺着与娇小的身材不相称的大肚子。
+	ELSE
+		PRINTFORML 现在正挺着个大肚子。
+	ENDIF
+	PRINTFORML （请避免过激的调教）
+ELSEIF TALENT:153 && CFLAG:110 <= DAY+20
+	PRINTFORML %SAVESTR:TARGET%腹中的胎儿已进入了稳定期，展露出孕妇特有的圆润曲线。
+ELSEIF TALENT:153 && CFLAG:110 <= DAY+30
+	PRINTFORML %SAVESTR:TARGET%的肚子非常引人注目。
+ENDIF	
+
+A = CFLAG:40
+CALL WEARING_CLOTH_ALL
+B = CFLAG:40
+CFLAG:40 = A
+
+IF (CFLAG:40 & 4)
+	IF (CFLAG:40 & 2) == 0 && (B & 2) && (TALENT:109 == 0 && TALENT:116 == 0)
+		PRINT 没有束缚的乳房在衣服内
+		IF TALENT:110 || TALENT:114
+			PRINT 明显地
+		ELSE
+			PRINT 稍稍地
+		ENDIF
+		PRINTFORML 摇曳着。%CALLNAME:MASTER%的眼睛正愉快地吃着雪糕。
+	ENDIF
+ENDIF
+
+;乳房ピアスでノーブラの場合
+IF (CFLAG:7 & 1) && (CFLAG:40 & 2) == 0
+	IF (CFLAG:40 & 4) == 1
+		PRINTFORML 隔着衣服，%SAVESTR:TARGET%乳头及上面的乳环浮现了出来。
+	ELSE
+		PRINTFORML 随着%SAVESTR:TARGET%身体的运动，两个乳环也随之起舞。
+	ENDIF
+ENDIF
+
+;ノーパンで下半身着衣、かつ露出癖Lv3未満の場合
+IF  (CFLAG:40 & 1) == 0 && ((CFLAG:40 & 8) || (CFLAG:40 & 16))
+	SIF (B & 1) && TALENT:135 == 0 && ABL:17 < 3
+		PRINTFORML %SAVESTR:TARGET%对没有穿裤子的下体非常在意，频繁地注意着自己的胯股间……
+ENDIF
+
+;ノーパンでスカートタイプ、かつ露出癖Lv3以上の場合
+IF  (CFLAG:40 & 1) == 0 && (CFLAG:40 & 8)
+	SIF (B & 1) && ABL:17 >= 3
+		PRINTFORML %SAVESTR:TARGET%卷起裙子的下摆，把没穿内裤的私处呈现了出来。
+ENDIF
+
+;下半身ピアスでノーパン、かつズボンタイプでない場合
+IF (CFLAG:7 & 4) || (CFLAG:7 & 8) && (CFLAG:40 & 1) == 0 && (CFLAG:40 & 16) == 0
+	IF (CFLAG:40 & 8) == 1
+		PRINT 从裙子里看到的
+	ELSE
+		PRINT 裸露着的
+	ENDIF
+	IF TALENT:122 || TALENT:121
+		PRINT 阴茎
+	ELSE
+		PRINT 阴唇
+		SIF (CFLAG:7 & 4)
+			PRINT 两边
+		SIF (CFLAG:7 & 4) && (CFLAG:7 & 8)
+			PRINT 和
+		SIF (CFLAG:7 & 8)
+			PRINT 阴蒂
+	ENDIF
+	PRINTL 穿了环，映射出金属的光芒……
+ENDIF
+WAIT
+
+;助手
+IF ASSI > 0
+	PRINTL
+	;淫乱+抖S气质Lv3以上
+	IF TALENT:ASSI:76 && ABL:ASSI:20 >= 3
+		PRINTFORMW %SAVESTR:PLAYER%的助手%SAVESTR:ASSI%用舌头轻舔嘴唇，津津有味地看着%SAVESTR:TARGET%，
+		PRINTFORMW 好像在考虑如何凌辱%SAVESTR:TARGET%。
+	;爱慕+抖S气质Lv3以上
+	ELSEIF TALENT:ASSI:85 && ABL:ASSI:20 >= 3
+		PRINTFORMW 助手%SAVESTR:ASSI%抱着%SAVESTR:PLAYER%的手臂，微笑地看着即将被调教的%SAVESTR:TARGET%。
+		PRINTFORMW 一边在%SAVESTR:PLAYER%耳边轻轻地说着什么，一边指着%SAVESTR:TARGET%呵呵地笑着。
+	ELSE
+		PRINTFORMW %SAVESTR:PLAYER%的身边站着助手%SAVESTR:ASSI%。
+	ENDIF
+ENDIF
+C = 0
+S = 0
+
+RETURN 1
+
+;--------------------------------------------------------
+;初調教時・着衣設定オフ
+;--------------------------------------------------------
+@PRITRAIN_MESSAGE_NOCLOTHES
+IF TALENT:22
+	PRINTFORML %SAVESTR:TARGET%依%CALLNAME:MASTER%的命令脱掉了衣服，
+	PRINTFORML 没有展露出任何情绪，或是很好地掩饰住了情绪。然后就这样呆立不动。
+ELSEIF TALENT:132 && TALENT:135
+	PRINTFORML %SAVESTR:TARGET%没有等%CALLNAME:MASTER%把命令说完就开始了脱衣服，一下子脱得精光。
+ELSEIF TALENT:12
+	PRINTFORML 赤裸的%SAVESTR:TARGET%把双手遮在胸前，
+	PRINTFORML 露出绝不屈服的坚决态度。
+ELSEIF TALENT:11
+	PRINTFORML %CALLNAME:MASTER%伸手粗暴地将%SAVESTR:TARGET%剥光。
+	PRINTFORML %SAVESTR:TARGET%一边拼命抓住衣服，一边用手遮住裸露出来的皮肤，
+	PRINTFORML 同时用可怕的眼神狠狠地盯着%CALLNAME:MASTER%。
+ELSEIF TALENT:21
+	PRINTFORML 听到%CALLNAME:MASTER%的命令，%SAVESTR:TARGET%耸了耸肩，把衣服脱了。
+	PRINTFORML 无论怎样都无所谓，只是请稍微迅速一点。
+	PRINTFORML 就是这种态度。
+ELSEIF TALENT:132
+	PRINTFORML 被剥光的%SAVESTR:TARGET%非常地害怕。
+	PRINTFORML 再怎么伪装也还是个孩子罢了。
+ELSEIF TALENT:20
+	PRINTFORML 被剥光的%SAVESTR:TARGET%用手遮住自己的身体，
+	PRINTFORML 表面上仍装作很平静。
+ELSEIF TALENT:10
+	PRINTFORML 被剥光的%SAVESTR:TARGET%肩膀颤抖着。
+	PRINTFORML 想象到了自己今后的命运，不禁牙齿打颤。
+ELSEIF TALENT:15
+	PRINTFORML %SAVESTR:TARGET%想到全裸的耻辱和今后作为奴隶的屈辱，
+	PRINTFORML 拼命地克制住自己颤抖着的牙齿和肩膀。
+ELSEIF TALENT:17
+	PRINTFORML 被剥光的%SAVESTR:TARGET%提心吊胆地观察着%CALLNAME:MASTER%的表情。
+	PRINTFORML 心里想着言听计从的话也许可以减少痛苦。
+ELSEIF TALENT:13
+	PRINTFORML 被剥光的%SAVESTR:TARGET%对自己现在的处境难以接受。
+	PRINTFORML 人不能对他人做这么过分的事，难道不是这样的吗？
+ELSEIF TALENT:14
+	PRINTFORML 意识到抵抗是无用的，%SAVESTR:TARGET%乖乖地把自己的衣服脱光了。
+	PRINTFORML 至少，躲过了被强行剥光的屈辱不是吗？
+ELSEIF TALENT:16
+	PRINTFORML %SAVESTR:TARGET%在害怕的同时对%CALLNAME:MASTER%投以挑衅的目光。
+	PRINTFORML 这种事是不会让我屈服的，好像有这种自信的样子。
+ELSE
+	PRINTFORML %SAVESTR:TARGET%被剥光了。
+ENDIF
+
+
+RETURN 1
+
+;--------------------------------------------------------
+;初調教時・上着着用時
+;--------------------------------------------------------
+@PRITRAIN_MESSAGE_CLOTHED
+IF TALENT:22
+	CALL PRINT_CLOTHTYPE
+	PRINTFORML 的%SAVESTR:TARGET%毫无表情地呆立不动。
+ELSEIF TALENT:132 && TALENT:135
+	CALL PRINT_CLOTHTYPE
+	PRINTFORML 的%SAVESTR:TARGET%不理解要发生什么了。
+ELSEIF TALENT:12
+	CALL PRINT_CLOTHTYPE
+	PRINTFORM 的%SAVESTR:TARGET%展示出了坚决的态度。
+	PRINTFORML 不会被抓到把柄，有这样的觉悟。
+ELSEIF TALENT:11
+	CALL PRINT_CLOTHTYPE
+	PRINTFORML 的%SAVESTR:TARGET%用可怕的眼神狠狠地盯着%CALLNAME:MASTER%。
+ELSEIF TALENT:21
+	CALL PRINT_CLOTHTYPE
+	PRINTFORM 的%SAVESTR:TARGET%耸耸肩。
+	PRINTFORM 无论怎样都无所谓，只是请稍微迅速一点。
+	PRINTFORML 就是这种态度。
+ELSEIF TALENT:132
+	CALL PRINT_CLOTHTYPE
+	PRINTFORM 的%SAVESTR:TARGET%非常地害怕。
+	PRINTFORML 再怎么伪装也还是个孩子罢了。
+ELSEIF TALENT:20
+	CALL PRINT_CLOTHTYPE
+	PRINTFORML 的%SAVESTR:TARGET%表面上仍装作很平静。
+ELSEIF TALENT:10
+	CALL PRINT_CLOTHTYPE
+	PRINTFORM 的%SAVESTR:TARGET%肩膀在颤抖着。
+	PRINTFORML 想象到了自己今后的命运，不禁牙齿打颤。
+ELSEIF TALENT:15
+	CALL PRINT_CLOTHTYPE
+	PRINTFORM 的%SAVESTR:TARGET%想到今后作为奴隶的屈辱，
+	PRINTFORML 拼命地克制住自己颤抖着的牙齿和肩膀。
+ELSEIF TALENT:17
+	CALL PRINT_CLOTHTYPE
+	PRINTFORM 的%SAVESTR:TARGET%提心吊胆地观察着%CALLNAME:MASTER%的神色。
+	PRINTFORML 心里想着言听计从的话也许可以减少痛苦。
+ELSEIF TALENT:13
+	CALL PRINT_CLOTHTYPE
+	PRINTFORM 的%SAVESTR:TARGET%对自己现在的处境难以接受。
+	PRINTFORML 人不能对他人做这么过分的事，难道不是这样的吗？
+ELSEIF TALENT:14
+	PRINTFORM 意识到抵抗是无用的，
+	CALL PRINT_CLOTHTYPE
+	PRINTFORML 的%SAVESTR:TARGET%老老实实的。
+ELSEIF TALENT:16
+	CALL PRINT_CLOTHTYPE
+	PRINTFORM 的%SAVESTR:TARGET%害怕的同时对%CALLNAME:MASTER%投以挑衅的目光。
+	PRINTFORML 这种事是不会让我屈服的，好像有这种自信的样子。
+ELSE
+	CALL PRINT_CLOTHTYPE
+	PRINTFORM 的%SAVESTR:TARGET%被带到调教室了。
+ENDIF
+
+RETURN 1

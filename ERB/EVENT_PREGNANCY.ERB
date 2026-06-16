@@ -1,0 +1,520 @@
+﻿;EVENT_P、EVENT_PREGNANCY、妊娠関連のイベント
+;eratohoAより流用
+;eraIM@Sから導入しました(eramaou)
+
+;---------------------------------------------------------
+;フラグ管理　口上用のフラグと被るので、変更
+;---------------------------------------------------------
+
+;CFLAG
+;101→マスターによる膣内射精カウント用
+;102→誰によって妊娠させられたか（マスター = 1, 助手 = 2, 奴隷 = 3, 客 = 4, 犬 = 5, 怪物・触手 = 6, 狂王 = 7）
+;103→助手→奴隷間での膣内射精カウント用
+;104→奴隷→助手間での膣内射精カウント用
+;105→娼館などの客（NTR乱交等）と奴隷間の膣内射精カウント用
+;106→ノラ犬から奴隷への膣内射精カウント用
+;107→怪物・触手から奴隷への膣内射精カウント用
+;108→狂王から奴隷への膣内射精カウント用
+;109→排卵诱发剂の使用の有無
+;110→出産日
+;111→父親は？？
+;121→妊娠時の増加体重
+;122→妊娠時の増加バスト
+;123→妊娠時の増加ウェスト
+;124→妊娠時の増加ヒップ
+;追加 FLAG
+;97→臨月or育儿中の奴隷はいるか？
+;98→射精箇所選択機能および妊娠機能のON・OFF
+;99→射精選択の自動モード時射精先選択機能のON・OFF
+;TFLAG
+;700→育児部屋コマンド実行した？
+
+
+;==================================================
+;	精液浓度相关的处理
+;==================================================
+
+
+;---------------------------------------------------------
+;関数群統括関数
+;---------------------------------------------------------
+
+@IN_VAGINA_ALL
+
+SIF TARGET < 0 || TARGET >= CHARANUM
+	RETURN 0
+SIF ASSI >= CHARANUM
+	RETURN 0
+CALL IN_VAGINA_M_TO_T
+CALL IN_VAGINA_M_TO_A
+CALL IN_VAGINA_T_TO_M
+CALL IN_VAGINA_A_TO_T
+CALL IN_VAGINA_T_TO_A
+CALL IN_VAGINA_D_TO_T
+CALL IN_VAGINA_SYOKU_TO_T
+CALL IN_VAGINA_SYOKU_TO_M
+CALL IN_VAGINA_KYOUOU_TO_M
+;売春・狂王・兽奸ショーによる妊娠判定は@EVENTTURNENDでまとめて行う
+;CALL IN_VAGINA_EXTRA
+;CALL IN_VAGINA_KYOUOU_TO_T
+;CALL IN_VAGINA_NTRD_TO_T
+@CONCEPTION_CHECK_ALL
+SIF TARGET < 0 || TARGET >= CHARANUM
+	RETURN 0
+SIF ASSI >= CHARANUM
+	RETURN 0
+	
+CALL CONCEPTION_CHECK_M_TO_T
+CALL CONCEPTION_CHECK_M_TO_A
+CALL CONCEPTION_CHECK_T_TO_M
+CALL CONCEPTION_CHECK_A_TO_T
+CALL CONCEPTION_CHECK_T_TO_A
+CALL CONCEPTION_CHECK_D_TO_T
+CALL CONCEPTION_CHECK_SYOKU_TO_T
+CALL CONCEPTION_CHECK_SYOKU_TO_M
+CALL CONCEPTION_CHECK_KYOUOU_TO_M
+;売春・狂王・兽奸ショーによる妊娠判定は@EVENTTURNENDでまとめて行う
+;CALL CONCEPTION_CHECK_EXTRA
+;CALL CONCEPTION_CHECK_KYOUOU_TO_T
+;CALL CONCEPTION_CHECK_NTRD_TO_T
+
+;---------------------------------------------------------
+;膣内射精・妊娠フラグに絡む関数群
+;---------------------------------------------------------
+
+@IN_VAGINA_M_TO_T
+
+;膣内射精による妊娠、非妊娠のチェック
+IF TARGET >= 1
+	;奴隷の妊娠・同族妊娠できないチェック
+	IF TALENT:TARGET:153 == 0 && TALENT:TARGET:158 == 0
+		CALL NAKADASHI_CHECK, TARGET, 1
+	ENDIF
+ENDIF
+
+@IN_VAGINA_M_TO_A
+;膣内射精による妊娠、非妊娠のチェック
+;助手がいるか
+IF ASSI >= 1
+	;助手の妊娠チェック
+	IF TALENT:ASSI:153 == 0 && TALENT:ASSI:158 == 0
+		CALL NAKADASHI_CHECK, ASSI, 1
+	ENDIF
+ENDIF
+
+@IN_VAGINA_T_TO_M
+;奴隷→主人への膣内射精による妊娠、非妊娠のチェック
+;主人の妊娠チェック
+IF MASTER == 0
+	IF TALENT:MASTER:153 == 0 && TALENT:MASTER:158 == 0
+		CALL NAKADASHI_CHECK, MASTER, 3
+	ENDIF
+ENDIF
+
+@IN_VAGINA_A_TO_T
+;助手→奴隷への膣内射精による妊娠判定
+;助手とターゲットがいるか
+IF ASSI >= 1 && TARGET >= 1
+	;奴隷の妊娠チェック
+	IF TALENT:TARGET:153 == 0 && TALENT:TARGET:158 == 0
+		CALL NAKADASHI_CHECK, TARGET, 2
+	ENDIF
+ENDIF
+
+@IN_VAGINA_T_TO_A
+;奴隷→助手への膣内射精による妊娠判定
+;助手がいるか
+IF ASSI >= 1
+	;助手の妊娠チェック
+	IF TALENT:ASSI:153 == 0 && TALENT:ASSI:158 == 0
+		CALL NAKADASHI_CHECK, ASSI, 3
+	ENDIF
+ENDIF
+
+@IN_VAGINA_D_TO_T
+;ノラ犬→奴隷への膣内射精による妊娠判定
+IF TARGET >= 1
+	;奴隷の妊娠チェック
+	IF TALENT:TARGET:153 == 0
+		CALL NAKADASHI_CHECK, TARGET, 5
+	ENDIF
+ENDIF
+
+@IN_VAGINA_SYOKU_TO_T
+;怪物・触手→奴隷への膣内射精による妊娠判定
+IF TARGET >= 1
+	;奴隷の妊娠チェック
+	IF TALENT:TARGET:153 == 0
+		CALL NAKADASHI_CHECK, TARGET, 6
+	ENDIF
+ENDIF
+
+@IN_VAGINA_SYOKU_TO_M
+;怪物・触手→主人への膣内射精による妊娠判定
+IF MASTER == 0
+	;奴隷の妊娠チェック
+	IF TALENT:MASTER:153 == 0
+		CALL NAKADASHI_CHECK, MASTER, 6
+	ENDIF
+ENDIF
+
+@IN_VAGINA_KYOUOU_TO_M
+;狂王→主人への膣内射精による妊娠判定
+IF MASTER == 0
+	;主人の妊娠チェック
+	IF TALENT:MASTER:153 == 0 && TALENT:MASTER:158 == 0
+		CALL NAKADASHI_CHECK, MASTER, 7
+	ENDIF
+ENDIF
+
+@IN_VAGINA_KYOUOU_TO_T
+;狂王→奴隷への膣内射精による妊娠判定
+REPEAT CHARANUM
+	;奴隷の妊娠チェック
+	IF TALENT:COUNT:153 == 0 && TALENT:COUNT:158 == 0
+		CALL NAKADASHI_CHECK, COUNT, 7
+	ENDIF
+REND
+
+@IN_VAGINA_NTRD_TO_T
+;兽奸ショー→奴隷への膣内射精による妊娠判定
+REPEAT CHARANUM
+	;奴隷の妊娠チェック
+	IF TALENT:COUNT:153 == 0
+		CALL NAKADASHI_CHECK, COUNT, 5
+	ENDIF
+REND
+
+@IN_VAGINA_EXTRA
+;娼館やレンタル時に客に膣射された場合の妊娠判定
+REPEAT CHARANUM
+	IF TALENT:COUNT:153 == 0 && TALENT:COUNT:158 == 0
+		CALL NAKADASHI_CHECK, COUNT, 4
+	ENDIF
+REND
+
+@NAKADASHI_CHECK, ARG:0, ARG:1
+#DIM NAKADASHI_PARTNER
+#DIM HAIRANZAI
+#DIM OTHER_POOL
+;ARG:0はキャラ登録番号、ARG:1はCFLAG:102フラグ
+;102→誰によって妊娠させられたか（マスター = 1, 助手 = 2, 奴隷 = 3, 客 = 4, 犬 = 5, 怪物・触手 = 6 狂王 = 7）
+;中出しされた精子量に応じて確率処理
+;妊娠出産機能オフ時
+IF GETBIT(FLAG:5,2) == 0
+	NAKADASHI_PARTNER = 101 + ARG:1
+	SIF ARG:1 == 1
+		NAKADASHI_PARTNER = 101
+	;妊娠不可でも膣射のリセット
+	CFLAG:(ARG:0):NAKADASHI_PARTNER = 0
+	RETURN 0
+ENDIF
+
+;チェックするフラグ設定
+;NAKADASHI_PARTNERは101、103～108　CFLAG:(ARG:0):NAKADASHI_PARTNERでCFLAG:101,CFLAG:103,CFLAG:104,CFLAG:105,CFLAG:106,CFLAG:107,CFLAG:108になる。
+NAKADASHI_PARTNER = 101 + ARG:1
+SIF ARG:1 == 1
+	NAKADASHI_PARTNER = 101
+
+;対象が男か未熟なら関数終了
+SIF TALENT:(ARG:0):122 || TALENT:(ARG:0):135
+	RETURN 0
+
+;兽奸で対象が动物耳朵じゃないなら関数終了
+SIF ARG:1 == 5 && TALENT:(ARG:0):124 == 0
+	RETURN 0
+
+;中だしされてないなら関数終了
+SIF CFLAG:(ARG:0):NAKADASHI_PARTNER == 0
+	RETURN 0
+
+;妊娠が既に確定している場合は関数終了
+IF CFLAG:(ARG:0):110 > 0
+	CFLAG:(ARG:0):NAKADASHI_PARTNER = 0
+	RETURN 0
+ENDIF
+
+;妊娠中もしくは育儿中は関数終了
+IF TALENT:(ARG:0):153 || TALENT:(ARG:0):154
+	CFLAG:(ARG:0):NAKADASHI_PARTNER = 0
+	RETURN 0
+ENDIF
+
+;排卵剤の有無による定数設定
+HAIRANZAI = 3 - (CFLAG:(ARG:0):109 * 2)
+
+;人狼の場合、満月時に妊娠しやすく
+IF TALENT:(ARG:0):314 == 2 && DAY:2 >= 14 && DAY:2 <= 16 && CFLAG:(ARG:0):109 == 1
+	HAIRANZAI = 1
+ELSEIF TALENT:(ARG:0):314 == 2 && DAY:2 >= 14 && DAY:2 <= 16
+	HAIRANZAI = 2
+ENDIF
+
+IF CFLAG:(ARG:0):NAKADASHI_PARTNER >= 25
+	SIF RAND:((1 + TALENT:(ARG:0):100 * 2) * HAIRANZAI) <= 3
+		CFLAG:(ARG:0):102 = ARG:1
+ELSEIF CFLAG:(ARG:0):NAKADASHI_PARTNER >= 20
+	SIF RAND:((2 + TALENT:(ARG:0):100 * 2) * HAIRANZAI) <= 2
+		CFLAG:(ARG:0):102 = ARG:1
+ELSEIF CFLAG:(ARG:0):NAKADASHI_PARTNER >= 15
+	SIF RAND:((3 + TALENT:(ARG:0):100 * 2) * HAIRANZAI) <= 2
+		CFLAG:(ARG:0):102 = ARG:1
+ELSEIF CFLAG:(ARG:0):NAKADASHI_PARTNER >= 10
+	SIF RAND:((4 + TALENT:(ARG:0):100 * 2) * HAIRANZAI) <= 2
+		CFLAG:(ARG:0):102 = ARG:1
+ELSEIF CFLAG:(ARG:0):NAKADASHI_PARTNER >= 5
+	SIF RAND:((5 + TALENT:(ARG:0):100 * 2) * HAIRANZAI) <= 2
+		CFLAG:(ARG:0):102 = ARG:1
+ELSEIF CFLAG:(ARG:0):NAKADASHI_PARTNER >= 1
+	SIF RAND:((6 + TALENT:(ARG:0):100 * 2) * HAIRANZAI) <= 2
+		CFLAG:(ARG:0):102 = ARG:1
+ENDIF
+
+;判定を行った膣射のリセット
+CFLAG:(ARG:0):NAKADASHI_PARTNER = 0
+
+;---------------------------------------------------------
+;妊娠判定関数郡
+;---------------------------------------------------------
+
+@GET_CHILD
+;既に妊娠中・育児中ならそのまま戻る
+SIF TALENT:TARGET:153 || TALENT:TARGET:154
+	RETURN 0
+
+;妊娠出産機能オフ時
+SIF GETBIT(FLAG:5,2) == 0
+	RETURN 0
+
+;乳内妊娠で異常妊娠体質でない
+SIF CFLAG:TARGET:113 == 1 && TALENT:TARGET:340 == 0
+	RETURN 0
+;精巣妊娠で異常妊娠体質でない
+SIF CFLAG:TARGET:113 == 2 && TALENT:TARGET:340 == 0
+	RETURN 0
+;精巣妊娠でオトコでもふたなりでもない
+SIF CFLAG:TARGET:113 == 2 && TALENT:TARGET:121 == 0 && TALENT:TARGET:122 == 0
+	RETURN 0
+;肛内妊娠で異常妊娠体質でない
+SIF CFLAG:TARGET:113 == 3 && TALENT:TARGET:340 == 0
+	RETURN 0
+;肛内妊娠でオトコでもふたなりでもない
+SIF CFLAG:TARGET:113 == 3 && TALENT:TARGET:121 == 0 && TALENT:TARGET:122 == 0
+	RETURN 0
+
+@CONCEPTION_CHECK_M_TO_T
+;マスターの精液でターゲット妊娠確定時の処理
+;奴隷がいるか
+IF TARGET >= 1
+	IF TALENT:TARGET:153 == 0 && CFLAG:TARGET:102 == 1 && CFLAG:TARGET:110 == 0
+		;出産系のフラグ設定
+		CFLAG:TARGET:110 = DAY + 10 + RAND:6
+		CFLAG:TARGET:111 = 0
+	ENDIF
+ENDIF
+
+
+@CONCEPTION_CHECK_M_TO_A
+;マスターの精液で助手妊娠確定時の処理
+;助手がいるか
+IF ASSI >= 1
+	IF TALENT:ASSI:153 == 0 && CFLAG:ASSI:102 == 1 && CFLAG:ASSI:110 == 0
+		;出産系のフラグ設定
+		CFLAG:ASSI:110 = DAY + 10 + RAND:6
+		CFLAG:ASSI:111 = 0
+	ENDIF
+ENDIF
+
+
+@CONCEPTION_CHECK_T_TO_M
+;奴隷の精液でマスター妊娠確定時の処理
+IF MASTER == 0
+	IF TALENT:MASTER:153 == 0 && CFLAG:MASTER:102 == 3 && CFLAG:MASTER:110 == 0
+		;出産系のフラグ設定
+		CFLAG:MASTER:110 = DAY + 10 + RAND:6
+		CFLAG:MASTER:111 = NID(TARGET)+1
+		CSTR:MASTER:2 = %SAVESTR:TARGET%
+	ENDIF
+ENDIF
+
+
+@CONCEPTION_CHECK_A_TO_T
+;助手の精液で奴隷妊娠確定時の処理
+;助手と奴隷がいるか
+IF ASSI >= 1 && TARGET >= 1
+	IF TALENT:TARGET:153 == 0 && CFLAG:TARGET:102 == 2 && CFLAG:TARGET:110 == 0
+		;出産系のフラグ設定
+		CFLAG:TARGET:110 = DAY + 10 + RAND:6
+		CFLAG:TARGET:111 = NID(ASSI)+1
+		CSTR:TARGET:2 = %SAVESTR:ASSI%
+	ENDIF
+ENDIF
+
+
+@CONCEPTION_CHECK_T_TO_A
+;奴隷の精液で助手妊娠確定時の処理
+;助手がいるか
+IF ASSI >= 1 && TARGET >= 1
+	IF TALENT:ASSI:153 == 0 && CFLAG:ASSI:102 == 3 && CFLAG:ASSI:110 == 0
+		;出産系のフラグ設定
+		CFLAG:ASSI:110 = DAY + 10 + RAND:6
+		CFLAG:ASSI:111 = NID(TARGET)+1
+		CSTR:ASSI:2 = %SAVESTR:TARGET%
+	ENDIF
+ENDIF
+
+@CONCEPTION_CHECK_D_TO_T
+;犬の精液で奴隷妊娠確定時の処理
+;奴隷がいるか
+IF TARGET >= 1
+	IF TALENT:TARGET:153 == 0 && CFLAG:TARGET:102 == 5 && CFLAG:TARGET:110 == 0
+		;出産系のフラグ設定
+		;犬の仔なら妊娠期間短い
+		CFLAG:TARGET:110 = DAY + 10 + RAND:6
+		CFLAG:TARGET:111 = -2
+	ENDIF
+ENDIF
+
+
+@CONCEPTION_CHECK_EXTRA
+;娼館やレンタル時の客の精液で妊娠確定時の処理
+REPEAT CHARANUM
+	IF TALENT:COUNT:153 == 0 && CFLAG:COUNT:102 == 4 && CFLAG:COUNT:110 == 0
+		;出産系のフラグ設定
+		CFLAG:COUNT:110 = DAY + 10 + RAND:6
+		CFLAG:COUNT:111 = -1
+	ENDIF
+REND
+
+@CONCEPTION_CHECK_SYOKU_TO_T
+;怪物・触手の精液で奴隷妊娠確定時の処理
+;奴隷がいるか
+IF TARGET >= 1
+	IF TALENT:TARGET:153 == 0 && CFLAG:TARGET:102 == 6 && CFLAG:TARGET:110 == 0
+		;出産系のフラグ設定
+		;苗床なので妊娠期間短い
+		CFLAG:TARGET:110 = DAY + 10 + RAND:6
+		CFLAG:TARGET:111 = -3
+	ENDIF
+ENDIF
+
+
+@CONCEPTION_CHECK_SYOKU_TO_M
+;怪物・触手の精液で主人妊娠確定時の処理
+IF MASTER == 0
+	IF TALENT:MASTER:153 == 0 && CFLAG:MASTER:102 == 6 && CFLAG:MASTER:110 == 0
+		;出産系のフラグ設定
+		;苗床なので妊娠期間短い
+		CFLAG:MASTER:110 = DAY + 10 + RAND:6
+		CFLAG:MASTER:111 = -3
+	ENDIF
+ENDIF
+
+@CONCEPTION_CHECK_KYOUOU_TO_M
+;狂王の精液で主人妊娠確定時の処理
+IF MASTER == 0
+	IF TALENT:MASTER:153 == 0 && CFLAG:MASTER:102 == 7 && CFLAG:MASTER:110 == 0
+		;出産系のフラグ設定
+		;促成营养剂を投与されてるので妊娠期間短い
+		CFLAG:MASTER:110 = DAY + 10 + RAND:6
+		CFLAG:MASTER:111 = -4
+	ENDIF
+ENDIF
+
+@CONCEPTION_CHECK_KYOUOU_TO_T
+;狂王の精液で奴隷妊娠確定時の処理
+REPEAT CHARANUM
+	IF TALENT:COUNT:153 == 0 && CFLAG:COUNT:102 == 7 && CFLAG:COUNT:110 == 0
+		;出産系のフラグ設定
+		;促成营养剂を投与されてるので妊娠期間短い
+		CFLAG:COUNT:110 = DAY + 10 + RAND:6
+		CFLAG:COUNT:111 = -4
+	ENDIF
+REND
+
+@CONCEPTION_CHECK_NTRD_TO_T
+;兽奸ショーの精液で奴隷妊娠確定時の処理
+REPEAT CHARANUM
+	IF TALENT:COUNT:153 == 0 && CFLAG:COUNT:102 == 5 && CFLAG:COUNT:110 == 0
+		;出産系のフラグ設定
+		;促成营养剂を投与されてるので妊娠期間短い
+		CFLAG:COUNT:110 = DAY + 10 + RAND:6
+		CFLAG:COUNT:111 = -2
+	ENDIF
+REND
+
+
+;==================================================
+;	訪問育児室的处理
+;==================================================
+
+;-----------------------------------------------
+@SHOW_BUTTON_CHILD_CARE(NUM, ARG)
+#DIM NUM
+;-----------------------------------------------
+;キャラの能力表示において[育児室の訪問]ボタンを表示する
+;引数NUMはボタンの数値、ARGは対象キャラの番号
+
+LOCAL = CHECK_ABLE_TO_CHILD_CARE(ARG)
+IF LOCAL == 2
+	; 侵攻中の勇者ならボタン自体を表示しない
+	RETURN 0
+ELSEIF LOCAL != 0
+	; 育児室にいないならボタン出さない
+	RETURN 0
+	; 奴隷で実行不可なら灰色にする
+	SETCOLOR 0x646464
+ENDIF
+PRINTFORM [{NUM}] 前往育儿室
+RESETCOLOR
+RETURN 0
+
+;-----------------------------------------------
+@CHECK_ABLE_TO_CHILD_CARE(ARG)
+#FUNCTION
+;-----------------------------------------------
+;ARG番のキャラに対して、育児室にいるかの判断を行い、結果に対応する値を返す式中関数
+;可なら0を返す
+
+IF ARG == 0
+	; 你は育児室にいない
+	RETURNF 1
+ELSEIF CFLAG:ARG:1 == 2
+	; 侵攻中の勇者だ
+	RETURNF 2
+ELSEIF CFLAG:ARG:1 != 10
+	; そのキャラは育児室にいない
+	RETURNF 3
+ENDIF
+RETURNF 0
+
+;-----------------------------------------------
+@CHILD_CARE_CHARA(ARG)
+;-----------------------------------------------
+;ARG番のキャラの育児室訪問
+;先に育児室に行けるかチェックして、ダメなら値に対応する処理をしてリターン0
+LOCAL = CHECK_ABLE_TO_CHILD_CARE(ARG)
+IF LOCAL != 0
+	IF LOCAL == 1
+		PRINTW 你不在育儿室。
+	ELSEIF LOCAL == 2
+		;侵攻中の勇者ではボタンが表示されないが、それでも入力すればここに来る。
+		RETURN 2
+	ELSEIF LOCAL == 3
+		PRINTW 该角色不在育儿室。
+	ENDIF
+	RETURN 0
+ENDIF
+
+PRINTFORMW 你去了%SAVESTR:ARG%的育儿室。
+PRINTL
+TARGET = ARG
+TFLAG:13 = 13
+CALL SELF_KOJO
+PRINT
+
+
+
+;==================================================
+;	怀孕相关处理：见NINSIN.ERB
+;==================================================

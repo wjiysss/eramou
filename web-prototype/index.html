@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>eraMaouEx Browser Prototype</title>
+    <link rel="stylesheet" href="./styles.css?v=ability-pages-2" />
+  </head>
+  <body>
+    <main class="emuera-window" aria-label="eraMaouEx browser prototype">
+      <nav class="menu-strip" aria-label="Application menu">
+        <button type="button" data-action="reset-demo">文件(F)</button>
+        <button type="button" data-action="stub-feature" data-feature="Settings">帮助(H)</button>
+      </nav>
+
+      <section class="emuera-screen">
+        <div class="debug-line" id="debug-line">[DEBUG] ERA_MAOU_EX Browser Prototype</div>
+        <div class="rule" aria-hidden="true"></div>
+
+        <header class="date-line">
+          <span id="screen-label">标题界面</span>
+          <span id="date-status">第0年　1月1日（第1日）　上午　（所持金：10000 pts.）</span>
+        </header>
+
+        <div class="rule" aria-hidden="true"></div>
+
+        <section class="info-row info-row--two" aria-label="Training target and assistant">
+          <article class="info-cell">
+            <h2>■ 调教目标</h2>
+            <div id="target-info" class="info-body"></div>
+          </article>
+          <article class="info-cell">
+            <h2>■ 助手</h2>
+            <div id="assistant-info" class="info-body"></div>
+          </article>
+        </section>
+
+        <div class="rule" aria-hidden="true"></div>
+
+        <section class="info-row info-row--four" aria-label="Inventory and region summary">
+          <article class="info-cell">
+            <h2>■ 物品/技能</h2>
+            <div id="item-info" class="info-body"></div>
+          </article>
+          <article class="info-cell">
+            <h2>■ 持有陷阱</h2>
+            <div id="trap-info" class="info-body"></div>
+          </article>
+          <article class="info-cell">
+            <h2>■ 地域概况</h2>
+            <div id="region-info" class="info-body"></div>
+          </article>
+          <article class="info-cell">
+            <h2>■ 地域日常</h2>
+            <div id="daily-info" class="info-body"></div>
+          </article>
+        </section>
+
+        <div class="rule" aria-hidden="true"></div>
+
+        <section class="command-section" aria-label="Commands">
+          <h2>■ Commands</h2>
+          <div id="command-grid" class="command-grid"></div>
+        </section>
+
+        <div class="rule" aria-hidden="true"></div>
+
+        <section class="message-section" aria-label="Output log">
+          <div id="message-output" class="message-output"></div>
+        </section>
+
+        <footer class="input-line">
+          <span>+</span>
+          <span id="input-prompt" class="caret">_</span>
+        </footer>
+      </section>
+    </main>
+
+    <script src="./app.js?v=ability-pages-2"></script>
+  </body>
+</html>

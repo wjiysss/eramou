@@ -1,0 +1,5 @@
+#DIM SAVEDATA theFourHorsemenClearRounds
+#DIM SAVEDATA theFourHorsemenDifficulty = 1
+#DIM SAVEDATA theFourHorsemenDifficultyRate = 2
+
+

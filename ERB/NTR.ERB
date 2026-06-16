@@ -1,0 +1,362 @@
+﻿;NTR関係
+;CFLAG:1=9 の場合、你の手を離れている
+;奴隷が勇者に敗北するとたまに本国に連れてかれる
+
+;-----------------------------------------
+@NTR_VIDEO
+;-----------------------------------------
+;狂王様からのメッセージをお読みください
+;キャラ指定はTARGET
+
+;TARGET確認
+SIF TARGET < 0 && TARGET > CHARANUM
+	RETURN 0
+;NTR確認
+SIF CFLAG:1 != 9
+	RETURN 0
+
+PRINTL  
+
+;ランダムでNTR状態が解除され侵攻してくる
+;妊娠中は侵攻しない
+IF RAND:6 == 0 && TALENT:153 == 0 && TARGET > 0
+	PRINTFORML 狂王命令%SAVESTR:TARGET%去封印魔王，
+	PRINTFORMW %SAVESTR:TARGET%往地下城出发了。
+	CFLAG:1 = 2
+	
+	;侵入階層・侵攻度・侵攻中・再起点設定
+	CFLAG:501 = 1
+	CFLAG:502 = 0
+	CFLAG:1 = 2
+	CFLAG:508 = 3
+	;善恶值がいくらか回復
+	SIF CFLAG:151 < -50
+		CFLAG:151 = -50
+	;好感度も低く
+	CFLAG:2 = 20
+	
+	RETURN 0	
+ENDIF
+
+CALL NTR_PLAY
+
+;珠によっては素質が成長する可能性がある
+
+;私处感觉点数による可否（I=0:可、I&1:点数不足、I&2:経験不足）
+I = 0
+CALL DECIDE_ABLUP2
+IF I == 0 && RESULT == 1
+	ABL:2 += 1
+	JUEL:1 -= A
+	PRINTFORML %ABLNAME:2%变为LV{ABL:2}
+ENDIF
+
+;肛门感觉点数による可否（I=0:可、I&1:点数不足、I&2:経験不足）
+I = 0
+CALL DECIDE_ABLUP3
+IF I == 0 && RESULT == 1
+	ABL:3 += 1
+	JUEL:2 -= A
+	PRINTFORML %ABLNAME:3%变为LV{ABL:3}
+ENDIF
+
+;欲情点数による可否（I=0:可、I&1:点数不足、I&2:経験不足）
+I = 0
+;异常经验が必要か
+E = 0
+CALL DECIDE_ABLUP11
+IF I == 0 && RESULT == 1
+	ABL:11 += 1
+	JUEL:5 -= A
+	PRINTFORML %ABLNAME:11%变为LV{ABL:11}
+ENDIF
+
+RETURN 0
+
+
+;------------------------------------------
+@NTR_PLAY
+;------------------------------------------
+;プレイ内容はP指定。口上用に
+;形式はビデオレター。水晶球的なもので送られてくる
+
+PRINTW 收到了狂王送来的水晶球，
+PRINTFORM 水晶球里%SAVESTR:TARGET%
+
+P = 0
+IF (TALENT:0 == 1 && RAND:2 == 0) || (CFLAG:42 == 79 && (CFLAG:40 & 64) && FLAG:37) || TALENT:273
+	;处女アナルプレイ
+	PRINTL 的肛门正承受着
+	IF FLAG:500 == 0 || FLAG:500 == 2
+		PRINT 狂王的巨根
+	ELSE
+		PRINT 巨型假阳具
+	ENDIF
+	PRINTW 的侵犯……
+	P = 2
+
+	CALL NTR_KOUJO
+
+	IF FLAG:500 == 1
+		PRINTL 肛门经验+10
+		PRINTFORML %EXPNAME:40%+10
+		EXP:1 += 10
+		EXP:40 += 5
+		PRINTFORML %PALAMNAME:2%点数＋{10*200}
+		PRINTFORMW %PALAMNAME:5%点数＋{10*250}
+		JUEL:2 += 10*200
+		JUEL:5 += 10*250
+	ELSE
+		PRINTL 肛门经验+10
+		PRINTL 精液经验+10
+		EXP:1 += 10
+		EXP:20 += 10
+		PRINTFORML %PALAMNAME:2%点数＋{10*200}
+		PRINTFORMW %PALAMNAME:5%点数＋{10*250}
+		JUEL:2 += 10*200
+		JUEL:5 += 10*250
+	ENDIF
+	RETURN 0
+	
+ELSEIF TALENT:0 == 1
+	;处女丧失
+	PRINTW 丧失处女的情景被拍下来了…
+	P = 1
+
+	CALL NTR_KOUJO
+
+	PRINTL 私处经验+3
+	EXP:0 += 3
+	PRINTFORML %PALAMNAME:1%点数＋{3*200}
+	PRINTFORMW %PALAMNAME:5%点数＋{3*250}
+	JUEL:1 += 3*200
+	JUEL:5 += 3*250
+	PRINTFORMW 【处女丧失】
+	TALENT:0 = 0
+	TALENT:280 = 1
+	CFLAG:15 = 105
+	CSTR:(RAND:8 + 10) = 狂王的纹章
+	PRINTFORMW %SAVESTR:TARGET%已经完全变成了狂王的东西了
+	RETURN 0
+ENDIF
+
+IF RAND:10 == 0 && ABL:39 > 0
+	;兽奸ショー
+	PRINTL 在被观众包围的舞台上，
+	PRINTW 与狗交配的情景被拍下来了…
+	P = 3
+
+	CALL NTR_KOUJO
+
+	PRINTL 私处经验+20
+	PRINTL 精液经验+20
+	PRINTL 兽奸经验+20
+	EXP:0 += 20
+	EXP:20 += 20
+	EXP:56 += 20
+	PRINTFORML %PALAMNAME:1%点数＋{20*200}
+	PRINTFORMW %PALAMNAME:5%点数＋{20*250}
+	JUEL:1 += 20*200
+	JUEL:5 += 20*250
+	;妊娠フラグオン
+	SIF FLAG:5 & 4
+		CFLAG:106 = 10
+	RETURN 0
+ENDIF
+
+
+P = RAND:4 + 4
+
+IF P == 4
+	;Vプレイ
+	IF FLAG:500 == 0 || FLAG:500 == 2
+		PRINT 正被狂王的巨根
+	ELSE
+		PRINT 正被巨型假阳具
+	ENDIF
+	PRINTL 侵犯着，性器对插入物吸啜不已的样子被拍下来了…
+	PRINTFORMW %SAVESTR:TARGET%与狂王缠绵着，深深地拥吻…
+	PRINTW 有一瞬间望向了镜头，但马上又沉迷地扭动着腰肢……
+
+	CALL NTR_KOUJO
+
+	IF FLAG:500 == 1
+		PRINTL 私处经验+5
+		PRINTFORML %EXPNAME:40%+5
+		EXP:0 += 5
+		EXP:40 += 5
+		PRINTFORML %PALAMNAME:1%点数＋{5*200}
+		PRINTFORMW %PALAMNAME:5%点数＋{5*250}
+		JUEL:1 += 5*200
+		JUEL:5 += 5*250
+	ELSE
+		PRINTL 私处经验+5
+		PRINTL 精液经验+5
+		EXP:0 += 5
+		EXP:20 += 5
+		PRINTFORML %PALAMNAME:1%点数＋{5*200}
+		PRINTFORMW %PALAMNAME:5%点数＋{5*250}
+		JUEL:1 += 5*200
+		JUEL:5 += 5*250
+		;妊娠フラグオン
+		SIF FLAG:5 & 4
+			CFLAG:108 = 10
+	ENDIF
+	
+	;初吻
+		SIF CFLAG:16 == -1
+			CFLAG:16 = 993
+	
+ELSEIF P == 5
+	;VA乱交プレイ
+	IF FLAG:500 == 0 || FLAG:500 == 2
+		PRINT 被很多男人包围着，
+	ELSE
+		PRINT 被很多装着假阳具的女人包围着，
+	ENDIF
+	PRINTL 两穴同时被侵犯的样子被拍下来了……
+	PRINTFORML %SAVESTR:TARGET%向狂王发着完全忠诚的誓言，
+	PRINTW 没有一丝犹豫，毫不嫌弃地高亢娇喘着…
+
+	CALL NTR_KOUJO
+
+	IF FLAG:500 == 1
+		PRINTL 私处经验+10
+		PRINTL 肛门经验+10
+		PRINTFORML %EXPNAME:40%+5
+		EXP:0 += 10
+		EXP:1 += 10
+		EXP:40 += 5
+		PRINTFORML %PALAMNAME:1%点数＋{10*200}
+		PRINTFORML %PALAMNAME:2%点数＋{10*200}
+		PRINTFORMW %PALAMNAME:5%点数＋{10*250}
+		JUEL:1 += 10*200
+		JUEL:2 += 10*200
+		JUEL:5 += 10*250
+	ELSE
+		PRINTL 私处经验+10
+		PRINTL 肛门经验+10
+		PRINTL 精液经验+10
+		EXP:0 += 10
+		EXP:1 += 10
+		EXP:20 += 10
+		PRINTFORML %PALAMNAME:1%点数＋{10*200}
+		PRINTFORML %PALAMNAME:2%点数＋{10*200}
+		PRINTFORMW %PALAMNAME:5%点数＋{10*250}
+		JUEL:1 += 10*200
+		JUEL:2 += 10*200
+		JUEL:5 += 10*250
+		;妊娠フラグオン
+		SIF FLAG:5 & 4
+			CFLAG:105 = 10
+	ENDIF
+	
+ELSEIF P == 6
+	;公衆便女
+	PRINTW 作为性处理便器的样子被拍下来了…
+	PRINTL 身上写着「私处10G，肛门免费」的文字，
+	PRINTW 还有性交的次数也写在身上。
+	PRINTFORML %SAVESTR:TARGET%向狂王发着完全忠诚的誓言，
+	PRINTW 毫不讨厌地作为便器侍奉着…
+
+	CALL NTR_KOUJO
+
+	PRINTL 私处经验+20
+	PRINTL 肛门经验+20
+	PRINTL 精液经验+20
+	EXP:0 += 20
+	EXP:1 += 20
+	EXP:20 += 20
+	PRINTFORML %PALAMNAME:1%点数＋{20*200}
+	PRINTFORML %PALAMNAME:2%点数＋{20*200}
+	PRINTFORMW %PALAMNAME:5%点数＋{20*250}
+	JUEL:1 += 20*200
+	JUEL:2 += 20*200
+	JUEL:5 += 20*250
+	;妊娠フラグオン
+	SIF FLAG:5 & 4
+		CFLAG:105 = 10
+
+ELSEIF P == 7
+	;精液処理
+	PRINT 侍奉狂王
+	IF FLAG:500 == 1
+		PRINT 性器
+	ELSE
+		PRINT 阴茎
+	ENDIF
+	PRINTW 的样子被拍下来了……
+	PRINTFORML %SAVESTR:TARGET%作为狂王传递信息的道具，
+	PRINTW 对着镜头淫荡地笑着……
+	PRINT 那张脸被
+	IF FLAG:500 == 1
+		PRINT 爱液
+	ELSE
+		PRINT 精液
+	ENDIF
+	PRINTW ，彻底地沾满玷污了……
+
+	CALL NTR_KOUJO
+
+	IF FLAG:500 == 1
+		PRINTFORMW %PALAMNAME:5%点数＋{5*250}
+		JUEL:5 += 5*250
+	ELSE
+		PRINTL 口交经验+3
+		PRINTL 精液经验+3
+		EXP:22 += 3
+		EXP:20 += 3
+		PRINTFORMW %PALAMNAME:5%点数＋{5*250}
+		JUEL:5 += 5*250
+		;初吻
+		SIF CFLAG:16 == -1
+			CFLAG:16 = 993
+	ENDIF
+	
+ELSEIF P == 8
+	;そのうちプレイ拡張
+ENDIF
+
+WAIT
+
+RETURN 0
+
+
+;------------------------------------------
+@NTR_CHILD_BIRTH
+;------------------------------------------
+PRINTL
+PRINTW 从狂王处收到了水晶球。
+;父が狂王
+IF CFLAG:102 == 7
+	PRINTFORMW 水晶球里播放着%SAVESTR:TARGET%在狂王和观众前公开生孩子的视频。
+	PRINTFORMW 被魔法药物促进发育的胎儿，全身肌肤和毛发都是雪白的婴儿呱呱坠地了。
+	PRINTFORMW 『都不知道生了几个这样的，从十人之后就没数了。』狂王笑着说，周围的观众也都笑了。
+;父が見ず知らずの男
+ELSEIF CFLAG:102 == 4
+	PRINTFORMW 水晶球里播放着%SAVESTR:TARGET%在狂王和观众前公开生孩子的视频。
+	PRINTFORMW 被魔法药物促进发育的胎儿，全身肌肤和毛发都是雪白的婴儿呱呱坠地了。
+	PRINTFORMW 『连父亲都不知道是谁的孩子，就当成是你的啦！』狂王笑着说，周围的观众也都笑了。
+;父が奴隷か助手
+ELSEIF CFLAG:102 == 2 || CFLAG:102 == 3
+	PRINTFORMW 水晶球里播放着%SAVESTR:TARGET%在狂王和观众前公开生孩子的视频。
+	PRINTFORMW 被魔法药物促进发育的胎儿，全身肌肤和毛发都是雪白的婴儿呱呱坠地了。
+	PRINTFORMW 『在勇者之间配对，是个不错的爱好，不止魔王才这样哦！』狂王笑着说，周围的观众也都笑了。
+ELSE
+	PRINTFORMW 水晶球里播放着%SAVESTR:TARGET%在狂王和观众前公开生孩子的视频。
+	PRINTFORMW 『污秽的肚子里，只能生出怪物了吗？』周围的观众嘲笑着。
+	IF RAND:3 == 0
+		PRINTFORMW 刚出生的怪物，当场被肢解杀掉了………
+	ELSEIF RAND:2 == 0
+		PRINTFORMW 刚出生的怪物，企图攻击狂王，被随手杀掉了………
+	ELSE
+		PRINTFORMW 刚出生的怪物，被举高丢地板上，举高丢地板上，好几次，被摔死了………
+	ENDIF
+ENDIF
+P = 20
+CALL NTR_KOUJO
+P = 0
+
+
+
+

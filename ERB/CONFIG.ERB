@@ -1,0 +1,228 @@
+﻿
+;--------------------------------------------------
+@CONFIG_FILTER_SETTING
+;--------------------------------------------------
+;各フィルタの設定を変更する
+SETCOLOR GETBIT(FLAG:25,0) ? 0x646464 # GETDEFCOLOR()
+PRINTFORML [0]爱抚系过滤　　 现在：\@ GETBIT(FLAG:25,0) ? ON # OFF \@
+SETCOLOR GETBIT(FLAG:25,1) ? 0x646464 # 0x6495ed
+PRINTFORML [1]器具系过滤　　 现在：\@ GETBIT(FLAG:25,1) ? ON # OFF \@
+SETCOLOR GETBIT(FLAG:25,2) ? 0x646464 # 0xffa500
+PRINTFORML [2]私处性交系过滤　 现在：\@ GETBIT(FLAG:25,2) ? ON # OFF \@
+SETCOLOR GETBIT(FLAG:25,3) ? 0x646464 # 0xdb7093
+PRINTFORML [3]肛门性交系过滤　 现在：\@ GETBIT(FLAG:25,3) ? ON # OFF \@
+SETCOLOR GETBIT(FLAG:25,4) ? 0x646464 # 0xff6347
+PRINTFORML [4]ＳＭ系过滤　　 现在：\@ GETBIT(FLAG:25,4) ? ON # OFF \@
+RESETCOLOR
+DRAWLINE
+PRINTL [100] 返回
+
+INPUT
+IF RESULT == 100
+	RETURN 0
+ENDIF
+IF RESULT >= 0 && RESULT <= 4
+	INVERTBIT FLAG:25,RESULT
+ENDIF
+RESTART
+
+;--------------------------------------------------
+@CONFIG_SHOW_FILTER_STATUS
+;--------------------------------------------------
+;フィルタの状態を1行で記述するだけ
+SETCOLOR GETBIT(FLAG:25,0) ? 0x646464 # GETDEFCOLOR()
+PRINT 爱抚　
+SETCOLOR GETBIT(FLAG:25,1) ? 0x646464 # 0x6495ed
+PRINT 器具　
+SETCOLOR GETBIT(FLAG:25,2) ? 0x646464 # 0xffa500
+PRINT 私处类　
+SETCOLOR GETBIT(FLAG:25,3) ? 0x646464 # 0xdb7093
+PRINT 肛门类　
+SETCOLOR GETBIT(FLAG:25,4) ? 0x646464 # 0xff6347
+PRINT SM系　
+RESETCOLOR
+PRINTL
+
+;--------------------------------------------------
+@CONFIG_VIRGIN_CONCEDED_SETTING
+;--------------------------------------------------
+;処女献上の発生可否設定をする
+;英語の訳が間違っていても気にしてはいけない
+PRINTL [0]从不发生
+PRINTL [1]每人一次
+PRINTL [2]持续触发
+DRAWLINE
+PRINTL [100] 返回
+
+WHILE 1
+	INPUT
+	SELECTCASE RESULT
+		CASE 0 TO 2
+			FLAG:38 = RESULT - 1
+			RETURN 0
+		CASE 100
+			RETURN 0
+	ENDSELECT
+	CLEARLINE 1
+WEND
+
+;--------------------------------------------------
+@CONFIG_VIRGIN_CONCEDED_STATUS
+;--------------------------------------------------
+;処女献上の発生可否状態を記述
+;三項演算子で記述できないから直接CONFIG関数に入れると見栄えが悪くなるかなって…
+SELECTCASE FLAG:38
+	CASE IS <= -1
+		PRINT 从不发生
+	CASE 0
+		PRINT 每人一次
+	CASE IS >= 1
+		PRINT 持续触发
+ENDSELECT
+PRINTL 
+
+;--------------------------------------------------
+@CONFIG_PENIS_YOU_SETTING
+;--------------------------------------------------
+
+PRINTFORML 魔王的兵器是如意金箍棒，可大也可小！！
+
+PRINTL  [0] - 普通
+PRINTL  [1] - 巨根
+PRINTL  [2] - 短小包茎
+PRINTL  [3] - 包茎
+PRINTL  [4] - 马阴茎
+DRAWLINE
+PRINTL  [999] - 返回
+
+INPUT
+
+IF RESULT == 999
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT <= 4
+	PRINT 你的鸡鸡状态：
+	IF RESULT == 1
+		PRINTW 《巨根》
+	ELSEIF RESULT == 2
+		PRINTW 《短小包茎》
+	ELSEIF RESULT == 3
+		PRINTW 《包茎》
+	ELSEIF RESULT == 4
+		PRINTW 《马阴茎》
+	ELSE
+		PRINTW 《普通》
+	ENDIF
+	TALENT:0:318 = RESULT
+ENDIF
+
+;--------------------------------------------------
+@CONFIG 
+#DIM PAGE
+;--------------------------------------------------
+LOCAL:99 = LINECOUNT
+;PAGE = 0
+$PAGE_TOP
+REDRAW 0
+DRAWLINE
+IF PAGE == 0
+PRINTFORML [0] 勇者投降后的凌辱　　　　　现在：\@ GETBIT(FLAG:5,0) ? 许可 # 禁止 \@
+PRINTFORML [1] 勇者强化　　　　　　　　　现在：\@ GETBIT(FLAG:5,1) ? 新的勇者会随游戏天数按比例增强 # 勇者等级维持 \@
+PRINTFORML [2] 怀孕分娩机能　　　　　　　现在：\@ GETBIT(FLAG:5,2) ? ON # OFF \@
+PRINTFORML [3] 勇者自动处刑机能　　　　　现在：\@ GETBIT(FLAG:5,3) ? ON # OFF \@
+PRINTFORML [4] 禁止怪物迎击　　　　　　　现在：\@ GETBIT(FLAG:5,4) ? ON (+怪物会和迎击的奴隶进行训练) # OFF \@
+PRINTFORML [5] 显示战斗记录　　　　　　　现在：\@ GETBIT(FLAG:5,5) ? ON # OFF \@
+PRINTFORML [6] 自动补充陷阱　　　　　　　现在：\@ GETBIT(FLAG:5,6) ? ON # OFF \@
+PRINTFORML [7] NTR机能　 　　　　　　　　现在：\@ GETBIT(FLAG:5,7) ? ON # OFF \@
+PRINTFORML [8] 素质分类显示　　　　　　　现在：\@ GETBIT(FLAG:5,8) ? ON # OFF \@
+PRINTFORML [9] 战斗记录的SKIP中断　　　　现在：\@ GETBIT(FLAG:5,9) ? ON # OFF \@
+PRINTFORML [10] 怀孕时的迎击・临月调教　 现在：\@ GETBIT(FLAG:5,10) ? 许可 # 禁止 \@
+PRINTFORML [11] 服装系统 　　　　　　　　现在：\@ (FLAG:37) ? ON # OFF \@
+PRINTFORML [12] 濒死时自动结束调教 　　　现在：\@ (FLAG:35) ? ON # OFF \@
+PRINTFORM [13] 调教时的过滤　　　　　　 现在：
+CALL CONFIG_SHOW_FILTER_STATUS
+ELSEIF PAGE == 1
+PRINTFORML [14] 自我介绍式的角色信息　　 现在：\@ GETBIT(FLAG:5,11) ? ON # OFF \@
+PRINTFORML [15] 显示角色的年龄/三围　　  现在：\@ GETBIT(FLAG:5,12) ? ON # OFF \@/\@ GETBIT(FLAG:5,15) ? ON # OFF \@
+PRINTFORML [16] 解除勇者登录限制   　 　 现在：\@ GETBIT(FLAG:5,32) ? ON # OFF \@
+PRINTFORML [17] 新探索模式         　 　 现在：\@ GETBIT(FLAG:5,33) ? ON # OFF \@
+PRINTFORML [18] 显示高级调教指令的名称   现在：\@ GETBIT(FLAG:5,34) ? ON # OFF \@
+PRINTFORML [19] 你那宝贝兵器的现状 　　　现在：%GET_LOOK_INFO(0, "阴茎的状态")%
+PRINTFORML [20] 自动提升角色能力         现在：\@ GETBIT(FLAG:5,35) ? ON # OFF \@ \@ GETBIT(FLAG:5,36) ? (仅主要) # \@
+     PRINT [21] 陷落之后处女主动献身　　 现在：
+CALL CONFIG_VIRGIN_CONCEDED_STATUS
+PRINTFORML [22] 男冒险者许可 　　　　　　现在：\@ GETBIT(FLAG:8,0) ? 许可 # 禁止 \@
+PRINTFORML [23] 勇者出現时的素质表示　　 现在：\@ GETBIT(FLAG:8,1) ? ON # OFF \@
+PRINTFORML [24] 勇者的恋爱发展　　　　　 现在：\@ GETBIT(FLAG:8,2) ? 许可 # 禁止 \@
+PRINTFORML [25] 勇者的任务揭示板  　　　 现在：\@ GETBIT(FLAG:8,3) ? 许可 # 禁止 \@
+[IF_DEBUG]
+;	 PRINT [25] 地下城显示方式　　　　　 现在：
+;	 CALL CONFIG_LABO_MAP_STATUS
+[ENDIF]
+PRINTFORM [26]　MOD开关　　　　　 　　　現在：
+CALL CONFIG_MODLIST
+PRINTL
+PRINTL
+ENDIF
+DRAWLINE
+
+PRINT [102] 上一页	
+PRINT [100] 返回	
+PRINTL [101] 下一页
+REDRAW 1
+INPUT
+LOCAL = RESULT
+IF LOCAL == 100
+	RETURN 0
+ELSEIF LOCAL == 101 || LOCAL == 102
+	PAGE += 1
+	PAGE %= 2
+	GOTO PAGE_TOP
+ELSEIF LOCAL >= 0 && LOCAL <= 10
+	INVERTBIT FLAG:5,LOCAL
+ELSEIF LOCAL == 11
+	FLAG:37 = !(FLAG:37)
+ELSEIF LOCAL == 12
+	FLAG:35 = !(FLAG:35)
+ELSEIF LOCAL == 13
+	CALL CONFIG_FILTER_SETTING
+ELSEIF LOCAL == 14
+	INVERTBIT FLAG:5,11
+ELSEIF LOCAL == 15
+	CALL CONFIG_AGE_SETTING
+ELSEIF LOCAL == 16
+	INVERTBIT FLAG:5,32
+ELSEIF LOCAL == 17
+	INVERTBIT FLAG:5,33
+ELSEIF LOCAL == 18
+	INVERTBIT FLAG:5,34
+ELSEIF LOCAL == 19
+	CALL CONFIG_PENIS_YOU_SETTING
+ELSEIF LOCAL == 20
+	IF !GETBIT(FLAG:5,35)
+		SETBIT FLAG:5,35
+	ELSEIF !GETBIT(FLAG:5,36)
+		SETBIT FLAG:5,36
+	ELSE
+		CLEARBIT FLAG:5,35,36
+	ENDIF 
+ELSEIF LOCAL == 21
+	CALL CONFIG_VIRGIN_CONCEDED_SETTING
+ELSEIF LOCAL >= 22 && LOCAL <= 25
+	LOCAL:1 = LOCAL - 22
+	INVERTBIT FLAG:8,LOCAL:1
+[IF_DEBUG]
+;ELSEIF LOCAL == 25
+;	CALL CONFIG_LABO_MAP_SETTING
+[ENDIF]
+ELSEIF LOCAL == 26
+	CALL MODLIST
+ENDIF
+
+REDRAW 0
+CLEARLINE LINECOUNT - LOCAL:99
+RESTART
+
+
+
+
+

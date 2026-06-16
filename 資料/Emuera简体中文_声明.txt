@@ -1,0 +1,45 @@
+﻿标题：Emuera 简体中文
+版本：1.821.8
+原作者：MinorShift, 妊）|д?)の中の人
+原发布者：MinorShift
+作者：d.f.32
+汉化人员：d.f.32, 金色的勺子
+授权：参见[许可协议]
+
+
+[ERA游戏]
+ERA游戏是由 .erb脚本文件、.csv文件和加载脚本的.exe程序组成的
+一般ERA游戏是由Emuera加载的。
+例如eraSQN, eraMaou, eraMegaten, erAVHoX等都是使用不同版本的Emuera加载的。
+但也有一些例外。
+
+
+[Emuera简体中文]
+Emuera简体中文，是对MinorShift的Emuera翻译、修改后的程序，
+用于代替Emuera来加载执行ERA中的ERB脚本。
+Emuera简体中文具有简体中文的UI界面，部分脚本错误的说明也进行了翻译。
+
+
+[使用方法]
+请将EmueraXXXXcX.exe放入到EmueraXXXX.exe所在的文件夹。
+（XXXX表示程序的版本号；.exe扩展名可能会因为系统设置而不显示）
+
+
+[联系方式]
+QQ群 469095189
+（如果你能找到我的话）
+※Emuera的作者并没有参与Emuera简体中文的制作。
+请不要将Emuera简体中文版的反馈和错误发送给MinorShift先生。
+
+
+[许可协议]
+Emuera简体中文的使用、传播、修改、再发布遵循
+	《知识共享协议 署名-非商业性使用-以相同方式共享 3.0》
+
+1. 保持EXE程序中的作者信息。
+2. 未经许可不得用于商业用途。
+3. 修改本程序并重新发布时，新的发布协议必须同样遵循本协议。
+
+
+[更多相关信息]
+见Emuera的说明文档。

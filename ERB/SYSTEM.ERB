@@ -1,0 +1,887 @@
+﻿@EVENTFIRST
+#DIM CHARA, 1
+#DIM ID_OF_NEWCHARA
+#DIM TEMP
+#DIM HAIRCOLOR
+#DIM CHARACTER
+
+HAIRCOLOR = -1
+CHARACTER = -1
+
+FLAG:26 = 232015325431115011
+FLAG:27 = 001001
+
+;狂王は初期値では扶她
+FLAG:500 = 2
+;初期奴隷の初期値は村娘
+;FLAG:501 = 1
+;各種設定
+CALL FIRST_SETTING
+
+REPEAT 14
+	X = COUNT + 60
+	FLAG:X = -1
+REND
+
+TARGET = -1
+BOUGHT = -1
+
+;戦闘ログ表示フラグ(stick修改)关闭自我介绍式角色信息、开启高级指令显示（位数太多用10进制好了，如需再修改开调试直接取得相应设定的flag:5值就好）
+;FLAG:5 = 0B1111010110100111
+FLAG:5 = 17179934119
+
+DAY:1 = 1
+
+ITEMSALES:53 = 1
+A = 200
+REPEAT 8
+	FLAG:A = 1
+	A += 1
+REND
+
+PBAND = 4
+
+;瀕死時に調教を自動終了
+FLAG:35 = 0
+;着衣システム
+FLAG:37 = 1
+
+;开局开启男冒险者用着素质展示和恋爱发展
+INVERTBIT FLAG:8,0
+INVERTBIT FLAG:8,1
+INVERTBIT FLAG:8,2
+
+MONEY = 10000
+EX_FLAG:4444 = 1234
+
+
+;魔王相当于人类年龄21岁
+CFLAG:0:451 = 21
+;初始威望为70
+EX_FLAG:99 = 70
+
+
+;2Dモードマップ生成
+IF FLAG:502 == 1
+	CALL GEO_TEST
+	CALL SET_VIL
+	FOR LOCAL:0,0,50
+		FOR LOCAL:1,0,50
+			DB:(LOCAL:0):(LOCAL:1) = 0
+	NEXT
+NEXT
+ENDIF
+
+
+;角色名初始化
+CALL CHARA_NAME_INIT
+;EX素质名初始化
+CALL EX_TALENTNAME_INIT
+
+ALIGNMENT CENTER
+PRINTL 从前，魔王得到了不死之力，
+PRINTL 他受到了只会被女性打倒的诅咒。
+PRINTL 虽然渐渐得到了足以掌握世界的力量，
+PRINTL 后来却败给了传说中的女勇者，被封印起来了。
+PRINTL  
+PRINTL 经过漫长的岁月，封印被打破了！
+PRINTL 今天，又有纯洁无垢的勇者敲响了地下城的大门……
+ALIGNMENT LEFT
+WAIT
+DRAWLINE
+
+;村娘の場合。他のユニークも同様に処理する感じ
+IF FLAG:501 == 1
+	PRINTW 首先，要奖励一下唤醒了我沉睡的愚蠢女人啊……
+	PRINTW 魔王俯视着被吸取了能量用于破坏封印的村女
+	PRINTW ………
+	PRINTW ……
+	PRINTW …
+	
+	ADDCHARA 17
+	CALL ADDCHARA_EX, CHARANUM-1
+	
+	SAVESTR:1 = %NAME:1%
+	
+	TARGET = 1
+	
+	CSTR:1 = %NAME:1%
+	CFLAG:420 = 1
+	CALL CHARA_NAME_DEFINE
+	CFLAG:9 = 1
+	CFLAG:1 = 0
+	CFLAG:11 = 15
+	CFLAG:12 = 15
+	CFLAG:13 = 15
+	CFLAG:14 = 15
+	CFLAG:16 = -1
+	CFLAG:450 = 31
+	
+	CALL CHAR_BODY_GENERATE_WAPPED, 1
+	
+	;勝手には書かないけどなんかセリフあってもいいかもね
+	;口上作者さん待ってます
+	;あいよー　4/8
+	PRINTFORMW 因为破坏封印時魔力的涌流，村女的衣服全都剥落了。
+	PRINTFORMW 村女还是少女体型，有个性的红色头发剪得短短的。
+	PRINTFORMW 还有气息，胸部静静地起伏，润泽的褐色肌肤仿佛在等待着蹂躪。
+	PRINTFORMW 就在这里尽情凌辱一番也不錯，不过还是暂且………
+	PRINTL 
+	PRINTL [1] 抱起来搬到牢房里
+	PRINTL [2] 抓着脚踝拖到牢房里
+	DRAWLINE
+
+	$INPUT_LOOP
+	INPUT
+	IF RESULT == 1
+		PRINTFORMW 村女比想象中要轻。少女的体香混合着农民的土地气息。
+		PRINTFORMW 身材尚不丰满，不过应该足以承受魔王的蹂躪了。
+		PRINTFORMW 许久没有尝过女人的味道，你正打算就这样帯回自己房间侵犯………
+		PRINTFORMW 「姐……姐………」
+		PRINTFORMW 村女的呻吟声打消了你的邪念。
+	ELSEIF RESULT == 2
+		PRINTFORMW 对于这种小丫头没必要小心翼翼的―――
+		PRINTFORMW 你抓着村女的脚踝一路拖進了牢房。
+		PRINTFORMW 虽然这里那里都擦伤了不过舔舔也就好了………
+		PRINTFORMW 结果她直到被扔进牢房都没有醒过来。
+	ELSE
+		GOTO INPUT_LOOP
+	ENDIF
+
+	PRINTL *****************************************
+	PRINT 村娘
+	PRINTS SAVESTR:1
+	PRINTL 被囚禁在了地牢里
+	PRINTL *****************************************
+
+	
+	WAIT
+	
+	BEGIN SHOP
+ENDIF
+
+;ランダムの場合
+
+PRINTW 首先，要奖励一下唤醒了我沉睡的愚蠢女人啊……
+PRINTW 魔王俯视着被吸取了能量用于破坏封印的冒险者
+PRINTW ………
+PRINTW ……
+PRINTW …
+PRINTW 
+PRINTL …
+PRINTL ……
+PRINTL ………
+
+CALL RAND_CHARA_MAKE
+BEGIN SHOP
+
+
+@EVENTTURNEND
+#DIM HEAL
+#DIM MHEAL
+#DIM LEADER
+#DIM TARGET_POOL
+#DIM ASSI_POOL
+;HEAL   = HP回復量
+;MHEAL  = 気力回復量
+;LEADER = リーダー記憶
+
+TARGET_POOL = TARGET
+ASSI_POOL = ASSI
+PLAYER = 0
+ASSI = -1
+
+
+FOR TARGET, 0, CHARANUM
+	;自動調教フォーマット
+	CALL FORMAT_AUTOTRAIN
+	;新人フラグ消去
+	CFLAG:506 = 0
+	;自動調教フラグ消去
+	CFLAG:666 = 0
+	
+NEXT
+
+
+
+;パーティー設定
+CALL PARTY_UNITE
+
+FOR LEADER, 0, CHARANUM
+	;装備の回復
+	CALL WEAPON_RESTORE,LEADER
+	
+	;ダンジョン攻略
+	SIF CFLAG:LEADER:1 == 12
+		CALL DUNGEON, LEADER
+NEXT
+
+A = 1
+REPEAT CHARANUM
+    
+	SIF A >= CHARANUM
+		BREAK
+	
+	;キャンペーン終了後のリセット
+	IF FLAG:400 == 0 && CFLAG:A:1 == 12
+		CFLAG:A:1 = 0
+		CFLAG:A:534 = 0
+	ENDIF
+	
+	;ダンジョン攻略
+	IF (CFLAG:A:1 == 2 || CFLAG:A:1 == 3) && FLAG:502 == 0
+		
+		LEADER = A	
+		CALL DUNGEON, LEADER
+		A = LEADER
+		
+	ELSEIF CFLAG:A:1 == 2 || CFLAG:A:1 == 3
+		;フィールド
+		CALL DUNGEON_MAP
+	ENDIF
+	
+	SIF CFLAG:A:1 != 2
+		CALL LVUP, A
+	
+	;戦果
+	CALL DUNGEON_AFTER
+	
+	;体力の回復（午后の調教後は夜の休みが入るので回復大きい）
+	SIF BASE:A:0 < 1
+		BASE:A:0 = 1
+	
+	IF TIME == 1
+		HEAL = MAXBASE:A:0 / 10
+	ELSE
+		HEAL = MAXBASE:A:0 / 2
+	ENDIF
+	
+	;装備効果
+	W:8 = 4
+	CALL EQUIP_CHECK
+	RESULT += 1
+	SIF RESULT > 0
+		HEAL *= RESULT
+	
+	;装備効果
+	W:8 = 13
+	CALL EQUIP_CHECK
+	RESULT += 1
+	SIF RESULT > 0
+		HEAL /= RESULT
+	
+	;吸血鬼の場合ボーナス
+	SIF TALENT:A:314 == 3
+		HEAL *= 3
+	
+	;侵攻中の勇者は回復にペナルティ
+	SIF CFLAG:A:1 == 2
+		HEAL /= 30
+	
+	;休憩フラグ
+	IF CFLAG:A:503 & 1
+		HEAL *= 2
+		CFLAG:A:503 -= 1
+	ENDIF
+	CFLAG:A:4 = 0
+	
+	;快速回复、回复缓慢、虚弱
+	IF TALENT:A:111
+		HEAL *= 2
+	ELSEIF TALENT:A:112 || TALENT:A:256
+		HEAL /= 2
+	ENDIF
+
+	BASE:A:0 += HEAL
+	SIF BASE:A:0 > MAXBASE:A:0
+		BASE:A:0 = MAXBASE:A:0
+
+	;気力の回復
+	;侵攻中の勇者は回復にペナルティ
+	IF CFLAG:A:1 == 2
+		MHEAL = MAXBASE:A:1 / 40
+		
+		;装備効果
+		W:8 = 5
+		CALL EQUIP_CHECK
+		RESULT += 1
+		MHEAL *= RESULT
+		
+		;装備効果
+		W:8 = 13
+		CALL EQUIP_CHECK
+		RESULT += 1
+		MHEAL /= RESULT
+		
+		;刚强、胆怯
+		IF TALENT:A:12
+			MHEAL *= 2
+		ELSEIF TALENT:A:10
+			MHEAL /= 2
+		ENDIF
+		
+		BASE:A:1 += MHEAL
+		SIF BASE:A:1 > MAXBASE:A:1
+			BASE:A:1 = MAXBASE:A:1
+		
+	ELSE
+		BASE:A:1 = MAXBASE:A:1
+	ENDIF
+	
+	;場所のリセット
+	SIF CFLAG:A:1 != 2 && CFLAG:A:1 != 3 && CFLAG:A:1 != 7 && CFLAG:A:1 != 8 && CFLAG:A:1 != 9 && CFLAG:A:1 != 10 && CFLAG:A:1 != 11 && CFLAG:A:1 != 12
+		CFLAG:A:1 = 0
+
+	;容易陷落付与（抵抗诱惑，不受影响）
+	;装備効果
+	W:8 = 6
+	CALL EQUIP_CHECK
+	PRINTFORML
+	IF RESULT > 0 && !TALENT:A:69 && !TALENT:A:73 ; CFLAG:A:800 != 1 && CFLAG:A:800 != 2 && CFLAG:A:800 != 3 && CFLAG:A:800 != 4 && CFLAG:A:800 != 5
+		PRINTFORML %SAVESTR:A%手上的粉红色戒指发出诡异的粉色光芒
+		PRINTFORML 戒指的魔力永久地改变了%SAVESTR:A%的身体和心灵
+		PRINTFORMW %SAVESTR:A%身体变得敏感，心中充满了欲望。
+		TALENT:A:73 = 1
+		;レベルに応じて欲情
+		SIF JUEL:A:5 < 10000
+			JUEL:A:5 += RESULT / 2
+	ELSEIF	RESULT > 0 && !TALENT:A:69 && TALENT:A:73 && JUEL:A:5 < 10000 && (RESULT / 2) > 0
+        PRINTFORML %SAVESTR:A%手上的粉红色戒指发出诡异的粉色光芒
+		PRINTFORMW %SAVESTR:A%对情欲的渴求变的更强了。	
+		SIF JUEL:A:5 < 10000
+			JUEL:A:5 += RESULT / 2
+	ELSEIF	RESULT > 0 && TALENT:A:69
+	    PRINTFORML %SAVESTR:A%手上的粉红色戒指发出诡异的粉色光芒
+		PRINTFORML 然而戒指的魔力对%SAVESTR:A%完全没有产生任何效果
+		PRINTFORMW %SAVESTR:A%用不屑的眼神看了一眼戒指，“在黑暗的地方大概还能照明用吧。”
+		
+	ENDIF
+	
+	;攻撃・防御増加について
+	;非常に強力になりすぎるため
+	;仕様変更を行いました
+	;现在これらの効果はCHAR_ST.ERBの@WEAPON_RESTOREに
+	;移動しています
+	
+	;装備効果(攻撃増加)
+	;W:8 = 7
+	;CALL EQUIP_CHECK
+	;SIF RESULT > 0 && CFLAG:A:13 < 200
+	;	CFLAG:A:13 += RESULT
+	
+	;装備効果(防御増加)
+	;W:8 = 8
+	;CALL EQUIP_CHECK
+	;SIF RESULT > 0 && CFLAG:A:14 < 200
+	;	CFLAG:A:14 += RESULT
+	
+	;装備効果(経験増加)
+	W:8 = 10
+	CALL EQUIP_CHECK
+	SIF RESULT > 0
+		EXP:A:80 += RESULT * 10
+	
+	;装備効果(攻撃防御減少)
+	W:8 = 14
+	CALL EQUIP_CHECK
+	IF RESULT > 0
+		CFLAG:A:13 -= RESULT
+		SIF CFLAG:A:13 < 15
+			CFLAG:A:13 = 15
+		CFLAG:A:14 -= RESULT
+		SIF CFLAG:A:14 < 15
+			CFLAG:A:14 = 15
+	ENDIF
+	
+	;装備効果(支配)
+	W:8 = 9
+	CALL EQUIP_CHECK
+	IF RESULT > 0
+		IF CFLAG:A:1 == 3
+			X = CFLAG:A:501 - 1
+			X *= 10
+			X += 100 + RAND:5
+			IF CFLAG:A:501 >= 8 && RAND:10 == 0
+				Z = 191 + RAND:3
+				SIF ITEM:Z > 0
+					X = Z
+			ENDIF
+			CFLAG:A:570 = X
+		ENDIF
+	ELSE
+		CFLAG:A:570 = 0
+	ENDIF
+	
+	;装備効果(洗脳)
+	W:8 = 15
+	CALL EQUIP_CHECK
+	PRINTFORML
+	IF RESULT > 0 && TALENT:A:152
+	    PRINTFORML %SAVESTR:A%手上的灰色戒指发出奇异的魔法波动
+		PRINTFORML 一个声音在%SAVESTR:A%的脑内不断重复，服从……服从……服从……
+		PRINTFORML 然而%SAVESTR:A%凭借自己强大的意志力无视了戒指的魔法
+		PRINTFORMW %SAVESTR:A%用不屑的眼神看了一眼戒指，“看起来倒是还挺漂亮的。”
+	ELSEIF RESULT > 0 && CFLAG:A:1 == 2 && !TALENT:A:152
+		CFLAG:A:1 = 0
+		PRINTFORML %SAVESTR:A%手上的灰色戒指发出奇异的魔法波动
+		PRINTFORML 一个声音在%SAVESTR:A%的脑内不断重复，服从……服从……服从……
+		PRINTFORML %SAVESTR:A%的眼神变得空洞，完全忘记了讨伐魔王的事情，自动向魔王的士兵投降了。
+		PRINTFORMW %SAVESTR:A%成了魔王的俘虏。
+		CFLAG:A:506 = 1
+		CFLAG:A:507 = 0
+		CALL PARTY_DEL, A
+		ABL:A:10 += 1
+	ELSEIF RESULT > 0 && ABL:A:10 < RESULT && !TALENT:A:152 
+		PRINTFORML %SAVESTR:A%手上的灰色戒指发出奇异的魔法波动
+		PRINTFORML 一个声音在%SAVESTR:A%的脑内不断重复，服从……服从……服从……
+		PRINTFORMW %SAVESTR:A%对魔王的顺从程度增加了
+		ABL:A:10 += 1
+	ELSEIF RESULT > 0 && ABL:A:10 >= RESULT && !TALENT:A:152 
+		PRINTFORML %SAVESTR:A%手上的灰色戒指发出奇异的魔法波动
+		PRINTFORMW 但是戒指的魔力似乎不足以再提升%SAVESTR:A%的顺从程度了。
+	ENDIF
+	
+	;好感度減少
+	IF CFLAG:A:1 == 2 && CFLAG:A:2 > 100
+		CFLAG:A:2 -= RAND:100
+	ENDIF
+	
+	;妄想支援パッチ。eraWIZから流用改変しました
+	IF A > 0 
+		IF TALENT:A:302 <= 201
+			;髪が伸びるまで１００ターン、つまり５０日。
+			TALENT:A:302 += 1
+			IF TALENT:A:302 == 51 || TALENT:A:302 == 201
+				PRINTFORM %SAVESTR:A%
+				SIF TALENT:A:312 == 22
+					PRINT 美丽的
+				;毛头发颜色
+				PRINTFORM %GET_LOOK_INFO(A,"发色(颜色)")%的
+				IF TALENT:A:302 == 51
+					PRINTL 头发半长，到肩膀了。
+				ELSEIF TALENT:A:302 == 201
+					PRINTL 头发很长，长发及腰。
+				ENDIF
+			ENDIF
+		ENDIF
+		;TALENT:310 == TALENT:311 のとき、成長が止まる
+		IF TALENT:A:310 < TALENT:A:311 && TALENT:A:125 == 0 && TALENT:A:310 <= 200
+			TALENT:A:310 += 1
+			IF TALENT:A:310 == 2 || TALENT:A:310 == 21 || TALENT:A:310 == 51 || TALENT:A:310 == 101 || TALENT:A:310 == 151 || TALENT:A:310 == 201
+				PRINTFORM %SAVESTR:A%
+				;魅力点確認
+				SIF  TALENT:A:312 ==  11
+					PRINT 可爱肚脐下
+				SIF  TALENT:A:312 == 14
+					PRINT 臀部阴影中
+				SIF  TALENT:A:312 == 15
+					PRINT 美丽大腿根
+				SIF  TALENT:A:312 == 22
+					PRINT 艳丽
+				PRINT 的阴阜上，
+				;毛头发颜色で陰毛の色を判断
+				PRINTFORM %GET_LOOK_INFO(A,"发色(颜色)")%的
+				;阴毛状态を見る
+				SIF TALENT:A:310 == 2
+					PRINTL 汗毛长出来了。
+				SIF TALENT:A:310 == 21
+					PRINTL 汗毛长满了。
+				SIF TALENT:A:310 == 51
+					PRINTL 细毛长满了。
+				SIF TALENT:A:310 == 101
+					PRINTL 嫩草丛生着。
+				SIF TALENT:A:310 == 151
+					PRINTL 刚毛长出来了。
+				SIF TALENT:A:310 == 201
+					PRINTL 森林复苏了。
+				IF TALENT:A:310 >= TALENT:A:311
+					TALENT:A:310 = TALENT:A:311
+				ENDIF
+			ENDIF
+		ENDIF
+	ENDIF
+	
+	A += 1
+	COUNT = 0
+REND
+
+IF FLAG:5 & 8
+	TARGET = 0
+	REPEAT CHARANUM
+		SIF TARGET >= CHARANUM
+			BREAK
+		
+		;自動処刑
+		;調教済と思われる顺从の高い勇者は死を免れる
+		;事前にお気に入り登録されている場合も処刑されない
+		IF CFLAG:506 == 1 && ABL:10 < 2 && CFLAG:700 == 0
+			CALL EXECUTION_MINI
+			COUNT = 1
+			TARGET = 0
+		ELSEIF CFLAG:TARGET:506 == 1
+			PRINTFORMW %SAVESTR:TARGET%拼命地求饶，向魔王宣誓效忠
+		ENDIF
+		
+		TARGET += 1
+	REND
+ENDIF
+
+;コンフィグ「戦闘ログでのSKIP中断」がONなら強制停止
+;戦闘後の処理が飛ばされてしまうので追加しました
+IF GETBIT(FLAG:5,9)
+	FORCEWAIT
+ELSE
+	WAIT
+ENDIF
+
+CALL LVUP, 0
+
+;CALL INVASION_CHECK
+
+PRINTL
+IF FLAG:82 == 0
+	IF FLAG:81 > 0
+		FLAG:81 -= RAND:100
+		PRINTL 人间界的军队反抗着魔王军的侵略………
+		PRINTW *人间界的侵略度减少了*
+		SIF FLAG:81 < 0
+			FLAG:81 = 0
+		CALL KYOTEN_EVENT, 1
+	ENDIF
+ELSEIF FLAG:82 == 1 && RAND:6 == 0
+	IF FLAG:81 > 100
+		FLAG:81 -= RAND:100
+		PRINTL 人间界的军队为了夺回领地、反抗着魔王军………
+		PRINTW *地上的魔界领土的侵略度减少了*
+		SIF FLAG:81 < 100
+			FLAG:81 = 100
+		CALL KYOTEN_EVENT, 1
+	ENDIF
+ENDIF
+IF FLAG:87 == 0
+	IF FLAG:86 > 0
+		FLAG:86 -= RAND:100
+		PRINTL 精灵族的抵抗组织反抗着魔王军………
+		PRINTW *精灵领域的侵略度减少了*
+		SIF FLAG:86 < 0
+			FLAG:86 = 0
+		CALL KYOTEN_EVENT, 2
+	ENDIF
+ELSEIF FLAG:87 == 1 && RAND:5 == 0
+	IF FLAG:86 > 100
+		FLAG:86 -= RAND:100
+		PRINTL 精灵族的抵抗组织为了夺回领地、反抗着魔王军………
+		PRINTW *黑暗精灵的领土的侵略度减少了*
+		SIF FLAG:86 < 100
+			FLAG:86 = 100
+		CALL KYOTEN_EVENT, 2
+	ENDIF
+ENDIF
+IF FLAG:89 == 0
+	IF FLAG:88 > 0
+		FLAG:88 -= RAND:100
+		PRINTL 成群的龙抵抗着魔王的军队………
+		PRINTW *龙之山脉的侵略度减少了*
+		SIF FLAG:88 < 0
+			FLAG:88 = 0
+		CALL KYOTEN_EVENT, 3
+	ENDIF
+ELSEIF FLAG:89 == 1 && RAND:4 == 0
+	IF FLAG:88 > 100
+		FLAG:88 -= RAND:100
+		PRINTL 成群的龙为了夺回领地、反抗着魔王军………
+		PRINTW *混沌龙之山的侵略度减少了*
+		SIF FLAG:88 < 100
+			FLAG:88 = 100
+		CALL KYOTEN_EVENT, 3
+	ENDIF
+ENDIF
+IF FLAG:91 == 0
+	IF FLAG:90 > 0
+		FLAG:90 -= RAND:100
+		PRINTL 天界的军队抵抗着魔王军………
+		PRINTW *天界的侵略度减少了*
+		SIF FLAG:90 < 0
+			FLAG:90 = 0
+		CALL KYOTEN_EVENT, 4
+	ENDIF
+ELSEIF FLAG:91 == 1 && RAND:3 == 0
+	IF FLAG:90 > 100
+		FLAG:90 -= RAND:100
+		PRINTL 天界的军队为了夺回领地、反抗着魔王军………
+		PRINTW *堕天使的淫界的侵略度减少了*
+		SIF FLAG:90 < 100
+			FLAG:90 = 100
+		CALL KYOTEN_EVENT, 4
+	ENDIF
+ENDIF
+
+
+;魔王の回復
+IF TIME == 0
+	HEAL = 1400
+ELSE
+	HEAL = 1000
+ENDIF
+
+BASE:0:0 += HEAL
+SIF BASE:0:0 > MAXBASE:0:0
+	BASE:0:0 = MAXBASE:0:0
+
+SIF FLAG:400 > 0
+	HEAL = -10
+
+BASE:0:1 += HEAL
+SIF BASE:0:1 > MAXBASE:0:1
+	BASE:0:1 = MAXBASE:0:1
+
+	
+CALL CAMPAIGN_GAMEOVER
+
+TARGET = TARGET_POOL
+
+;肉便器/苗床業務/結婚
+;イベント後の場所、クエスト初期化
+A = 0
+REPEAT CHARANUM
+	CALL BENKI,A
+	CALL NAEDOKO,A
+	CALL MARRIAGE_DAY,A
+	IF FLAG:400 == 0 && CFLAG:A:1 == 12
+		CFLAG:A:1 = 0
+		CFLAG:A:534 = 0
+	ENDIF
+	A += 1
+REND
+
+;自動調教
+CALL AUTOTRAIN
+
+;パーティ結成
+CALL PARTY_JOIN
+
+SIF FLAG:502 == 1
+	CALL GEO_OUTPUT_2
+
+
+;翌朝に起こる出来事
+SIF TIME == 0
+	CALL EVENT_NEWDAY
+
+;前回の調教対象と前回の助手を戻す
+TARGET = FLAG:1
+ASSI = FLAG:2
+
+
+BEGIN SHOP
+
+;ロード時の処理
+@EVENTLOAD
+LOADGLOBAL
+
+;角色名初始化
+CALL CHARA_NAME_INIT
+;EX素质名初始化
+CALL EX_TALENTNAME_INIT
+
+IF LASTLOAD_NO == 999
+	CALL MAOUNET
+	BEGIN SHOP
+ENDIF
+SIF LASTLOAD_NO >= 1000 && LASTLOAD_NO < 1020
+	CALL INPORT_B
+
+;SIF EX_FLAG:2801 < 10
+;	EX_FLAG:2801 == 10
+;データ修正
+CALL DATA_FIX
+;---------------------------------------
+@FIRST_SETTING
+;---------------------------------------
+#DIM MAOUSEX
+CFLAG:0:16 = -1
+CALL QUE2MK
+IF !RESULT
+$INPUT_LOOP
+DRAWLINE
+PRINT [0] 魔王性別 ： 
+
+IF MAOUSEX == 0
+	PRINTL 男性
+ELSEIF MAOUSEX == 1
+	PRINTL 女性
+ELSEIF MAOUSEX == 3
+	PRINTL 少年
+ELSE
+	PRINTL 扶她
+ENDIF
+IF MAOUSEX != 1
+	PRINT [1] 肉棒尺寸 ： 
+	SIF TALENT:0:318 == 0
+		PRINTL 普通阴茎
+	SIF TALENT:0:318 == 1
+		PRINTL 巨根
+	SIF TALENT:0:318 == 2
+		PRINTL 短小包茎
+	SIF TALENT:0:318 == 3
+		PRINTL 包茎
+	SIF TALENT:0:318 == 4
+		PRINTL 马阴茎
+ENDIF	
+PRINT [2] 狂王性別 ： 
+
+IF FLAG:500 == 0
+	PRINTL 男性
+ELSEIF FLAG:500 == 1
+	PRINTL 女性
+ELSE
+	PRINTL 扶她
+ENDIF
+
+PRINT [3] 初期奴隶 ： 
+
+IF FLAG:501 == 0
+	PRINTL 随机
+ELSEIF FLAG:501 == 1
+	PRINTL 村娘
+ENDIF
+
+;现在開発中のモード。隠しコマンド
+
+;PRINT [4] 地下城模式 ： 
+
+;IF FLAG:502 == 0
+;	PRINTL 通常
+;ELSEIF FLAG:502 == 1
+;	PRINTL 2D
+;ENDIF
+
+
+DRAWLINE
+PRINTL [100] 决定
+
+INPUT
+
+IF RESULT == 0
+	;魔王の性別
+	PRINTL [0] 男性  [1] 女性  [2] 扶她  [3] 少年
+	INPUT
+	
+	IF RESULT == 0
+		TALENT:0:1 = 1
+		TALENT:0:122 = 1
+		TALENT:0:121 = 0
+		TALENT:0:100 = 0
+		CFLAG:0:16 = -1
+		MAOUSEX = 0
+	ELSEIF RESULT == 1
+		TALENT:0:1 = 0
+		TALENT:0:122 = 0
+		TALENT:0:121 = 0
+		TALENT:0:100 = 0
+		CFLAG:0:16 = -1
+		MAOUSEX = 1
+	ELSEIF RESULT == 2
+		TALENT:0:1 = 1
+		TALENT:0:122 = 0
+		TALENT:0:121 = 1
+		TALENT:0:100 = 0
+		CFLAG:0:16 = -1
+		MAOUSEX = 2
+	ELSEIF RESULT == 3
+		TALENT:0:1 = 1
+		TALENT:0:122 = 1
+		TALENT:0:121 = 0
+		TALENT:0:100 = 1
+		TALENT:0:135 = 1
+		CFLAG:0:16 = -1
+		MAOUSEX = 3
+	ENDIF
+	
+ELSEIF RESULT == 1
+	;チンボのサイズ
+	;PRINTL 
+	PRINTL [0] 普通阴茎  [1] 巨根  [2] 短小包茎  [3] 包茎  [4] 马阴茎
+	INPUT
+	
+	SIF RESULT >= 0 && RESULT <= 4
+		TALENT:0:318 = RESULT	
+		
+ELSEIF RESULT == 2
+	;狂王の性別
+	PRINTL 狂王是支配这个地区的领主
+	PRINTL 继承了曾经封印你的勇者的血统，打算把你再次封印
+	PRINTL [0] 男性  [1] 女性  [2] 扶她
+	INPUT
+	
+	SIF RESULT >= 0 && RESULT <= 2
+		FLAG:500 = RESULT
+	
+ELSEIF RESULT == 3
+	;初期奴隷
+	PRINTL [0] 随机  [1] 村娘
+	INPUT
+	
+	SIF RESULT >= 0 && RESULT <= 1
+		FLAG:501 = RESULT
+	
+ELSEIF RESULT == 4
+	;モード
+	PRINTL [0] 普通  [1] 2D
+	INPUT
+	
+	SIF RESULT >= 0 && RESULT <= 1
+		FLAG:502 = RESULT
+	
+ELSEIF RESULT == 100
+	RETURN 0
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+
+GOTO INPUT_LOOP
+ELSEIF RESULT
+$INPUT_LOOP2
+IF RESULT == 1
+ELSE
+	GOTO INPUT_LOOP2
+ENDIF
+
+GOTO INPUT_LOOP2
+ENDIF
+;========================================================
+;セーブ時のテキストの設定
+;;========================================================
+@SAVEINFO
+
+
+IF TIME == 0
+	LOCALS = 第{DAY+1,2}日午前 
+ELSE
+	LOCALS = 第{DAY+1,2}日午后 
+ENDIF
+PUTFORM %LOCALS,11% 
+
+SIF FLAG:1 >= 0
+	TARGET = FLAG:1
+SIF FLAG:2 >= 0
+	ASSI = FLAG:2
+
+	PUTFORM LV{CFLAG:MASTER:9,4,RIGHT}
+	
+IF TARGET >= 1
+	PUTFORM  正在调教:%SAVESTR:TARGET,14,LEFT% 
+ELSE
+	PUTFORM %"",24%
+ENDIF
+
+SIF STRLENS(CSTR:MASTER:99) > 0
+	PUTFORM 『%CSTR:MASTER:99%』
+	
+;========================================================
+;金钱相关增减用
+;========================================================
+@MONEYSYS(ARG)
+
+MONEY += ARG
+EX_FLAG:4444 += ARG

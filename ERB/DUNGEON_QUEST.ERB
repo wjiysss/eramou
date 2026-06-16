@@ -1,0 +1,951 @@
+﻿;---------------------------------
+;クエスト全般
+;---------------------------------
+
+;---------------------------------
+@SET_QUEST,ARG:0
+#DIM PM, 3
+#DIM LCOUNT
+;---------------------------------
+;クエスト受注
+;移動する際はかならず冒険の計画より後ろに置くこと
+;目標階層を参照するため
+;PM:0がリーダー、PM:1が仲間A、PM:2が仲間B
+
+;クエスト禁止
+SIF GETBIT(FLAG:8,3)
+	RETURN 0
+
+PM:0 = ARG
+PM:1 = CFLAG:ARG:531
+PM:2 = CFLAG:ARG:532
+
+;全員に順番に設定する
+FOR LCOUNT, 0 ,3
+	SIF PM:LCOUNT <= 0
+		CONTINUE
+	
+	;終了したクエストの清算
+	IF GETBIT(CFLAG:(PM:LCOUNT):534,2)
+		CFLAG:(PM:LCOUNT):534 = 0
+	ELSEIF GETBIT(CFLAG:(PM:LCOUNT):534,1)
+		;成功報酬
+		IF CFLAG:(PM:LCOUNT):535 == 1
+			;お金
+			LOCAL = CFLAG:(PM:LCOUNT):9 * 10 + 100
+			PRINTFORMW %SAVESTR:(PM:LCOUNT)%完成了任务、获得了資金{LOCAL}！
+			CFLAG:(PM:LCOUNT):580 += LOCAL
+		ELSEIF CFLAG:(PM:LCOUNT):535 == 2
+			LOCAL = 10
+			PRINTFORMW %SAVESTR:(PM:LCOUNT)%完成了任务、道德提升了{LOCAL}！
+			CALL KARMA, (PM:LCOUNT), LOCAL
+		ELSEIF CFLAG:(PM:LCOUNT):535 == 3
+			PRINTFORMW %SAVESTR:(PM:LCOUNT)%完成了任务！
+			CALL ADD_EX_ITEM, -3, (PM:LCOUNT), 1
+		ENDIF
+		CFLAG:(PM:LCOUNT):534 = 0
+	ENDIF
+	
+	;受注状態が初期化されていないとダメ
+	SIF CFLAG:(PM:LCOUNT):534 != 0
+		CONTINUE
+	
+	;クエスト報酬
+	CFLAG:(PM:LCOUNT):535 = RAND:3 + 1
+	
+	;クエストの障害
+	;初期化
+	CFLAG:(PM:LCOUNT):536 = 0
+	;それはボスとの戦闘を強いられる
+	;クエスト戦闘で最後列の敵がボス化します
+	SIF RAND:3 == 0
+		SETBIT CFLAG:(PM:LCOUNT):536, 0
+	;それは罠が仕掛けてある
+	;クエスト戦闘で追加の罠が発動します
+	SIF RAND:3 == 0
+		SETBIT CFLAG:(PM:LCOUNT):536, 1
+	;それは時間制限がある
+	;受注カウンタが消滅すると失敗します
+	SIF RAND:3 == 0
+		SETBIT CFLAG:(PM:LCOUNT):536, 2
+	;それは敵の数が異様に多い
+	;最前列の敵の数が15体になります
+	SIF RAND:3 == 0
+		SETBIT CFLAG:(PM:LCOUNT):536, 3
+	;それは性奉仕を要求される
+	;スケベイベントを起こせばクエストが成功します
+	SIF RAND:3 == 0
+		SETBIT CFLAG:(PM:LCOUNT):536, 4
+	;それは偽の依頼である（非表示）
+	;自動的に失敗するクエストです
+	;ただし性奉仕要求による成功には干渉しません
+	SIF RAND:3 == 0
+		SETBIT CFLAG:(PM:LCOUNT):536, 5
+	
+	;クエストの目的
+	CALL QUEST_SELECT(PM:LCOUNT, "セット")
+	
+	;討伐対象（モンスターID）
+	
+	IF CFLAG:(PM:LCOUNT):1 == 12
+		CALL CAMPAIGN_MONSTER_LIST,CFLAG:(PM:LCOUNT):501
+		CFLAG:(PM:LCOUNT):538 = RESULT
+	ELSE
+		LOCAL = RAND:(CFLAG:(PM:LCOUNT):520)
+		CFLAG:(PM:LCOUNT):538 = (LOCAL * 10) + RAND:5 + 100
+	ENDIF
+	
+	IF GETBIT(CFLAG:(PM:LCOUNT):536, 3)
+		;時間制限あり
+		CFLAG:(PM:LCOUNT):539 = RAND:10 + 1
+	ELSE
+		;普通の依頼は99ターンまで猶予あり
+		CFLAG:(PM:LCOUNT):539 = 99
+	ENDIF
+	
+	;クエスト：受注状態
+	CFLAG:(PM:LCOUNT):534 = 1
+	
+	PRINTFORML %SAVESTR:(PM:LCOUNT)%接受了任务！
+	CALL QUEST_SELECT,PM:LCOUNT, "名前"
+NEXT
+
+RETURN 1
+
+;---------------------------------
+@RESULT_QUEST,ARG:0,ARGS
+#DIM PM, 3
+#DIM LCOUNT
+#DIM MONID
+#DIM MCOUNT
+;---------------------------------
+;クエスト結果
+;PM:0がリーダー、PM:1が仲間A、PM:2が仲間B
+
+;クエスト禁止
+SIF GETBIT(FLAG:8,3)
+	RETURN 0
+
+PM:0 = ARG
+PM:1 = CFLAG:ARG:531
+PM:2 = CFLAG:ARG:532
+
+;全員に順番に結果を見るする
+FOR LCOUNT, 0 ,3
+	SIF PM:LCOUNT <= 0
+		CONTINUE
+	
+	;クエスト受注で成功でも失敗でもない場合じゃないとダメ
+	SIF CFLAG:(PM:LCOUNT):534 != 1
+		CONTINUE
+	
+	MONID = CFLAG:(PM:LCOUNT):538
+	;該当モンスターがいないとダメ
+	LOCAL = 0
+	FOR MCOUNT, 0, 300, 100
+		SIF	E:MCOUNT == MONID
+			LOCAL = 1
+	NEXT
+	SIF LOCAL == 0
+		CONTINUE
+	
+	
+	PRINTW *クエスト結果*
+	
+	IF GETBIT(CFLAG:(PM:LCOUNT):536, 5)
+		PRINTW 看来是接了个假任务……
+		ARGS = 失敗
+	ENDIF
+	
+	IF CFLAG:(PM:LCOUNT):539 < 1
+		PRINTW 看来是没有赶上……
+		ARGS = 失敗
+	ENDIF
+	
+	CALL QUEST_SELECT,PM:LCOUNT, ARGS
+	
+	IF ARGS == "失敗"
+		PRINTFORML -任务失敗-
+		SETBIT CFLAG:(PM:LCOUNT):534, 2
+	ELSE
+		PRINTFORML *任务成功*
+		SETBIT CFLAG:(PM:LCOUNT):534, 1
+	ENDIF
+	
+NEXT
+
+RETURN 1
+
+;---------------------------------
+@QUEST_SELECT, ARG:0, ARGS,QUEST_LINE = 0
+#DIM TYPE
+#DIM LCOUNT
+#DIM MON_ID
+#DIM QUEST_LINE
+;---------------------------------
+;クエスト分岐
+;ARGS = セット…クエスト種別の設定をする
+;ARGS = 成功……クエスト成功時のログ
+;ARGS = 失敗……クエスト失敗時のログ
+;ARGS = 名前……クエスト名と詳細
+
+;おためしで二つだけクエスト実装
+
+IF ARGS == "セット"
+	TYPE = RAND:3 + 1
+	CFLAG:ARG:537 = TYPE
+ELSE
+	TYPE = CFLAG:ARG:537
+ENDIF
+
+MON_ID = CFLAG:ARG:538
+
+
+IF QUEST_LINE == 2
+	GOTO LINE2
+ELSEIF QUEST_LINE == 3
+	GOTO LINE3
+ENDIF
+
+IF TYPE == 1
+	;さらわれた娘
+	IF ARGS == "セット"
+		CFLAG:ARG:540 = RAND:5
+	ELSEIF ARGS == "成功"
+		PRINTFORM %SAVESTR:ARG%将被%ITEMNAME:MON_ID%掳走的
+		IF CFLAG:ARG:540 == 0
+			PRINT 村娘
+		ELSEIF CFLAG:ARG:540 == 1
+			PRINT 千金
+		ELSEIF CFLAG:ARG:540 == 2
+			PRINT 女学生
+		ELSEIF CFLAG:ARG:540 == 3
+			PRINT 街娘
+		ELSEIF CFLAG:ARG:540 == 4
+			PRINT 女冒険者
+		ELSE
+			PRINT 村娘
+		ENDIF
+		PRINTFORML 安全救出了！
+	ELSEIF ARGS == "失敗"
+		PRINTFORM 被%ITEMNAME:MON_ID%掳走的
+		IF CFLAG:ARG:540 == 0
+			PRINT 村娘
+		ELSEIF CFLAG:ARG:540 == 1
+			PRINT 千金
+		ELSEIF CFLAG:ARG:540 == 2
+			PRINT 女学生
+		ELSEIF CFLAG:ARG:540 == 3
+			PRINT 街娘
+		ELSEIF CFLAG:ARG:540 == 4
+			PRINT 女冒険者
+		ELSE
+			PRINT 村娘
+		ENDIF
+		;PRINT は
+		IF RAND:10 == 0
+			PRINTL 几经凌辱、怀孕了……
+		ELSEIF RAND:9 == 0
+			PRINTL 被切断了四肢受尽凌辱、双目已然失去了光芒……
+		ELSEIF RAND:8 == 0
+			PRINTL 如同痴女一般完全沉浸在了快樂之中……
+		ELSEIF RAND:7 == 0
+			PRINTL 成了長著不可名狀肉棒的射精人偶……
+		ELSEIF RAND:6 == 0
+			PRINTL 菊穴被深度地調教、完全回不到原本正常的生活了……
+		ELSEIF RAND:5 == 0
+			PRINTL 的乳房變得肥大、被改造成了絕頂噴乳的家畜……
+		ELSEIF RAND:4 == 0
+			PRINTL 懷上了怪物的孩子……
+		ELSEIF RAND:3 == 0
+			PRINTL 全身被紋上了低賤的刺青、成了渴求著精液的肉便器……
+		ELSEIF RAND:2 == 0 && ITEM:22 == 1
+			;野良犬で獣姦フラグON
+			PRINTL 與豬交換了靈魂成了家畜、沉迷在了與豬的交尾當中……
+		ELSE
+			PRINTL 已然被侵犯了……
+		ENDIF
+	ELSEIF ARGS == "名前"
+		PRINTFORM 任务[被掳走的
+		IF CFLAG:ARG:540 == 0
+			PRINT 村娘
+		ELSEIF CFLAG:ARG:540 == 1
+			PRINT 千金
+		ELSEIF CFLAG:ARG:540 == 2
+			PRINT 女学生
+		ELSEIF CFLAG:ARG:540 == 3
+			PRINT 街娘
+		ELSEIF CFLAG:ARG:540 == 4
+			PRINT 女冒険者
+		ELSE
+			PRINT 村娘
+		ENDIF
+		IF QUEST_LINE == 1
+			PRINT ]
+		ELSE
+			PRINTL ]
+		ENDIF
+	ENDIF
+ELSEIF TYPE == 2
+	;淫魔の虜
+	IF ARGS == "セット"
+		CFLAG:ARG:540 = RAND:5
+	ELSEIF ARGS == "成功"
+		PRINTFORM %SAVESTR:ARG%将被%ITEMNAME:MON_ID%诱惑了的
+		IF CFLAG:ARG:540 == 0
+			PRINT 人妻
+		ELSEIF CFLAG:ARG:540 == 1
+			PRINT 女神官
+		ELSEIF CFLAG:ARG:540 == 2
+			PRINT 大小姐
+		ELSEIF CFLAG:ARG:540 == 3
+			PRINT 女学者
+		ELSEIF CFLAG:ARG:540 == 4
+			PRINT 女冒険者
+		ELSE
+			PRINT 村娘
+		ENDIF
+		PRINTFORML 安全救出了！
+	ELSEIF ARGS == "失敗"
+		PRINTFORM 被%ITEMNAME:MON_ID%诱惑了的
+		IF CFLAG:ARG:540 == 0
+			PRINT 人妻
+		ELSEIF CFLAG:ARG:540 == 1
+			PRINT 女神官
+		ELSEIF CFLAG:ARG:540 == 2
+			PRINT 大小姐
+		ELSEIF CFLAG:ARG:540 == 3
+			PRINT 女学者
+		ELSEIF CFLAG:ARG:540 == 4
+			PRINT 女冒険者
+		ELSE
+			PRINT 村娘
+		ENDIF
+		;PRINT は
+		IF RAND:10 == 0
+			PRINTL 完全成了魔的眷屬甚至還懷孕了……
+		ELSEIF RAND:9 == 0
+			PRINTL 成爲魔族的一員戴上了代表契約的乳環……
+		ELSEIF RAND:8 == 0
+			PRINTL 成爲了魔族的眷屬戴上了項圈……
+		ELSEIF RAND:7 == 0
+			PRINTL 成爲了魔族的一員歡快地舔舐著肉棒……
+		ELSEIF RAND:6 == 0
+			PRINTL 受盡了菊穴調教成爲了魔族……
+		ELSEIF RAND:5 == 0
+			PRINTL 的乳房肥大化最終成了魔族……
+		ELSEIF RAND:4 == 0
+			PRINTL 懷上魔族的孩子幸福地笑了起來……
+		ELSEIF RAND:3 == 0
+			PRINTL 屁股被紋上了魔族的刺青成爲了魔族的情婦……
+		ELSEIF RAND:2 == 0
+			PRINTL 曾經清純的面容已經轉化為了魔族的面容了……
+		ELSE
+			PRINTL 已然被侵犯了……
+		ENDIF
+	ELSEIF ARGS == "名前"
+		PRINTFORM 任务[受魔诱惑的
+		IF CFLAG:ARG:540 == 0
+			PRINT 人妻
+		ELSEIF CFLAG:ARG:540 == 1
+			PRINT 女神官
+		ELSEIF CFLAG:ARG:540 == 2
+			PRINT 大小姐
+		ELSEIF CFLAG:ARG:540 == 3
+			PRINT 女学者
+		ELSEIF CFLAG:ARG:540 == 4
+			PRINT 女冒険者
+		ELSE
+			PRINT 村娘
+		ENDIF
+		IF QUEST_LINE == 1
+			PRINT ]
+		ELSE
+			PRINTL ]
+		ENDIF
+	ENDIF
+ELSEIF TYPE == 3
+	;変異する身体
+	IF ARGS == "セット"
+		CFLAG:ARG:540 = RAND:5
+	ELSEIF ARGS == "成功"
+		PRINTFORM %SAVESTR:ARG%将%ITEMNAME:MON_ID%的肝打了包用回城魔法传送了、成功治好了
+		IF CFLAG:ARG:540 == 0
+			PRINT 魔女
+		ELSEIF CFLAG:ARG:540 == 1
+			PRINT 魔法女学生
+		ELSEIF CFLAG:ARG:540 == 2
+			PRINT 女魔法騎士
+		ELSEIF CFLAG:ARG:540 == 3
+			PRINT 女魔法学者
+		ELSEIF CFLAG:ARG:540 == 4
+			PRINT 女冒険者
+		ELSE
+			PRINT 村娘
+		ENDIF
+		PRINTFORML 的异状！
+	ELSEIF ARGS == "失敗"
+		PRINTFORM 因変異魔法而暴走的
+		IF CFLAG:ARG:540 == 0
+			PRINT 魔女
+		ELSEIF CFLAG:ARG:540 == 1
+			PRINT 魔法女学生
+		ELSEIF CFLAG:ARG:540 == 2
+			PRINT 女魔法騎士
+		ELSEIF CFLAG:ARG:540 == 3
+			PRINT 女魔法学者
+		ELSEIF CFLAG:ARG:540 == 4
+			PRINT 女冒険者
+		ELSE
+			PRINT 村娘
+		ENDIF
+		;PRINT は
+		IF RAND:10 == 0
+			PRINTL 似乎用長出的巨大陰莖一個接一個地侵犯著街娘……
+		ELSEIF RAND:9 == 0
+			PRINTL 似乎大脳被弄成了色情狂、喜欢上全裸著在野外交尾……
+		ELSEIF RAND:8 == 0
+			PRINTL 似乎覺醒了脏污凌辱的兴趣、每晚都在做着公众便所……
+		ELSEIF RAND:7 == 0
+			PRINTL 似乎明白了兽人的魅力、与丑陋的兽人结婚了……
+		ELSEIF RAND:6 == 0
+			PRINTL 似乎大脳被弄成了喜欢扩张菊穴的变态……
+		ELSEIF RAND:5 == 0
+			PRINTL 乳房变得肥大了、似乎和城里的变态交易着……
+		ELSEIF RAND:4 == 0
+			PRINTL 最终成了淫靡的肉块、上演着奇物秀过活……
+		ELSEIF RAND:3 == 0
+			PRINTL 似乎觉醒了変態性癖全身纹上低贱的刺青、成为了肉便器……
+		ELSEIF RAND:2 == 0 && ITEM:22 == 1
+			;野良犬で獣姦フラグON
+			PRINTL 把自己当成了母狗、在草丛里和野良犬交尾时被发现了……
+		ELSE
+			PRINTL 似乎因为长出了阴茎强奸了城里的女人而被逮捕了……
+		ENDIF
+	ELSEIF ARGS == "名前"
+		PRINTFORM 任务[因变异魔法而暴走的
+		IF CFLAG:ARG:540 == 0
+			PRINT 魔女
+		ELSEIF CFLAG:ARG:540 == 1
+			PRINT 魔法女学生
+		ELSEIF CFLAG:ARG:540 == 2
+			PRINT 女魔法騎士
+		ELSEIF CFLAG:ARG:540 == 3
+			PRINT 女魔法学者
+		ELSEIF CFLAG:ARG:540 == 4
+			PRINT 女冒険者
+		ELSE
+			PRINT 村娘
+		ENDIF
+		IF QUEST_LINE == 1
+			PRINT ]
+		ELSE
+			PRINTL ]
+		ENDIF
+	ENDIF
+ELSE
+	RETURN 0
+ENDIF
+SIF QUEST_LINE == 1
+	GOTO LINEEND
+$LINE2	
+IF ARGS == "名前"
+	IF QUEST_LINE == 0
+	SIF GETBIT(CFLAG:ARG:536, 0)
+		PRINTL *それはボスとの戦闘を強いられる
+	SIF GETBIT(CFLAG:ARG:536, 1)
+		PRINTL *それは罠が仕掛けてある
+	SIF GETBIT(CFLAG:ARG:536, 2)
+		PRINTL *それは時間制限がある
+	SIF GETBIT(CFLAG:ARG:536, 3)
+		PRINTL *それは敵の数が異様に多い
+	SIF GETBIT(CFLAG:ARG:536, 4)
+		PRINTL *それは性奉仕を要求される
+	ELSE
+	SIF CFLAG:ARG:536
+		PRINT *将有
+	LOCALS = 
+	FOR COUNT,0,5
+		IF GETBIT(CFLAG:ARG:536, COUNT)
+			SIF COUNT && LOCALS != ""
+				LOCALS += "/"
+			IF	COUNT == 0
+				LOCALS += "BOSS战"
+			ELSEIF COUNT == 1
+				LOCALS += "陷阱"
+			ELSEIF COUNT == 2
+				LOCALS += "时限"
+			ELSEIF COUNT == 3
+				LOCALS += "大量敌人"
+			ELSEIF COUNT == 4
+				LOCALS += "性要求"
+			ENDIF
+		ENDIF
+	NEXT
+	;SIF GETBIT(CFLAG:ARG:536, 0)
+	;	LOCALS += 与BOSS级作战
+	;SIF GETBIT(CFLAG:ARG:536, 1)
+	;	PRINT *それは罠が仕掛けてある
+	;SIF GETBIT(CFLAG:ARG:536, 2)
+	;	PRINT *それは時間制限がある
+	;SIF GETBIT(CFLAG:ARG:536, 3)
+	;	PRINT *それは敵の数が異様に多い
+	;SIF GETBIT(CFLAG:ARG:536, 4)
+	;	PRINT *それは性奉仕を要求される
+	
+	PRINTFORM %LOCALS%
+	LOCALS = 
+	ENDIF
+	SIF QUEST_LINE == 2
+		GOTO LINEEND
+	$LINE3
+	SIF MON_ID == 0
+		GOTO LINEEND
+	IF QUEST_LINE == 0
+		PRINTFORML *討伐対象是%ITEMNAME:MON_ID%
+	ELSE
+		PRINTFORM *討伐対象是%ITEMNAME:MON_ID%
+	ENDIF
+	SIF QUEST_LINE == 0
+		WAIT
+ENDIF
+$LINEEND
+RETURN 1
+
+;---------------------------------
+@QUEST_BATTLE_SET, ARG:0
+#DIM LCOUNT
+#DIM PM, 3
+#DIM MONID
+#DIM MCOUNT
+#DIM QUEST_ON
+;---------------------------------
+;クエスト戦闘判定と敵のセット
+;ARG:0 = リーダー
+;PM:0がリーダー、PM:1が仲間A、PM:2が仲間B
+PM:0 = ARG
+PM:1 = CFLAG:ARG:531
+PM:2 = CFLAG:ARG:532
+;クエスト発生フラグ
+QUEST_ON = 0
+
+FOR LCOUNT, 0 ,3
+	SIF PM:LCOUNT <= 0
+		CONTINUE
+	
+	;時間経過
+	SIF CFLAG:(PM:LCOUNT):539 > 0
+		CFLAG:(PM:LCOUNT):539 -= 1
+	
+	;発生しないときもある
+	SIF RAND:3 > 0
+		CONTINUE
+	
+	;クエスト受注で成功でも失敗でもない場合じゃないとダメ
+	SIF CFLAG:(PM:LCOUNT):534 != 1
+		CONTINUE
+	
+	MONID = CFLAG:(PM:LCOUNT):538
+	;該当モンスターがいないとダメ
+	LOCAL = 0
+	FOR MCOUNT, 0, 300, 100
+		SIF	E:MCOUNT == MONID
+			LOCAL = 1
+	NEXT
+	SIF LOCAL == 0
+		CONTINUE
+	
+	PRINTW *任务戦闘発生*
+	QUEST_ON = 2
+	
+	IF GETBIT(CFLAG:(PM:LCOUNT):536, 0)
+		;最後列ボス化
+		E:208 = 1
+		E:299 = 1
+	ENDIF
+	
+	IF GETBIT(CFLAG:(PM:LCOUNT):536, 1)
+		;罠
+		LOCAL = A
+		A = PM:LCOUNT
+		IF RAND:3 == 0
+			CALL ARROW_TRAP
+		ELSEIF RAND:2 == 0
+			CALL OIL_TRAP
+		ELSE
+			CALL ALL_DOWN_TRAP
+		ENDIF
+		A = LOCAL
+	ENDIF
+	
+	IF GETBIT(CFLAG:(PM:LCOUNT):536, 3)
+		;最前列15匹
+		E:208 = 0
+		E:299 = 15
+	ENDIF
+	
+	IF GETBIT(CFLAG:(PM:LCOUNT):536, 4)
+		;性奉仕
+		PRINTL 看来敌人提出了性方面的需求进行着交涉……
+		LOCAL = 100
+		;娼婦
+		SIF TALENT:(PM:LCOUNT):成为勇者前的生活 == 5
+			LOCAL += 30
+		;奴隷
+		SIF TALENT:(PM:LCOUNT):成为勇者前的生活 == 20
+			LOCAL += 30
+		;売春経験
+		LOCAL += EXP:(PM:LCOUNT):74
+		;カルマ低い
+		SIF CFLAG:(PM:LCOUNT):151 < -30
+			LOCAL += 10
+		;カルマすごく低い
+		SIF CFLAG:(PM:LCOUNT):151 < -60
+			LOCAL += 20
+		IF RAND:LOCAL > 100
+			CALL QUEST_BITCH, PM:LCOUNT
+			PRINTFORML *任务成功*
+			SETBIT CFLAG:(PM:LCOUNT):534, 1
+			RETURN 1
+		ENDIF
+		PRINTFORML %SAVESTR:(PM:LCOUNT)%用愤怒的话语回绝了
+	ENDIF
+	
+	
+NEXT
+
+RETURN QUEST_ON
+
+;---------------------------------
+@QUEST_BITCH, ARG:0
+#DIM LCOUNT
+#DIM MONID
+#DIM MONTYPE
+#DIM MONNUM
+#DIM MCOUNT
+;---------------------------------
+
+FOR MCOUNT, 0, 300, 100
+	;一応モンスター数の確認
+	MONNUM = E:(MCOUNT + 99)
+	SIF MONNUM <= 0
+		CONTINUE
+	MONID = E:MCOUNT
+	MONTYPE = E:(MCOUNT + 7)
+	IF MONTYPE == 1
+		;亜人
+		CALL ORC_QUEST_BITCH,ARG,MCOUNT
+	ELSEIF MONTYPE == 2
+		;スライム
+		CALL SLIME_QUEST_BITCH,ARG,MCOUNT
+	ELSEIF MONTYPE == 3
+		;昆虫
+		CALL INSECT_QUEST_BITCH,ARG,MCOUNT
+	ELSEIF MONTYPE == 4
+		;蔦触手
+		CALL IVY_QUEST_BITCH,ARG,MCOUNT
+	ELSEIF MONTYPE == 5
+		;触手
+		CALL SYOKUSYU_QUEST_BITCH,ARG,MCOUNT
+	ELSEIF MONTYPE == 6
+		;妖精
+		CALL FAILY_QUEST_BITCH,ARG,MCOUNT
+	ELSEIF MONTYPE == 7
+		;巨人
+		CALL GIANT_QUEST_BITCH,ARG,MCOUNT
+	ELSEIF MONTYPE == 8
+		;男
+		CALL MAN_QUEST_BITCH,ARG,MCOUNT
+	ELSEIF MONTYPE == 9
+		;女
+		CALL GIRL_QUEST_BITCH,ARG,MCOUNT
+	ELSEIF MONTYPE == 10
+		;獣
+		CALL BEAST_QUEST_BITCH,ARG,MCOUNT
+	ELSEIF MONTYPE == 11
+		;脳姦
+		CALL BRAIN_QUEST_BITCH,ARG,MCOUNT
+	ELSEIF MONTYPE == 12
+		;馬
+		CALL HORSE_QUEST_BITCH,ARG,MCOUNT
+	ENDIF
+	
+NEXT
+
+IF EXP:0 > 0 && TALENT:0 == 1
+	TALENT:0 = 0
+	PRINTL 【処女喪失】
+	CFLAG:15 = 104
+ENDIF
+
+
+RETURN 1
+
+;---------------------------------
+;各種モンスター性的交渉
+;---------------------------------
+;亜人
+;---------------------------------
+@ORC_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORML %SAVESTR:ARG%服从了命令、舔起了%ITEMNAME:MONID%的阴茎……
+PRINTFORML 口交経験+{MONNUM}
+PRINTFORML 精液経験+{MONNUM}
+EXP:ARG:22 += MONNUM
+EXP:ARG:20 += MONNUM
+;ファーストキス
+SIF CFLAG:16 == -1
+	CFLAG:16 = 995
+
+WAIT
+RETURN 1
+
+;---------------------------------
+;スライム
+;---------------------------------
+@SLIME_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORM %SAVESTR:ARG%服从了命令、%ITEMNAME:MONID%慢慢地
+IF TALENT:ARG:120 || TALENT:ARG:121
+	PRINTL 将阴茎插了进去……
+	PRINTL 阴茎点数+{MONNUM}
+	JUEL:ARG:0 += MONNUM
+ELSE
+	PRINTL 将腰沉了下去……
+	PRINTL 阴核点数+{MONNUM}
+	JUEL:ARG:0 += MONNUM
+ENDIF
+WAIT
+RETURN 1
+
+;---------------------------------
+;昆虫
+;---------------------------------
+@INSECT_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORML %SAVESTR:ARG%服从了命令、与%ITEMNAME:MONID%交尾了……
+IF TALENT:ARG:120 || TALENT:ARG:121
+	PRINTL 阴茎点数+{MONNUM}
+	JUEL:ARG:0 += MONNUM
+ELSE
+	PRINTL 私处经验+1
+	EXP:ARG:0 += 1
+ENDIF
+
+WAIT
+RETURN 1
+
+;---------------------------------
+;蔦触手
+;---------------------------------
+@IVY_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORML %SAVESTR:ARG%服从了命令、将身体交给了%ITEMNAME:MONID%……
+PRINTFORML %ITEMNAME:MONID%勒住了%SAVESTR:ARG%的头！
+PRINTFORML 苦痛点数+{MONNUM}
+PRINTFORML 恐怖点数+{MONNUM}
+JUEL:ARG:9 += MONNUM
+JUEL:ARG:10 += MONNUM
+WAIT
+RETURN 1
+
+;---------------------------------
+;触手
+;---------------------------------
+@SYOKUSYU_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORML %SAVESTR:ARG%服从了命令、任凭%ITEMNAME:MONID%的触手触碰……
+IF TALENT:ARG:120 || TALENT:ARG:121
+	PRINTL 阴茎点数+{MONNUM}
+	JUEL:ARG:0 += MONNUM
+ELSE
+	PRINTL 私处经验+1
+	PRINTL 阴核点数+{MONNUM}
+	EXP:ARG:0 += 1
+	JUEL:ARG:0 += MONNUM
+ENDIF
+
+
+
+WAIT
+RETURN 1
+
+;---------------------------------
+;妖精
+;---------------------------------
+@FAILY_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORM %SAVESTR:ARG%服从了命令、对%ITEMNAME:MONID%
+IF TALENT:ARG:120 || TALENT:ARG:121
+	PRINTL 用阴茎摩擦了起来……
+	PRINTL 阴茎点数+{MONNUM}
+	JUEL:ARG:0 += MONNUM
+ELSE
+	PRINTL 用阴蒂摩擦了起来……
+	PRINTL 阴核点数+{MONNUM}
+	JUEL:ARG:0 += MONNUM
+ENDIF
+WAIT
+RETURN 1
+
+;---------------------------------
+;巨人
+;---------------------------------
+@GIANT_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORML %SAVESTR:ARG%服从了命令、舔起了%ITEMNAME:MONID%的巨根……
+PRINTFORML 口交経験+{MONNUM}
+PRINTFORML 精液経験+{MONNUM}
+EXP:ARG:22 += MONNUM
+EXP:ARG:20 += MONNUM
+;ファーストキス
+SIF CFLAG:16 == -1
+	CFLAG:16 = 995
+
+WAIT
+RETURN 1
+
+;---------------------------------
+;男
+;---------------------------------
+@MAN_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORML %SAVESTR:ARG%服从了命令、舔起了%ITEMNAME:MONID%的阴茎……
+PRINTFORML 口交経験+{MONNUM}
+PRINTFORML 精液経験+{MONNUM}
+EXP:ARG:22 += MONNUM
+EXP:ARG:20 += MONNUM
+;ファーストキス
+SIF CFLAG:16 == -1
+	CFLAG:16 = 995
+
+WAIT
+RETURN 1
+
+;---------------------------------
+;女
+;---------------------------------
+@GIRL_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORM %SAVESTR:ARG%服从了命令、与%ITEMNAME:MONID%
+IF TALENT:ARG:120 || TALENT:ARG:121
+	PRINTL 交尾了……
+	PRINTL 阴茎点数+{MONNUM}
+	JUEL:ARG:0 += MONNUM
+ELSE
+	PRINTL 交合在了一起……
+	PRINTL 阴核点数+{MONNUM}
+	JUEL:ARG:0 += MONNUM
+ENDIF
+WAIT
+RETURN 1
+
+;---------------------------------
+;獣
+;---------------------------------
+@BEAST_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORML %SAVESTR:ARG%服从了命令、舔起了%ITEMNAME:MONID%的阴茎……
+PRINTFORML 口交経験+{MONNUM}
+PRINTFORML 精液経験+{MONNUM}
+PRINTFORMW 獣姦経験+{MONNUM}
+EXP:ARG:22 += MONNUM
+EXP:ARG:20 += MONNUM
+EXP:ARG:56 += MONNUM
+;ファーストキス
+SIF CFLAG:16 == -1
+	CFLAG:16 = 995
+
+WAIT
+RETURN 1
+
+;---------------------------------
+;脳姦
+;---------------------------------
+@BRAIN_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORML %SAVESTR:ARG%服从了命令、任%ITEMNAME:MONID%侵犯着大脳开始自慰了起来……
+PRINTL 阴茎点数+{MONNUM}
+JUEL:ARG:0 += MONNUM
+WAIT
+RETURN 1
+
+;---------------------------------
+;馬
+;---------------------------------
+@HORSE_QUEST_BITCH, ARG, MCOUNT
+#DIM MCOUNT
+#DIM MONID
+#DIM MONNUM
+MONID = E:MCOUNT
+MONNUM = E:(MCOUNT + 99)
+
+PRINTFORML %SAVESTR:ARG%服从了命令、舔起了%ITEMNAME:MONID%的马阴茎……
+PRINTFORML 口交経験+{MONNUM}
+PRINTFORML 精液経験+{MONNUM}
+PRINTFORMW 獣姦経験+{MONNUM}
+EXP:ARG:22 += MONNUM
+EXP:ARG:20 += MONNUM
+EXP:ARG:56 += MONNUM
+;ファーストキス
+SIF CFLAG:16 == -1
+	CFLAG:16 = 995
+
+WAIT
+RETURN 1
+

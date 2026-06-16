@@ -1,0 +1,1471 @@
+﻿;=================================================
+;仕立て屋
+;eraIM@Sから導入しました(eramaou)
+;ZはTARGETを保存してるため使用禁止
+;=================================================
+@TAILOR_MAIN
+;購入した品物の種類（1～9:通常衣類 2:学生服 3:子供服 10:下着 11:替えオムツ 20:装備品 ）
+A = 0
+;選んだ服の種類
+R = 0
+;服の価格
+C = 0
+;着せ替えるのに必要な顺从Lv
+S = 0
+;着衣時の服の損傷フラグ
+F = 0
+
+$INPUT_LOOP_01
+
+CUSTOMDRAWLINE =
+PRINTL 服装设计师
+PRINTL 《这里是制作衣装的服饰店》
+DRAWLINE
+PRINTV DAY+1
+PRINT 日
+IF TIME == 0
+	PRINTL  午前
+ELSE
+	PRINTL  午后
+ENDIF
+
+PRINTFORML 所持金：{MONEY}点
+DRAWLINE
+PRINTL 调整谁的衣装？
+DRAWLINE
+CALL LIFE_LIST_TAILOR
+CUSTOMDRAWLINE ‥
+PRINTL  [999] - 返回
+
+INPUT
+
+IF RESULT == 999
+	A = 0
+	C = 0
+	R = 0
+	RETURN 0
+ELSEIF RESULT < 1 || RESULT >= CHARANUM
+	GOTO INPUT_LOOP_01
+;臨死中のキャラは排除
+ELSEIF BASE:RESULT:0 < 1
+	GOTO INPUT_LOOP_01
+;調教中以外は排除
+ELSEIF CFLAG:RESULT:1 != 0
+	GOTO INPUT_LOOP_01
+ENDIF
+
+CALL TAILOR_CORE(RESULT)
+
+RESTART
+
+@TAILOR_CORE(ARG)
+
+TARGET = ARG
+
+$INPUT_LOOP_02
+A = 0
+C = 0
+R = 0
+S = 0
+
+DRAWLINE
+PRINTFORML 所持金：{MONEY}点
+PRINTFORML %SAVESTR:TARGET%现在%GET_CLOTHTYPE_MAIN2(TARGET,"身穿")%。
+
+PRINTFORML 要让%SAVESTR:TARGET%穿上什么？
+DRAWLINE
+
+PRINTL  [0] - 日常服饰（100点）
+PRINTL  [1] - 普通装备（1000点）
+PRINTL  [2] - 其它
+PRINTL  [3] - 替换内衣（5点）
+SIF CFLAG:42 == 69 && ((CFLAG:40 & 64) == 0 || CFLAG:47 > 0)
+	PRINTL  [4] - 替换尿布（50点）
+SIF CFLAG:42 == 79 && (CFLAG:40 & 64) && CFLAG:49 == 0 && TALENT:0
+	PRINTL  [5] - 扔掉贞操带的钥匙
+;PRINTL  [6] - 卖掉穿着的衣物
+PRINTL  [7] - 魔法装备
+PRINTL  [8] - 武器
+DRAWLINE
+PRINTL  [999] - 返回
+
+INPUT
+
+IF RESULT == 0
+	CALL TAILOR_CASUAL
+ELSEIF RESULT == 1
+	CALL TAILOR_NORMAL
+ELSEIF RESULT == 2
+	CALL TAILOR_ACCESSORY
+ELSEIF RESULT == 3
+	CALL TAILOR_UNDERWARE
+ELSEIF RESULT == 4 && CFLAG:42 == 69
+	CALL TAILOR_DIAPER
+ELSEIF RESULT == 5 && CFLAG:42 == 79 && (CFLAG:40 & 64) && CFLAG:49 == 0 && TALENT:0 && CFLAG:71 == 0
+	CALL CHASTITY_KEY
+ELSEIF RESULT == 7
+	CALL EQUIP_MAGIC_ITEM
+ELSEIF RESULT == 8
+	CALL EQUIP_MAGIC_WEAPON
+ELSEIF RESULT == 999
+	RETURN 0
+ELSE
+	GOTO INPUT_LOOP_02
+ENDIF
+
+IF A == 0
+	GOTO INPUT_LOOP_02
+ELSEIF A == 20 && CFLAG:49
+	PRINTFORMW 不解開貞操帯的話，无法穿戴其他装备！
+	GOTO INPUT_LOOP_02
+ELSEIF MONEY < C
+	PRINTW 钱不够！
+	GOTO INPUT_LOOP_02
+ELSEIF ABL:10 < S
+	PRINTFORMW 拒绝穿戴。
+	GOTO INPUT_LOOP_02
+ENDIF
+
+;【魁梧】キャラに子供服を買ってやった場合
+IF TALENT:99 && A == 3
+	$INPUT_LOOP_03
+	PRINTFORML %SAVESTR:TARGET%应该是穿不下这衣服。
+	PRINTFORML  [0] - 强行套上
+	PRINTFORML  [1] - 作罢
+	INPUT
+	IF RESULT == 0
+		PRINTL 强行套上的时候，把衣服的下半身撑破啦！
+		WAIT
+		;下半身が破れたフラグ
+		F = 2
+	ELSEIF RESULT == 1
+		GOTO INPUT_LOOP_02
+	ELSE
+		GOTO INPUT_LOOP_03
+	ENDIF
+;【小型体型】でない【巨乳】【爆乳】【超乳】キャラに子供服を買ってやった場合
+ELSEIF (TALENT:100 == 0 && (TALENT:114 || TALENT:110 || TALENT:119)) && A == 3
+	$INPUT_LOOP_04
+	PRINTFORML %SAVESTR:TARGET%应该是穿不下这衣服。
+	PRINTFORML  [0] - 强行套上
+	PRINTFORML  [1] - 作罢
+	INPUT
+	IF RESULT == 0
+		PRINTL 强行套上的时候，把衣服的上半身撑破啦！
+		WAIT
+		;上半身が破れたフラグ
+		F = 1
+	ELSEIF RESULT == 1
+		GOTO INPUT_LOOP_02
+	ELSE
+		GOTO INPUT_LOOP_04
+	ENDIF
+ENDIF
+
+IF A <= 9 
+	PRINTFORM %SAVESTR:TARGET%
+	IF CFLAG:41 && (CFLAG:45 == 0 || CFLAG:46 == 0)
+		PRINTV GET_CLOTHTYPE_MAIN2(TARGET,"脱下")
+	ENDIF
+	
+	
+	CFLAG:41 = R
+	CFLAG:45 = 0
+	CFLAG:46 = 0
+	
+	PRINTFORML %GET_CLOTHTYPE_MAIN2(TARGET,"换上")%了。
+ELSEIF A == 10
+	PRINTFORML 为%SAVESTR:TARGET%买了新内衣。
+	IF CFLAG:43 >= 0 && CFLAG:48 >= 6
+		WAIT
+		M = 50 * CFLAG:48
+		;自慰狂
+		SIF TALENT:74
+			TIMES M , 1.50
+		;谜之魅力
+		SIF TALENT:92
+			TIMES M , 2.00
+		;高人气
+		SIF TALENT:126
+			TIMES M , 1.50
+		PRINTFORML 穿过的内裤被卖掉挣了{M}点钱。
+		MONEY += M
+		EX_FLAG:4444 += M
+	ENDIF
+
+	IF CFLAG:41 == 0
+		CFLAG:41 = 1
+		CFLAG:45 = -3
+		CFLAG:46 = -3
+	ENDIF
+
+	CFLAG:40 = 3
+	CFLAG:43 = 0
+	CFLAG:44 = 0
+	CFLAG:48 = 0
+ELSEIF A == 11
+	PRINTFORML %SAVESTR:TARGET%在房间的角落穿上了尿布。
+	CFLAG:47 = 0
+ELSEIF A == 20
+	IF CFLAG:42 && CFLAG:47 == 0
+		PRINTFORM %SAVESTR:TARGET%将
+		CALL PRINT_CLOTHTYPE_SPECIAL
+		PRINTFORM 脱了下来，
+	ELSE
+		PRINTFORM %SAVESTR:TARGET%穿上了
+	ENDIF
+	
+	CFLAG:42 = R
+	CFLAG:47 = 0
+	
+	CALL PRINT_CLOTHTYPE_SPECIAL
+	PRINTFORML 穿上了。
+	
+;	※尿道カテーテルある装備をつけた場合。
+	IF CFLAG:42 == 99 || CFLAG:42 == 98
+		PRINTFORML 穿衣的时候，因为尚未习惯的尿道导管的插入，
+		PRINTFORML %SAVESTR:TARGET%不自觉的发出了声音，脸上也泛起了红潮。
+	ENDIF
+	
+ENDIF
+
+IF F == 1
+	PRINTFORML 新买的	
+	CALL PRINT_CLOTHTYPE_MAIN2
+	PRINTFORML 的上半身被撑破了，
+	PRINTFORML %SAVESTR:TARGET%高耸入云的双峰，一览无遗。
+	CFLAG:44 = 0 - 3
+	CFLAG:45 = 0 - 3
+ELSEIF F == 2
+	PRINTFORML 新买的	
+	CALL PRINT_CLOTHTYPE_MAIN2
+	PRINTFORML 的下半身被撑破了，
+	PRINTFORML %SAVESTR:TARGET%的屁股暴露人前。
+	CFLAG:46 = 0 - 3
+ENDIF
+
+CALL WEARING_CLOTH_ABLE
+
+TARGET = - 1
+MONEY -= C
+EX_FLAG:4444 -= C
+WAIT
+
+RETURN 0
+
+;-------------------------------------------------
+;普段着
+;-------------------------------------------------
+@TAILOR_CASUAL
+A = 1
+C = 100
+F = 0
+
+IF MONEY < C
+	PRINTW 钱不够！
+	A = 0
+	RETURN 0
+ENDIF
+
+$INPUT_LOOP_01
+
+PRINTL □日常着装
+PRINTFORML 所持金：{MONEY}点
+DRAWLINE
+
+PRINTL  [1] - 日常着装・裙子
+PRINTL  [2] - 日常着装・裤子
+DRAWLINE
+PRINTL  [999] - 返回
+
+INPUT
+
+IF RESULT == 1
+	R = 1
+	S = 0
+	SIF TALENT:122
+		S = 3
+ELSEIF RESULT == 2
+	R = 101
+	S = 0
+ELSEIF RESULT == 999
+	A = 0
+	C = 0
+	R = 0
+	S = 0
+	RETURN 0
+ELSE
+	GOTO INPUT_LOOP_01
+ENDIF
+
+RETURN 1
+
+RETURN 1
+
+;-------------------------------------------------
+;一般的な装備
+;-------------------------------------------------
+@TAILOR_NORMAL
+A = 1
+C = 1000
+F = 0
+;ページ
+P = 0
+
+IF MONEY < C
+	PRINTW 钱不够！
+	A = 0
+	RETURN 0
+ENDIF
+
+$INPUT_LOOP_01
+
+PRINTL □普通的服装
+PRINTFORML 所持金：{MONEY}点
+DRAWLINE
+
+IF P == 0
+	PRINTL  [1] - 护胸＆裙甲
+	PRINTL  [2] - 童装（女孩用）
+	PRINTL  [3] - 锁甲
+	PRINTL  [4] - 皮甲＆裙甲
+	PRINTL  [5] - 护胸＆短裤式护甲
+	PRINTL  [6] - 神官服
+	PRINTL  [7] - 胸甲＆南瓜裙
+	PRINTL  [8] - 长袍
+	PRINTL  [9] - 睡衣
+	PRINTL  [10] - 连衣裙
+ELSEIF P == 1
+	PRINTL  [11] - 忍者装
+	PRINTL  [12] - 妓女装
+	PRINTL  [13] - 巫女装
+	PRINTL  [14] - 孕妇装
+	PRINTL  [15] - 紧身装甲
+	PRINTL  [16] - 兔女郎装
+	PRINTL  [17] - 紧身服＆裙甲
+	PRINTL  [18] - 胸甲＆裙子
+	PRINTL  [19] - 尖刺铠＆裙子
+	PRINTL  [20] - 女仆装
+ELSEIF P == 2
+	PRINTL  [21] - 冒险装
+	PRINTL  [22] - 骑士铠
+	PRINTL  [23] - 混沌护甲
+	PRINTL  [24] - 贴身甲
+	PRINTL  [25] - 比基尼铠甲
+	PRINTL  [26] - 性感内衣
+	PRINTL  [27] - 梦魔式比基尼
+	PRINTL  [28] - 恶魔紧身衣
+	PRINTL  [29] - 拘束衣
+	PRINTL  [30] - 挂满避孕套的圣女服
+ELSEIF P == 3
+	PRINTL  [31] - 冒险服＆丁字裤
+	PRINTL  [32] - 乳贴＆迷你短裙铠甲
+	PRINTL  [33] - 胸甲＆透视裙子
+	PRINTL  [34] - 袒胸露乳的巫女装
+	PRINTL  [35] - 暴露的女忍者装
+	PRINTL  [36] - 胸甲＆丁字裤
+	PRINTL  [37] - 挂满避孕套的妓女服装
+	PRINTL  [38] - 淫荡暴露的神官服
+	PRINTL  [39] - 露出乳头与私处的紧身衣
+	PRINTL  [40] - 连身泳装
+ELSEIF P == 4
+	PRINTL  [41] - 分体泳装
+	PRINTL  [42] - 旗袍
+	PRINTL
+	PRINTL
+	PRINTL
+	PRINTL
+	PRINTL
+	PRINTL
+	PRINTL
+	PRINTL
+ENDIF
+DRAWLINE
+PRINT [997] 下一页
+PRINT [996] 服装黑市
+PRINT [998] 上一页
+PRINTL  [999] - 返回
+
+INPUT
+
+IF RESULT == 1
+	R = 2
+	S = 0
+ELSEIF RESULT == 2
+	A = 3
+	R = 22
+	S = 5
+	SIF TALENT:132 || TALENT:135 || TALENT:131
+		S = 0
+	SIF TALENT:122 && S < 3
+		S = 3
+ELSEIF RESULT == 3
+	R = 3
+	S = 0
+ELSEIF RESULT == 4
+	R = 4
+	S = 0
+ELSEIF RESULT == 5
+	R = 108
+	S = 0
+ELSEIF RESULT == 6
+	R = 207
+	S = 0
+ELSEIF RESULT == 7
+	R = 111
+	S = 0
+ELSEIF RESULT == 8
+	R = 206
+	S = 3
+ELSEIF RESULT == 9
+	R = 131
+	S = 0
+ELSEIF RESULT == 10
+	R = 201
+	S = 0
+	SIF TALENT:122
+		S = 3
+ELSEIF RESULT == 11
+	R = 110
+	S = 0
+ELSEIF RESULT == 12
+	R = 203
+	S = 1
+	SIF TALENT:122
+		S = 3
+ELSEIF RESULT == 13
+	R = 104
+	S = 0
+ELSEIF RESULT == 14
+	R = 205
+	S = 4
+	SIF TALENT:153
+		S = 1
+ELSEIF RESULT == 15
+	R = 251
+	S = 0
+ELSEIF RESULT == 16
+	R = 254
+	S = 3
+ELSEIF RESULT == 17
+	R = 5
+	S = 0
+ELSEIF RESULT == 18
+	R = 6
+	S = 0
+ELSEIF RESULT == 19
+	R = 7
+	S = 2
+ELSEIF RESULT == 20
+	R = 209
+	S = 0
+ELSEIF RESULT == 21
+	R = 103
+	S = 0
+ELSEIF RESULT == 22
+	R = 105
+	S = 0
+ELSEIF RESULT == 23
+	R = 253
+	S = 3
+ELSEIF RESULT == 24
+	R = 292
+	S = 0
+ELSEIF RESULT == 25
+	R = 193
+	S = 0
+ELSEIF RESULT == 26
+	R = 194
+	S = 3
+ELSEIF RESULT == 27
+	R = 195
+	S = 3
+ELSEIF RESULT == 28
+	R = 294
+	S = 3
+ELSEIF RESULT == 29
+	R = 241
+	S = 3
+ELSEIF RESULT == 30
+	R = 213
+	S = 3
+ELSEIF RESULT == 31
+	R = 113
+	S = 3
+ELSEIF RESULT == 32
+	R = 8
+	S = 3
+ELSEIF RESULT == 33
+	R = 9
+	S = 3
+ELSEIF RESULT == 34
+	R = 114
+	S = 3
+ELSEIF RESULT == 35
+	R = 115
+	S = 3
+ELSEIF RESULT == 36
+	R = 116
+	S = 3
+ELSEIF RESULT == 37
+	R = 210
+	S = 3
+ELSEIF RESULT == 38
+	R = 211
+	S = 3
+ELSEIF RESULT == 39
+	R = 212
+	S = 3
+ELSEIF RESULT == 40
+	R = 295
+	S = 1
+ELSEIF RESULT == 41
+	R = 196
+	S = 1
+ELSEIF RESULT == 42
+	R = 214
+	S = 0
+ELSEIF RESULT == 997
+	P += 1
+	P %= 5
+	GOTO INPUT_LOOP_01
+ELSEIF RESULT == 998
+	P += 4
+	P %= 5
+	GOTO INPUT_LOOP_01
+ELSEIF RESULT == 999
+	A = 0
+	C = 0
+	R = 0
+	S = 0
+	T = 0
+	P = 0
+	RETURN 0
+ELSEIF RESULT == 996
+	CALL TAILOR_NORMAL_SPECIAL
+ELSE
+	GOTO INPUT_LOOP_01
+ENDIF
+
+RETURN 1
+
+
+;-------------------------------------------------
+;装備品
+;-------------------------------------------------
+@TAILOR_ACCESSORY
+A = 20
+F = 0
+;现在ページ
+LOCAL:0 = 0
+;商品数
+LOCAL:1 = 40
+
+$INPUT_LOOP_01
+
+PRINTFORML □装备品 ({(LOCAL:0)+1,2}/{(LOCAL:1/10)+1,2}页)
+PRINTFORML 所持金：{MONEY}点
+DRAWLINE
+
+IF LOCAL:0 == 0
+	PRINTL  [1] - 围裙（10000点）
+	PRINTL  [2] - 外套（10000点）
+	PRINTL  [3] - 白衣（10000点）
+	PRINTL  [4] - 男装衬衣（10000点）
+	PRINTL  [5] - 朴素的背心（10000点）
+	PRINTL  [6] - 斗篷（10000点）
+	PRINTL  [7] - 头饰（10000点）
+	PRINTL  [8] - 护额（10000点）
+	PRINTL  [9] - 护士帽（10000点）
+	PRINTL  [10] - 女警帽（10000点）
+ELSEIF LOCAL:0 == 1
+	PRINTL  [11] - 牛仔帽（10000点）
+	PRINTL  [12] - 土著帽子（10000点）
+	PRINTL  [13] - 发饰（10000点）
+	PRINTL  [14] - 眼镜（10000点）
+	PRINTL  [15] - 墨镜（10000点）
+	PRINTL  [16] - 银吊坠（10000点）
+	PRINTL  [17] - 珍珠项链（10000点）
+	PRINTL  [18] - 勾玉项链（10000点）
+	PRINTL  [19] - 阶级章（10000点）
+	PRINTL  [20] - 名牌（10000点）	
+ELSEIF LOCAL:0 == 2
+	PRINTL  [21] - 项链（10000点）
+	PRINTL  [22] - 蝴蝶结（10000点）
+	PRINTL  [23] - 银手镯（10000点）
+	PRINTL  [24] - 护身符（10000点）
+	PRINTL  [25] - 拉拉队彩球（10000点）
+	PRINTL  [26] - 腕带（10000点）
+	PRINTL  [27] - 串珠手镯（10000点）
+	PRINTL  [28] - 长手套（10000点）
+	PRINTL  [29] - 狗项圈（10000点）
+	PRINTL  [30] - 龟甲缚用的绳子（10000点）
+ELSEIF LOCAL:0 == 3
+	PRINTL  [31] - 牛铃和鼻环（10000点）
+	PRINTL  [32] - 手枷（10000点）
+	PRINTL  [33] - 足枷（10000点）
+	PRINTL  [34] - 首枷（10000点）
+	PRINTL  [35] - 涂鸦（100点）
+	PRINTL  [36] - 绳子印（100点）
+	PRINTL  [37] - 魔法纹身（500点）
+	PRINTL  [38] - 尿布（100点）
+	PRINTL  [39] - 贞操带（100点）
+	PRINTL  [40] - 长袍（10000点）
+ELSEIF LOCAL:0 == 4
+	PRINTL  [41] - 头环（10000点）
+	PRINTL  [42] - 戒指（100000点）
+	PRINTL  [43] - 神秘的尿道导管（3000点）
+	PRINTL
+	PRINTL
+	PRINTL
+	PRINTL
+	PRINTL
+	PRINTL
+	PRINTL
+ENDIF
+DRAWLINE
+
+PRINT [997] 下一页
+PRINT [998] 上一页
+PRINTL  [999] - 返回
+
+INPUT
+
+IF RESULT == 997
+	LOCAL:0 += 1
+	IF LOCAL:0 > (LOCAL:1)/10
+		LOCAL:0 = 0
+	ENDIF
+	GOTO INPUT_LOOP_01
+ELSEIF RESULT == 998
+	LOCAL:0 -= 1
+	IF LOCAL:0 < 0
+		LOCAL:0 = (LOCAL:1)/10
+	ENDIF
+	GOTO INPUT_LOOP_01
+ELSEIF RESULT == 1
+	R = 1
+	C = 10000
+	S = 0
+ELSEIF RESULT == 2
+	R = 2
+	C = 10000
+	S = 0
+ELSEIF RESULT == 3
+	R = 3
+	C = 10000
+	S = 0
+ELSEIF RESULT == 4
+	R = 4
+	C = 10000
+	S = 1
+ELSEIF RESULT == 5
+	R = 10
+	C = 10000
+	S = 0
+ELSEIF RESULT == 6
+	R = 12
+	C = 10000
+	S = 1
+ELSEIF RESULT == 7
+	R = 81
+	C = 10000
+	S = 0
+ELSEIF RESULT == 8
+	R = 52
+	C = 10000
+	S = 0
+ELSEIF RESULT == 9
+	R = 53
+	C = 10000
+	S = 2 - TALENT:63
+	SIF TALENT:122 && S < 3
+		S = 3
+ELSEIF RESULT == 10
+	R = 54
+	C = 10000
+	S = 0
+ELSEIF RESULT == 11
+	R = 55
+	C = 10000
+	S = 0
+ELSEIF RESULT == 12
+	R = 56
+	C = 10000
+	S = 0
+ELSEIF RESULT == 13
+	R = 82
+	C = 10000
+	S = 0
+ELSEIF RESULT == 14
+	R = 83
+	C = 10000
+	S = 0
+ELSEIF RESULT == 15
+	R = 84
+	C = 10000
+	S = 0
+ELSEIF RESULT == 16
+	R = 87
+	C = 10000
+	S = 0
+ELSEIF RESULT == 17
+	R = 88
+	C = 10000
+	S = 0
+ELSEIF RESULT == 18
+	R = 89
+	C = 10000
+	S = 0
+ELSEIF RESULT == 19
+	R = 60
+	C = 10000
+	S = 0
+ELSEIF RESULT == 20
+	R = 61
+	C = 10000
+	S = 0
+ELSEIF RESULT == 21
+	R = 90
+	C = 10000
+	S = 0
+ELSEIF RESULT == 22
+	R = 62
+	C = 10000
+	S = 0
+ELSEIF RESULT == 23
+	R = 86
+	C = 10000
+	S = 0
+ELSEIF RESULT == 24
+	R = 85
+	C = 10000
+	S = 0
+ELSEIF RESULT == 25
+	R = 51
+	C = 10000
+	S = 0
+ELSEIF RESULT == 26
+	R = 57
+	C = 10000
+	S = 0
+ELSEIF RESULT == 27
+	R = 58
+	C = 10000
+	S = 0
+ELSEIF RESULT == 28
+	R = 59
+	C = 10000
+	S = 0
+ELSEIF RESULT == 29
+	R = 71
+	C = 10000
+	S = 10 - ABL:21
+	SIF TALENT:124 && S > 5
+		S = 5
+	SIF TALENT:136 || S < 3
+		S = 3
+ELSEIF RESULT == 30
+	R = 72
+	C = 10000
+	S = 8 - ABL:21
+	SIF TALENT:88 || S < 3
+		S = 3
+ELSEIF RESULT == 31
+	R = 73
+	C = 10000
+	S = 6
+	SIF (TALENT:110 || TALENT:114) && TALENT:130
+		S = 3
+ELSEIF RESULT == 32
+	R = 74
+	C = 10000
+	S = 10 - ABL:21
+	SIF TALENT:124 && S > 5
+		S = 5
+	SIF TALENT:136 || S < 3
+		S = 3
+ELSEIF RESULT == 33
+	R = 75
+	C = 10000
+	S = 10 - ABL:21
+	SIF TALENT:124 && S > 5
+		S = 5
+	SIF TALENT:136 || S < 3
+		S = 3
+ELSEIF RESULT == 34
+	R = 76
+	C = 10000
+	S = 10 - ABL:21
+	SIF TALENT:124 && S > 5
+		S = 5
+	SIF TALENT:136 || S < 3
+		S = 3
+ELSEIF RESULT == 35
+	R = 77
+	C = 100
+	S = 8 - ABL:21
+	SIF TALENT:88 || S < 3
+		S = 3
+ELSEIF RESULT == 36
+	R = 80
+	C = 100
+	S = 8 - ABL:21
+	SIF TALENT:88 || S < 3
+		S = 3
+ELSEIF RESULT == 37
+	R = 78
+	C = 500
+	S = 5
+ELSEIF RESULT == 38
+	R = 69
+	C = 100
+	S = 6
+	SIF TALENT:57
+		S = 1
+ELSEIF RESULT == 39
+	R = 79
+	C = 100
+	S = 0
+	SIF TALENT:122
+		S = 99
+ELSEIF RESULT == 40
+	R = 13
+	C = 10000
+	S = 0
+ELSEIF RESULT == 41
+	R = 91
+	C = 10000
+	S = 0
+ELSEIF RESULT == 42
+	R = 92
+	C = 100000
+	S = 6
+	SIF TALENT:85
+		S = 1
+ELSEIF RESULT == 43
+;※神秘の尿道カテーテル
+	R = 98
+	C = 3000
+	S = 3
+ELSEIF RESULT == 999
+	A = 0
+	C = 0
+	R = 0
+	S = 0
+	T = 0
+	RETURN 0
+ELSE
+	GOTO INPUT_LOOP_01
+ENDIF
+
+RETURN 1
+
+;-------------------------------------------------
+;下着
+;-------------------------------------------------
+@TAILOR_UNDERWARE
+A = 10
+C = 5
+F = 0
+S = 0
+
+IF MONEY < C
+	PRINTW 钱不够！
+	A = 0
+	C = 0
+	R = 0
+	T = 0
+	RETURN 0
+ENDIF
+
+RETURN 1
+
+;-------------------------------------------------
+;替えオムツ
+;-------------------------------------------------
+@TAILOR_DIAPER
+A = 11
+C = 50
+F = 0
+
+IF MONEY < C
+	PRINTW 钱不够！
+	A = 0
+	C = 0
+	R = 0
+	T = 0
+	RETURN 0
+ENDIF
+
+RETURN 1
+
+;-------------------------------------------------
+;貞操帯のカギを捨てる
+;-------------------------------------------------
+@CHASTITY_KEY
+A = 0
+
+PRINTFORML %SAVESTR:TARGET%贞操带的钥匙丢掉的话，
+PRINTFORML 就再也无法打开%CALLNAME:MASTER%的贞操带了。
+PRINTFORML 丢掉钥匙，而且也没有后备匙，钥匙真的再也找不回来了哦！
+$INPUT_LOOP_01
+PRINTL  
+PRINTFORML 当真当真要把%SAVESTR:TARGET%贞操带的钥匙丢掉吗？
+PRINTFORML  [0] - 丢掉！
+PRINTFORML  [1] - 不丢。
+INPUT
+IF RESULT == 0
+	PRINTFORML %SAVESTR:TARGET%呆若木鸡地看着前方，
+	PRINTFORMW %CALLNAME:MASTER%把贞操带的钥匙，丢到连接地下城迷宫各层的楼梯处。
+	PRINTFORML 到底掉到哪层，掉到哪里，再也没人知道了。
+	WAIT
+	CFLAG:49 = 1
+ELSEIF RESULT != 1
+	GOTO INPUT_LOOP_01
+ENDIF
+
+RETURN 1
+
+;-------------------------------------------------
+;仕立屋用メンバーリスト
+;-------------------------------------------------
+@LIFE_LIST_TAILOR
+REPEAT CHARANUM
+	;主人公は排除
+	SIF COUNT == 0
+		CONTINUE
+	;臨死中のキャラは排除
+	SIF BASE:COUNT:0 < 1
+		CONTINUE
+	;調教中以外は排除
+	SIF CFLAG:COUNT:1 != 0
+		CONTINUE
+	TARGET = COUNT
+	PRINTFORM  [{COUNT}] %SAVESTR:COUNT% 
+	IF CFLAG:41 && (CFLAG:45 >= 0 || CFLAG:46 >= 0)
+		PRINTFORM / 
+		PRINT 穿着
+		CALL PRINT_CLOTHTYPE_MAIN2
+	ELSEIF CFLAG:41 && (CFLAG:43 >= 0 || CFLAG:44 >= 0)
+		PRINT / 穿着内衣
+	ELSE
+		PRINT / 全裸着
+	ENDIF
+	IF CFLAG:42 && CFLAG:47 >= 0
+		PRINT / 
+		PRINT 佩戴着
+		CALL PRINT_CLOTHTYPE_SPECIAL
+	ENDIF
+	IF CFLAG:550 > 0
+		PRINT / [
+		W:0 = CFLAG:550
+		CALL PRINT_EQUIPTYPE_WEAPON
+		PRINT ] 
+	ENDIF
+	IF CFLAG:551 > 0
+		PRINT / [
+		W:0 = CFLAG:551
+		CALL PRINT_EQUIPTYPE_RING
+		PRINT ] 
+	ENDIF
+	IF CFLAG:552 > 0
+		PRINT / [
+		W:0 = CFLAG:552
+		CALL PRINT_EQUIPTYPE_RING
+		PRINT ] 
+	ENDIF
+	PRINTL 
+REND
+
+;---------------------------------------------
+@EQUIP_MAGIC_ITEM
+#DIM EQUIPTYPE
+;---------------------------------------------
+;魔法装備品の装備
+;EQUIPTYPE = 装備品の種別（0=新規 1=強化）
+
+$INPUT_LOOP_01
+
+W:0 = CFLAG:TARGET:551
+PRINTFORM  [1] - 装饰A　:
+IF W:0 <= -1
+	PRINTL 无
+ELSE
+	CALL PRINT_EQUIPTYPE_RING
+	PRINTL  
+ENDIF
+
+W:0 = CFLAG:TARGET:552
+PRINTFORM  [2] - 装饰B　:
+IF W:0 <= -1
+	PRINTL 无
+ELSE
+	CALL PRINT_EQUIPTYPE_RING
+	PRINTL  
+ENDIF
+
+PRINTL  [999] - 返回
+
+INPUT
+
+IF RESULT == 999
+	RETURN 0
+ELSEIF RESULT == 1
+	Y:0 = 551
+ELSEIF RESULT == 2
+	Y:0 = 552
+ELSE
+	GOTO INPUT_LOOP_01
+ENDIF
+
+$INPUT_LOOP_02
+
+REPEAT 20
+	X = COUNT + 300
+	SIF ITEM:X > 0
+		PRINTFORML  [{X}] - %ITEMNAME:X% ({ITEM:X})
+REND
+
+IF CFLAG:0:9 < 30
+	SETCOLOR 80,80,80
+	PRINTL  [---] - 未开放（30级后才能装备强化）
+	RESETCOLOR
+ELSEIF CFLAG:TARGET:Y >= 0
+	PRINTL  [997] - 装备强化
+ENDIF
+
+SIF CFLAG:TARGET:Y >= 0
+	PRINTL  [998] - 取下
+PRINTL  [999] - 返回
+
+INPUT
+
+EQUIPTYPE = 0
+
+IF RESULT == 999
+	RETURN 0
+ELSEIF RESULT == 997 && CFLAG:0:9 >= 30
+	EQUIPTYPE = 1
+ELSEIF RESULT == 998
+	W:0 = CFLAG:TARGET:Y
+	CALL EQUIP_GET
+	CFLAG:TARGET:Y = -1
+	GOTO INPUT_LOOP_01
+ELSEIF RESULT >= 300
+	Y:1 = RESULT
+ELSE
+	GOTO INPUT_LOOP_02
+ENDIF
+
+IF EQUIPTYPE == 1
+	PRINTFORML 要强化现在的装备吗？　每+1需花费10000pt，最多能+10。
+ELSE
+	PRINTFORML 要装备%ITEMNAME:RESULT%了吗？　请确认装备的提升。每+1需花费10000pt，最多能+10。
+ENDIF
+
+$INPUT_LOOP_03
+
+X = MONEY / 10000
+SIF X > 10
+	X = 10
+
+PRINTFORML [0] [1] [2] [4] [6] [8] [{X}]
+PRINTL [999] - 不装备
+
+INPUT
+
+IF RESULT == 999
+	GOTO INPUT_LOOP_01
+ELSEIF X >= 0 && X <= 10
+	Y:2 = RESULT
+ELSE
+	GOTO INPUT_LOOP_01
+ENDIF
+
+IF MONEY < (RESULT * 10000)
+	PRINTW 钱不够！！
+	GOTO INPUT_LOOP_01
+ENDIF
+
+W:0 = CFLAG:TARGET:Y
+
+;強化の場合
+IF EQUIPTYPE == 1
+	;強度を求める
+	W:2 = W:0 % 100000
+	W:2 /= 1000
+	
+	;強化
+	W:2 += Y:2
+	
+	;オーバーの場合
+	SIF W:2 > 10
+		Y:2 += 10 - W:2
+	
+	;実際の値に加算強化
+	W:0 += 1000 * Y:2
+	
+	;支払い
+	MONEY -= (Y:2 * 10000)
+	EX_FLAG:4444 -= (Y:2 * 10000)
+	CFLAG:TARGET:Y = W:0
+	GOTO INPUT_LOOP_01
+ENDIF
+
+CALL EQUIP_GET
+
+;装備で一個減らす
+X = Y:1
+ITEM:X -= 1
+
+MONEY -= (Y:2 * 10000)
+EX_FLAG:4444 -= (Y:2 * 10000)
+;ITEMナンバーから識別番号へ
+W:8 = Y:1
+CALL GET_EQUIP_NUM
+W:0 += Y:2 * 1000
+CFLAG:TARGET:Y = W:0
+GOTO INPUT_LOOP_01
+
+
+;---------------------------------------------
+@EQUIP_MAGIC_WEAPON
+#DIM EQUIPTYPE
+;---------------------------------------------
+;武器の装備
+;EQUIPTYPE = 装備品の種別（0=新規 1=強化）
+
+$INPUT_LOOP_01
+
+W:0 = CFLAG:TARGET:550
+
+PRINTFORM 武器　:
+IF W:0 <= -1
+	PRINTL 空手
+ELSE
+	CALL PRINT_EQUIPTYPE_WEAPON
+	PRINTL  
+ENDIF
+
+PRINTL  [340] - 剑
+
+REPEAT 19
+	X = COUNT + 341
+	SIF ITEM:X > 0 && X != 349
+		PRINTFORML  [{X}] - %ITEMNAME:X% ({ITEM:X})
+REND
+
+SIF ITEM:90 > 0
+	PRINTFORML  [990] - 武器化触手
+
+IF CFLAG:0:9 < 30
+	SETCOLOR 80,80,80
+	PRINTL  [---] - 未开放（30级后才能装备强化）
+	RESETCOLOR
+ELSEIF W:0 >= 0
+	PRINTL  [997] - 装备强化
+ENDIF
+
+SIF W:0 >= 0
+	PRINTL  [998] - 取下
+PRINTL  [999] - 返回
+
+INPUT
+
+EQUIPTYPE = 0
+
+IF RESULT == 999
+	RETURN 0
+ELSEIF RESULT == 990
+	Y:1 = 349
+	RESULT = 349
+ELSEIF RESULT == 997 && W:0 <= -1
+	PRINTFORML 手无寸铁，强化啥子？
+	GOTO INPUT_LOOP_01
+ELSEIF RESULT == 997 && CFLAG:0:9 >= 30
+	EQUIPTYPE = 1
+ELSEIF RESULT == 998
+	W:0 = CFLAG:TARGET:550
+	CALL EQUIP_GET
+	CFLAG:TARGET:550 = -1
+	GOTO INPUT_LOOP_01
+ELSEIF RESULT >= 300
+	Y:1 = RESULT
+ELSE
+	GOTO INPUT_LOOP_01
+ENDIF
+
+IF EQUIPTYPE == 1
+	PRINTFORML 要强化现在的装备吗？　每+1需花费10000pt，最多能+10。
+ELSE
+	PRINTFORML 要装备%ITEMNAME:RESULT%了吗？　请确认装备的提升。每+1需花费10000pt，最多能+10。
+ENDIF
+
+$INPUT_LOOP_03
+
+X = MONEY / 10000
+SIF X > 10
+	X = 10
+
+PRINTFORML [0] [1] [2] [4] [6] [8] [{X}]
+PRINTL [999] - 不装备
+
+INPUT
+
+IF RESULT == 999
+	GOTO INPUT_LOOP_01
+ELSEIF X >= 0 && X <= 10
+	Y:2 = RESULT
+ELSE
+	GOTO INPUT_LOOP_01
+ENDIF
+
+IF MONEY < (RESULT * 10000)
+	PRINTW 钱不够！！
+	GOTO INPUT_LOOP_01
+ENDIF
+
+;強化の場合
+IF EQUIPTYPE == 1
+	W:0 = CFLAG:TARGET:550
+	;強度を求める
+	W:2 = W:0 % 100000
+	W:2 /= 1000
+	
+	;強化
+	W:2 += Y:2
+	
+	;オーバーの場合
+	SIF W:2 > 10
+		Y:2 += 10 - W:2
+	
+	;実際の値に加算強化
+	W:0 += 1000 * Y:2
+	
+	;支払い
+	MONEY -= (Y:2 * 10000)
+	EX_FLAG:4444 -= (Y:2 * 10000)
+	CFLAG:TARGET:550 = W:0
+	GOTO INPUT_LOOP_01
+ENDIF
+
+PRINTFORMW 可以设定强化的前缀
+PRINTL [0] - 无
+PRINTL [1] - 巨型
+PRINTL [2] - 剧毒
+PRINTL [3] - 死亡
+PRINTL [4] - 开叉
+PRINTL [5] - 火之
+PRINTL [6] - 冰之
+PRINTL [7] - 雷之
+PRINTL [8] - 魔导
+PRINTL [9] - 暗黑
+
+PRINTL  [999] - 返回
+
+INPUT
+
+IF RESULT == 999
+	RETURN 0
+ELSEIF RESULT >= 0 && RESULT < 10
+	Y:3 = RESULT
+ELSE
+	GOTO INPUT_LOOP_01
+ENDIF
+
+W:0 = CFLAG:TARGET:550
+CALL EQUIP_GET
+
+;装備で一個減らす
+X = Y:1
+ITEM:X -= 1
+
+MONEY -= (Y:2 * 10000)
+EX_FLAG:4444 -= (Y:2 * 10000)
+;ITEMナンバーから識別番号へ
+W:8 = Y:1
+CALL GET_EQUIP_NUM
+W:0 += Y:2 * 1000
+W:0 += Y:3 * 100000
+CFLAG:TARGET:550 = W:0
+GOTO INPUT_LOOP_01
+
+
+;-------------------------------------------------
+;普通服装的里菜单
+;-------------------------------------------------
+;---------------------------------------------
+@TAILOR_NORMAL_SPECIAL
+;---------------------------------------------
+A = 2
+C = 30000
+F = 0
+;ページ
+P = 0
+
+IF MONEY < C
+	PRINTW 钱不够！
+	A = 0
+	RETURN 0
+ENDIF
+
+$INPUT_LOOP_01
+
+PRINTL □黑市服装
+PRINTFORML 所持金：{MONEY}点
+DRAWLINE
+
+IF P == 0
+	PRINTL  [1] - 高中制服
+	PRINTL  [2] - 初中制服
+	PRINTL  [3] - 水手服
+	PRINTL  [4] - 私立贵族学院制服
+	PRINTL  [5] - 西装
+	PRINTL  [6] - 浴衣
+	PRINTL  [7] - 名牌服装
+	PRINTL  [8] - 护士服
+	PRINTL  [9] - 女性用军服
+	PRINTL  [10] - 女侍制服
+ELSEIF P == 1
+	PRINTL  [11] - 便利店制服
+	PRINTL  [12] - 事务员制服
+	PRINTL  [13] - 岛屿女孩服装
+	PRINTL  [14] - 演出服
+	PRINTL  [15] - 运动服
+	PRINTL  [16] - 丧服
+	PRINTL  [17] - 拉拉队服
+	PRINTL  [18] - 网球服
+	PRINTL  [19] - 女警服
+	PRINTL  [20] - 狩衣
+ELSEIF P == 2
+	PRINTL  [21] - 巫女装束
+	PRINTL  [22] - 军服
+	PRINTL  [23] - 体操服
+	PRINTL  [24] - 忍者装束
+	PRINTL  [25] - 骑马服
+	PRINTL  [26] - 滑雪服
+	PRINTL  [27] - 和服
+	PRINTL  [28] - 晚礼服
+	PRINTL  [29] - 幼稚园服
+	PRINTL  [30] - 婚礼裙装
+	PRINTL
+ENDIF
+DRAWLINE
+
+PRINT [997] 下一页
+PRINT [998] 上一页
+PRINTL  [999] - 返回
+
+INPUT
+
+IF RESULT == 997
+	P += 1
+	P %= 3
+	GOTO INPUT_LOOP_01
+ELSEIF RESULT == 998
+	P += 2
+	P %= 3
+	GOTO INPUT_LOOP_01
+ELSEIF RESULT == 999
+	A = 0
+	C = 0
+	R = 0
+	S = 0
+	T = 0
+	RETURN 0
+ELSEIF RESULT == 1
+	R = 17
+	S = 0
+ELSEIF RESULT == 2
+	R = 18
+	S = 0
+ELSEIF RESULT == 3
+	R = 19
+	S = 0
+ELSEIF RESULT == 4
+	R = 20
+	S = 0
+ELSEIF RESULT == 5
+	R = 21
+	S = 0
+ELSEIF RESULT == 6
+	R = 204
+	S = 0
+ELSEIF RESULT == 7
+	R = 23
+	S = 0
+ELSEIF RESULT == 8
+	R = 24
+	S = 0
+ELSEIF RESULT == 9
+	R = 25
+	S = 0
+ELSEIF RESULT == 10
+	R = 26
+	S = 0
+ELSEIF RESULT == 11
+	R = 27
+	S = 0
+ELSEIF RESULT == 12
+	R = 28
+	S = 0
+ELSEIF RESULT == 13
+	R = 29
+	S = 2
+ELSEIF RESULT == 14
+	R = 30
+	S = 0
+ELSEIF RESULT == 15
+	R = 31
+	S = 3
+ELSEIF RESULT == 16
+	R = 32
+	S = 0
+ELSEIF RESULT == 17
+	R = 33
+	S = 3
+ELSEIF RESULT == 18
+	R = 34
+	S = 3
+ELSEIF RESULT == 19
+	R = 35
+	S = 2
+ELSEIF RESULT == 20
+	R = 102
+	S = 0
+ELSEIF RESULT == 21
+	R = 104
+	S = 0
+ELSEIF RESULT == 22
+	R = 106
+	S = 0
+ELSEIF RESULT == 23
+	R = 109
+	S = 3
+ELSEIF RESULT == 24
+	R = 110
+	S = 2
+ELSEIF RESULT == 25
+	R = 112
+	S = 0
+ELSEIF RESULT == 26
+	R = 120
+	S = 2
+ELSEIF RESULT == 27
+	R = 202
+	S = 0
+ELSEIF RESULT == 28
+	R = 208
+	S = 5
+ELSEIF RESULT == 29
+	R = 221
+	S = 5
+ELSEIF RESULT == 30
+	R = 240
+	S = 5
+ELSE
+	GOTO INPUT_LOOP_01
+ENDIF
+
+RETURN 1

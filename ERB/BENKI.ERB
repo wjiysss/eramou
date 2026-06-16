@@ -1,0 +1,1654 @@
+﻿;----------------------------------------
+@BENKI, ARG:0
+#DIM PLAY
+#DIM BENKI_MENU,10
+#DIM TARGET_POOL
+;----------------------------------------
+;肉便器に転職するとできるプレイ
+;ARG:0がキャラ
+;PLAY       = 参加者
+;BENKI_MENU = プレイ内容
+
+;BENKI_MENU:0  = 奉仕のソース
+;BENKI_MENU:1  = Vのソース
+;BENKI_MENU:2  = Aのソース
+;BENKI_MENU:3  = 同性爱のソース
+;BENKI_MENU:4  = 兽奸のソース
+;BENKI_MENU:5  = 露出のソース
+;BENKI_MENU:6  = ビデオのソース
+
+;初期化
+BENKI_MENU:0 = 0,0,0,0,0,0,0,0,0,0
+TARGET_POOL = TARGET
+
+IF ARG:0 == 0
+	;魔王様は除外
+	RETURN 0
+ELSEIF TALENT:(ARG:0):肉便器 == 0
+	;肉便器以外は除外
+	RETURN 0
+ENDIF
+
+;気力・体力による制限
+SIF BASE:(ARG:0):0 < 300
+	RETURN 0
+SIF BASE:(ARG:0):1 < 100
+	RETURN 0
+
+;調教中以外除去
+SIF CFLAG:(ARG:0):1 != 0
+	RETURN 0
+
+;男人は除外
+SIF TALENT:(ARG:0):男人
+	RETURN 0
+
+;育儿中は除外
+SIF TALENT:(ARG:0):育儿中
+	RETURN 0
+
+PRINTL  
+DRAWLINE
+
+;FLAG:62 = 肉便器行動内容
+
+;FLAG:62 = 0 最下層怪物奉仕
+;FLAG:62 = 1 レズ便器
+;FLAG:62 = 2 兽奸便器
+;FLAG:62 = 3 両穴便器
+;FLAG:62 = 4 膣便器
+;FLAG:62 = 5 アナル便器
+;FLAG:62 =  6 フェラ便器
+
+;FLAG:62 =  7 兽奸配信
+;FLAG:62 =  8 妓女購入配信
+;FLAG:62 =  9 野外露出配信
+;FLAG:62 = 10 公衆便所配信
+;FLAG:62 = 11 アナル拡張配信
+;FLAG:62 = 12 自慰配信
+
+FLAG:62 = -1
+
+;常識改変フラグ
+FLAG:63 = 0
+;常識改変【日常】
+SIF TALENT:ARG:283 > 0
+	FLAG:63 = 1
+
+;肉便器奉仕相手
+;FLAG:64 =  0 不浄な眷属
+;FLAG:64 =  1 娼婦
+;FLAG:64 =  2 大型犬
+;FLAG:64 =  3 魔族の男
+;FLAG:64 =  4 ダークエルフの少年
+;FLAG:64 =  5 脂ぎったオーク
+;FLAG:64 =  6 オークの中年
+;FLAG:64 =  7 幼い奴隷少女
+;FLAG:64 =  8 物乞い
+;FLAG:64 =  9 淫魔
+
+;初期人数1人
+PLAY = 1
+
+;素質
+
+;处女（V減少）
+SIF TALENT:(ARG:0):处女
+	BENKI_MENU:1 -= 20
+;献身的（奉仕）
+SIF TALENT:(ARG:0):献身的
+	BENKI_MENU:0 += 1
+;性爱狂（V）
+SIF TALENT:(ARG:0):性爱狂
+	BENKI_MENU:1 += 3
+;尻穴狂（A）
+SIF TALENT:(ARG:0):尻穴狂
+	BENKI_MENU:2 += 3
+;双性恋・讨厌男人（同性爱）
+SIF TALENT:(ARG:0):双性恋 || TALENT:(ARG:0):讨厌男人
+	BENKI_MENU:3 += 1
+;露出狂（露出）
+SIF TALENT:(ARG:0):露出狂
+	BENKI_MENU:5 += 3
+;动物耳朵（兽奸）
+SIF TALENT:(ARG:0):动物耳朵
+	BENKI_MENU:4 += 1
+;牝犬（兽奸）
+SIF TALENT:(ARG:0):牝犬
+	BENKI_MENU:4 += 3
+;绝不侍奉（奉仕減少）
+SIF TALENT:(ARG:0):绝不侍奉
+	BENKI_MENU:0 -= 20
+;淫壶（V）
+SIF TALENT:(ARG:0):淫壶
+	BENKI_MENU:1 += 3
+;淫肛（A）
+SIF TALENT:(ARG:0):淫肛
+	BENKI_MENU:2 += 3
+;私处封印（V減少）
+SIF TALENT:(ARG:0):私处封印
+	BENKI_MENU:1 -= 20
+
+;能力値
+
+;V感覚（V）
+	BENKI_MENU:1 += ABL:(ARG:0):私处感觉
+;A感覚（A）
+	BENKI_MENU:2 += ABL:(ARG:0):肛门感觉
+;话术（ビデオ）
+	BENKI_MENU:6 += ABL:(ARG:0):话术
+;侍奉精神（奉仕）
+	BENKI_MENU:0 += ABL:(ARG:0):侍奉精神
+;露出癖（露出）
+	BENKI_MENU:5 += ABL:(ARG:0):露出癖
+;百合中毒（同性爱）
+	BENKI_MENU:3 += ABL:(ARG:0):百合中毒
+;兽奸中毒（兽奸）
+	BENKI_MENU:4 += ABL:(ARG:0):兽奸中毒
+
+;特殊な経験の有無
+
+;侍奉快乐经验（奉仕）
+SIF EXP:(ARG:0):侍奉快乐经验
+	BENKI_MENU:0 += 1
+;阴道扩张经验（V）
+SIF EXP:(ARG:0):私处扩张经验
+	BENKI_MENU:1 += 1
+;肛门扩张经验（A）
+SIF EXP:(ARG:0):肛门扩张经验
+	BENKI_MENU:2 += 1
+;兽奸经验（兽奸）
+SIF EXP:(ARG:0):兽奸经验
+	BENKI_MENU:4 += 1
+;50回を超える兽奸经验（兽奸）
+SIF EXP:(ARG:0):兽奸经验 > 50
+	BENKI_MENU:4 += 3
+;拍摄经验（ビデオ）
+SIF EXP:(ARG:0):拍摄经验
+	BENKI_MENU:6 += 1
+;50回を超える拍摄经验（ビデオ）	
+SIF EXP:(ARG:0):拍摄经验 > 50
+	BENKI_MENU:6 += 3
+
+;服装による趣向
+
+;貞操帯（V減少）
+SIF CFLAG:(ARG:0):42 == 79 && (CFLAG:(ARG:0):40 & 64) && FLAG:37
+	BENKI_MENU:1 -= 20
+
+;常識改変効果
+;物乞い奉仕（奉仕）
+SIF TALENT:(ARG:0):283 == 1
+	BENKI_MENU:0 += 3
+;野外露出（露出）
+SIF TALENT:(ARG:0):283 == 2
+	BENKI_MENU:5 += 3
+;痴態公開（ビデオ）
+SIF TALENT:(ARG:0):283 == 3
+	BENKI_MENU:6 += 3
+;公衆便女（人数）
+SIF TALENT:(ARG:0):283 == 4
+	PLAY += 3
+;獣姦マニア（獣姦）
+SIF TALENT:(ARG:0):283 == 5
+	BENKI_MENU:4 += 3
+
+;共通のPLAY補正
+
+;素質
+
+;看轻贞操
+SIF TALENT:(ARG:0):看轻贞操
+	PLAY += 1
+;接受快感
+SIF TALENT:(ARG:0):接受快感
+	PLAY += 1
+;淫乱
+SIF TALENT:(ARG:0):淫乱
+	PLAY += 1
+;受虐狂
+SIF TALENT:(ARG:0):受虐狂
+	PLAY += 1
+
+;能力
+
+;顺从
+	PLAY += ABL:(ARG:0):顺从
+;欲望
+	PLAY += ABL:(ARG:0):欲望
+;技巧
+	PLAY += ABL:(ARG:0):技巧
+;抖M气质
+	PLAY += ABL:(ARG:0):抖M气质
+
+;ランダムボーナス
+	PLAY += RAND:4
+
+;プレイ内容の判定
+;----------------------------------------------------------
+;后面是我主要修改东西
+
+FOR	LOCAL:1,0,10
+	SIF BENKI_MENU:(LOCAL:1) > 9
+		BENKI_MENU:(LOCAL:1) = 9
+	SIF BENKI_MENU:(LOCAL:1) < 0
+		BENKI_MENU:(LOCAL:1) = 0
+	;ついでにボーナス
+	PLAY += BENKI_MENU:(LOCAL:1)
+NEXT
+
+;未確定の相手
+FLAG:64 = -1
+
+;配信分岐
+IF BENKI_MENU:6 >= 3
+	;ビデオソース3以上でビデオ配信分岐
+	;例）被写経験50回超
+	
+	IF BENKI_MENU:4 >= 3
+		;獣姦ソース3以上で獣姦配信
+		;例）獣姦中毒3以上
+		
+		;肉便器行動内容
+		FLAG:62 = 7
+		;相手：大型犬
+		FLAG:64 = 2
+	ELSEIF BENKI_MENU:3 >= 3
+		;同性愛ソース3以上で娼婦購入配信
+		;例）レズ中毒3以上
+		
+		;肉便器行動内容
+		FLAG:62 = 8
+		;相手：娼婦
+		FLAG:64 = 1
+		
+	ELSEIF BENKI_MENU:5 >= 3
+		;露出ソース3以上で野外露出配信
+		;例）露出癖3以上
+		
+		;肉便器行動内容
+		FLAG:62 = 9
+		
+	ELSEIF BENKI_MENU:1 >= 3 && BENKI_MENU:2 >= 3
+		;A&Vソース3以上で公衆便所配信
+		;例）Ｖ感覚3以上かつＡ感覚3以上
+		
+		;肉便器行動内容
+		FLAG:62 = 10
+		
+	ELSEIF BENKI_MENU:2 >= 3
+		;Aソース3以上でA拡張配信
+		;例）Ａ感覚3以上
+		
+		;肉便器行動内容
+		FLAG:62 = 11
+		;相手無し
+		FLAG:64 = -2
+	ELSE
+		;その他・自慰配信
+		
+		;肉便器行動内容
+		FLAG:62 = 12
+		;相手無し
+		FLAG:64 = -2
+	ENDIF
+ELSEIF BENKI_MENU:4 >= 3
+	;獣姦ソース3以上で獣姦分岐
+	;例）獣姦中毒3以上
+	
+	;肉便器行動内容
+	FLAG:62 = 2
+	;相手：大型犬
+	FLAG:64 = 2
+ELSEIF BENKI_MENU:3 >= 3
+	;同性愛ソース3以上でレズ便器分岐
+	;例）レズ中毒3以上
+	
+	;肉便器行動内容
+	FLAG:62 = 1
+	IF TALENT:ARG:萝莉控
+		;幼い奴隷少女
+		FLAG:64 = 7
+	ELSE
+		;淫魔
+		FLAG:64 = 9
+	ENDIF
+ELSEIF BENKI_MENU:0 >= 3
+	;奉仕ソース3以上で最下層民分岐
+	;例）奉仕精神3以上
+	
+	;肉便器行動内容
+	FLAG:62 = 0
+	;相手：最下層民
+	FLAG:64 = 0
+;さらにAとVで分岐
+ELSEIF BENKI_MENU:1 >= 3 && BENKI_MENU:2 >= 3
+	;A&Vソース3以上で両穴プレイ
+	;例）Ｖ感覚3以上かつＡ感覚3以上
+	
+	;肉便器行動内容
+	FLAG:62 = 3
+ELSEIF BENKI_MENU:1 >= 3
+	;Vソース3以上でVプレイ
+	;例）Ｖ感覚3以上
+	
+	;肉便器行動内容
+	FLAG:62 = 4
+ELSEIF BENKI_MENU:2 >= 3
+	;Aソース3以上でAプレイ
+	;例）Ａ感覚3以上
+	
+	;肉便器行動内容
+	FLAG:62 = 5
+ELSE
+	;その他。フェラ便器
+	
+	;肉便器行動内容
+	FLAG:62 = 6
+ENDIF
+
+;未定の相手を確定
+IF FLAG:64 == -1
+	IF TALENT:ARG:283 == 1
+		;物乞い常識改変
+		FLAG:64 = 8
+	ELSEIF TALENT:ARG:正太控
+		;ダークエルフの少年
+		FLAG:64 = 4
+	ELSEIF TALENT:ARG:恋父情结
+		;オークの中年
+		FLAG:64 = 6
+	ELSEIF TALENT:ARG:62
+		;脂ぎったオーク
+		FLAG:64 = 5
+	ELSE
+		;魔族の男
+		FLAG:64 = 3
+	ENDIF
+ENDIF
+
+SIF TALENT:(ARG:0):容易自慰
+	BENKI_MENU:7 += 1
+
+SIF TALENT:(ARG:0):自慰狂
+	BENKI_MENU:7 += 1
+
+BENKI_MENU:7 += ABL:(ARG:0):自慰中毒
+
+SIF EXP:(ARG:0):自慰经验
+	BENKI_MENU:7 += 1
+	
+;実行
+
+;妊娠
+SIF TALENT:(ARG:0):妊娠
+	PRINTFORM 挺着怀孕的大肚子的
+;乳内妊娠
+SIF TALENT:(ARG:0):乳内妊娠
+	PRINTFORM 乳房不时胎动着的
+;精巣妊娠
+SIF TALENT:(ARG:0):精巣妊娠
+	PRINTFORM 性器不时鼓动着的
+
+;DUNGEON_BITCH_LOG.ERB参照
+PRINTFORM %FS_BITCH("LOOKS", ARG)%正
+
+;常識改変
+SIF FLAG:63 == 1
+	PRINT 一点犹豫也没有地
+IF TALENT:(ARG:0):高贵 && BENKI_MENU:0 >= 3
+		;高貴＆奉仕ボーナス
+		PRINTFORM 举止高贵地 
+		PLAY += 1
+ELSEIF TALENT:(ARG:0):慈爱 && BENKI_MENU:0 >= 3
+		;慈愛＆奉仕ボーナス
+		PRINTFORM 怀着慈爱之心地
+		PLAY += 1
+ENDIF
+	
+IF TALENT:(ARG:0):献身的 && BENKI_MENU:0 >= 3
+		;献身的＆奉仕ボーナス
+		PRINTFORM 主动地
+		PLAY += 1
+ENDIF
+
+;説明（～をした）
+IF FLAG:62 == 0
+	;最下層モンスター奉仕
+	PRINTFORM 成为了
+	CALL BENKI_PLAYER_NAME
+	PRINTFORML 们的肉便器。
+ELSEIF FLAG:62 == 1
+	;レズ便器
+	PRINTFORML 成为了性欲旺盛的淫魔们当做了性处理工具。
+ELSEIF FLAG:62 == 2
+	;獣姦便器
+	PRINTFORML 成为了家畜们的性处理工具。
+ELSEIF FLAG:62 == 3
+	;両穴便器
+	PRINTFORML 用阴道和菊花来做。
+ELSEIF FLAG:62 == 4
+	;膣便器
+	PRINTFORML 用阴道来做。
+ELSEIF FLAG:62 == 5
+	;アナル便器
+	PRINTFORML 用菊花来做。
+ELSEIF FLAG:62 == 6
+	;フェラ便器
+	PRINTFORML 用嘴来做。
+ELSEIF FLAG:62 == 7
+	;兽奸配信
+	PRINTFORML 将与狗交配着的样子收录在了水晶球中。
+ELSEIF FLAG:62 == 8
+	;妓女購入配信
+	PRINTFORML 将与叫来的妓女做爱的样子收录在了水晶球中。
+ELSEIF FLAG:62 == 9
+	;露出配信
+	PRINTFORML 将野外露出的样子收录在了水晶球中。
+ELSEIF FLAG:62 == 10
+	;便所配信
+	PRINTFORML 将作为公众便器被使用着的样子收录在了水晶球中。
+ELSEIF FLAG:62 == 11
+	;拡張配信
+	PRINTFORML 将肛门扩张着的样子收录在了水晶球中。
+ELSEIF FLAG:62 == 12
+	;自慰配信
+	PRINTFORML 将自慰着的样子收录在了水晶球中。
+ELSE
+	;自慰
+	PRINTFORML 自慰着。
+ENDIF
+
+WAIT
+
+SIF BENKI_MENU:6 >= 3
+	PRINTFORM 水晶球播放了，
+	
+;妊娠
+SIF TALENT:(ARG:0):妊娠
+	PRINTFORM 挺着怀孕的大肚子的
+;乳内妊娠
+SIF TALENT:(ARG:0):乳内妊娠
+	PRINTFORM 乳房不时胎动着的
+;精巣妊娠
+SIF TALENT:(ARG:0):精巣妊娠
+	PRINTFORM 性器不时鼓动着的
+
+PRINTFORM %SAVESTR:(ARG:0)%在
+
+;いつ？
+IF FLAG:62 == 9
+	;露出配信
+	PRINTFORM 人来人往的白天，
+ELSE
+	PRINTFORM 深夜，
+ENDIF
+
+;（誰がいる）どこで？
+IF FLAG:62 == 8
+	;妓女購入配信
+	PRINTFORM 在充斥着呻吟声的风俗店里
+ELSEIF FLAG:62 == 10
+	;便所配信
+	PRINTFORM 在肮脏的公厕里
+ELSEIF BENKI_MENU:5 >= 3 && BENKI_MENU:4 >= 3
+	;露出＆獣姦
+	PRINTFORM 沐浴着研究员的目光，在异种奸研究所中
+ELSEIF BENKI_MENU:5 >= 5
+	;露出ソースによる露出行為
+	PRINTFORM 在能听到大街声音的小巷子里
+ELSEIF BENKI_MENU:5 >= 3
+	;露出ソースによる露出行為
+	IF FLAG:64 == 4
+		;相手がダークエルフの少年
+		PRINT 在少年们玩耍着的
+	ELSE
+		PRINT 在不会有人经过的
+	ENDIF
+	PRINTFORM 公园的树丛中
+ELSEIF FLAG:62 == 9
+	;露出配信
+	PRINTFORM 能听到大街声音的小巷子
+ELSE
+	;その他
+	PRINTFORM 自己屋子里
+ENDIF
+
+IF BENKI_MENU:6 >= 3
+	PRINT 设置了水晶球。
+ELSE
+	PRINT ，
+ENDIF
+
+IF TALENT:(ARG:0):巨乳
+	PRINTFORM 诱人的巨乳摇晃着，
+ELSEIF TALENT:(ARG:0):爆乳
+	PRINTFORM 惊人的爆乳翻腾着，
+ELSEIF TALENT:(ARG:0):超乳
+    PRINTFORM 夸张的超乳翻腾着，
+ENDIF
+
+;害羞
+SIF TALENT:(ARG:0):害羞
+	PRINTFORM 害羞着地，
+	
+;誰と？
+IF FLAG:64 == -2
+	PRINT 
+ELSEIF FLAG:64 == 2
+	PRINT 和
+ELSEIF BENKI_MENU:0 >= 3
+	PRINT 对
+ELSE
+	PRINT 任
+ENDIF
+CALL BENKI_PLAYER_NAME	
+	
+;どうした？
+IF FLAG:62 == 11
+	;拡張配信
+	PRINTFORM 将巨大的肛塞插入了菊门
+ELSEIF FLAG:62 == 6
+	;フェラ
+	PRINTFORM 将阴茎塞入了口中
+ELSEIF FLAG:64 == -2
+	;相手無し自慰
+	PRINTFORM 自慰着
+ELSEIF BENKI_MENU:4 >= 3
+	;獣姦ソース
+	PRINTFORM 交配着
+ELSEIF BENKI_MENU:3 >= 3
+	;同性ソース
+	PRINTFORM 赤裸相拥着
+ELSEIF BENKI_MENU:0 >= 3
+	;奉仕
+	PRINTFORM 服侍了起来
+ELSEIF BENKI_MENU:1 >= 3 && BENKI_MENU:2 >= 3
+	;A&Vソース3以上
+	PRINTFORM 私处和肛门盛放着发情着
+ELSEIF BENKI_MENU:1 >= 3
+	;Vソース3以上
+	PRINTFORM 兴奋地做爱着
+ELSE
+	PRINTFORM 兴奋地肛交着
+ENDIF
+
+IF BENKI_MENU:6 >= 3
+	PRINTW 的样子被拍下来了…
+ELSE
+	PRINTW …
+ENDIF
+
+;ビーヂオボーナス
+PLAY += BENKI_MENU:6
+
+;最低一匹
+SIF PLAY < 1
+	PLAY = 1
+
+A = ARG:0
+TARGET = ARG:0
+CALL BENKI_KOUJO
+
+IF BENKI_MENU:6 >= 3
+
+	;清算
+	PRINTFORM %SAVESTR:(ARG:0)%共
+	IF FLAG:62 == 7
+		;兽奸配信
+		PRINTFORML 处理了{PLAY}只大型犬的性欲。
+	ELSEIF FLAG:62 == 8
+		;妓女購入配信
+		PRINTFORML 向{PLAY}人提供了有偿性服务。
+	ELSEIF FLAG:62 == 11 || FLAG:62 == 12
+		;拡張配信・自慰配信
+		PRINTFORML 自慰了{PLAY}次。
+	ELSE
+		PRINTFORML 和{PLAY}人做爱了。
+	ENDIF
+
+
+	;処理数に応じて噂が広がる
+
+	PRINTFORM 录下%SAVESTR:(ARG:0)%痴态的水晶球，
+
+	IF PLAY > 25
+		PRINTFORM 公开地
+	ELSE
+		PRINTFORM 暗地里
+	ENDIF
+
+	IF PLAY > 15
+		PRINTFORM 大量地
+	ELSE
+		PRINTFORM 少数地
+	ENDIF
+
+	IF PLAY > 10
+		PRINTFORM 被复制
+	ELSE
+		PRINTFORM 被交易
+	ENDIF
+
+	PRINTFORM 传播着，%SAVESTR:(ARG:0)%的传闻，传到
+	
+	IF PLAY > 30
+		PRINTFORM 故乡
+	ELSEIF PLAY > 25
+		PRINTFORM 地下城外
+	ELSEIF PLAY > 20
+		PRINTFORM 全地下城
+	ELSEIF PLAY > 15
+		PRINTFORM 你的直属部队
+	ELSEIF PLAY > 10
+		PRINTFORM 你的身边
+	ELSE
+		PRINTFORM 你的耳边
+	ENDIF
+
+	PRINTFORML 了。
+
+	PRINTFORML 阴核点数+{PLAY*10}
+	PRINTFORML 欲情点数+{PLAY*10}
+	PRINTFORML 耻情点数+{PLAY*5}
+	JUEL:(ARG:0):0 += PLAY*10
+	JUEL:(ARG:0):5 += PLAY*10
+	JUEL:(ARG:0):8 += PLAY*5
+
+	IF FLAG:62 == 7
+		;兽奸配信
+		PRINTFORML 兽奸经验+{PLAY}
+		EXP:(ARG:0):兽奸经验 += PLAY
+	ENDIF
+
+	IF FLAG:62 == 8
+		;妓女購入配信
+		PRINTFORML 百合经验+{PLAY}
+		EXP:(ARG:0):百合经验 += PLAY
+	ELSEIF FLAG:62 == 11 || FLAG:62 == 12
+		;アナル拡張・自慰配信
+		PRINTFORML 自慰经验+{PLAY}
+		EXP:(ARG:0):自慰经验 += PLAY
+	ELSE
+		PRINTFORML 性交经验+{PLAY}
+		PRINTFORML 精液经验+{PLAY}
+		EXP:(ARG:0):性交经验 += PLAY
+		EXP:(ARG:0):精液经验 += PLAY
+	ENDIF
+
+	IF FLAG:62 == 11
+		;拡張配信
+		PRINTFORML 肛门扩张经验+{PLAY}
+		EXP:(ARG:0):肛门扩张经验 += PLAY
+	ENDIF
+
+	IF BENKI_MENU:1 >= 3
+		;Vソース3以上
+		PRINTFORML 私处点数+{PLAY*10}
+		PRINTFORML 私处经验+{PLAY}
+		JUEL:(ARG:0):1 += PLAY*10
+		EXP:(ARG:0):私处经验 += PLAY
+	ENDIF
+	IF BENKI_MENU:2 >= 3
+		;Aソース3以上
+		PRINTFORML 肛门点数+{PLAY*10}
+		PRINTFORML 肛门经验+{PLAY}
+		JUEL:(ARG:0):2 += PLAY*10
+		EXP:(ARG:0):肛门经验 += PLAY
+	ENDIF
+
+	PRINTFORML 拍摄经验+{PLAY}
+	EXP:(ARG:0):拍摄经验 += PLAY
+
+	PRINTFORML 经验值+{PLAY}
+	EXP:(ARG:0):战斗经验 += PLAY
+
+;---------------------------------------	
+ELSEIF BENKI_MENU:4 >= 3
+	;兽奸ソース3以上で兽奸分岐
+	;例）兽奸中毒3以上
+;----------------------------------------
+	;肉便器行動内容
+	FLAG:62 = 2
+	;相手：大型犬或者。。。
+	FLAG:64 = 2
+	;妊娠
+	SIF TALENT:(ARG:0):妊娠
+		PRINTFORM 挺着怀孕的大肚子的
+	;乳内妊娠
+	SIF TALENT:(ARG:0):乳内妊娠
+		PRINTFORM 乳房不时胎动着的
+	;精巣妊娠
+	SIF TALENT:(ARG:0):精巣妊娠
+		PRINTFORM 性器不时鼓动着的
+	
+	;DUNGEON_BITCH_LOG.ERB参照
+	PRINTFORM %FS_BITCH("LOOKS", ARG)%
+	
+	;露出のソース3以上で公開
+	IF BENKI_MENU:5 >= 3
+		PRINTFORM 身边聚满了看热闹的人，
+		;露出ボーナス
+		PLAY += BENKI_MENU:5
+	ENDIF
+	
+	PRINTFORML 作为公共便器，处理着地下城内魔兽们的性欲。
+	
+	PRINTFORM %SAVESTR:(ARG:0)%
+	
+	IF BENKI_MENU:1 >= 3 && BENKI_MENU:2 >= 3
+		;A&Vソース3以上で両穴プレイ
+		PRINTFORM 的子宫和直肠，灌满了魔兽的精液，
+		;A&Vボーナス
+		PLAY += BENKI_MENU:1 + BENKI_MENU:2
+	ELSEIF BENKI_MENU:1 >= 3
+		;Vソース3以上でVプレイ
+		PRINTFORM 的子宫，灌满了魔兽的精液，
+		;Vボーナス
+		PLAY += BENKI_MENU:1
+	ELSEIF BENKI_MENU:2 >= 3
+		;Aソース3以上でAプレイ
+		PRINTFORM 的直肠，灌满了魔兽的精液，
+		;Aボーナス
+		PLAY += BENKI_MENU:2
+	ELSE
+		;そのほか
+		PRINTFORM 不断摩擦着魔兽的阴茎，
+		;奉仕ボーナス
+		PLAY += BENKI_MENU:0
+	ENDIF
+	
+	;奴隷の様子
+	IF TALENT:(ARG:0):崩坏
+		;崩坏
+		PRINTFORML 浮现出被玩坏的痴笑。
+	ELSEIF TALENT:(ARG:0):牝犬
+		;牝犬
+		PRINTFORML 高兴地摇着屁股。
+	ELSEIF ABL:(ARG:0):兽奸中毒
+		;兽奸中毒1以上
+		PRINTFORML 沉醉在与魔兽交配的快感之中。
+	ELSE
+		PRINTFORML 看起来很不自在。
+	ENDIF
+	
+	;兽奸ボーナス
+	PLAY += BENKI_MENU:4
+	
+	;最低一匹
+	SIF PLAY < 1
+		PLAY = 1
+	
+	;清算
+	PRINTFORML %SAVESTR:(ARG:0)%一共处理了{PLAY}只魔兽的性欲。。
+	
+	;処理数に応じて噂が広がる
+	IF PLAY > 30
+		PRINTFORML %SAVESTR:(ARG:0)%与其和同族做爱，还是比较喜欢在厕所与魔兽的阴茎玩。这样的传闻扩散到她的故乡。这么可爱的脸却有这么变态的欲望，被乡人蔑视了。
+	ELSEIF PLAY > 25
+		PRINTFORML %SAVESTR:(ARG:0)%的痴态传到了地下城外，作为相比外面的同类还是更喜欢和地底魔兽玩的变态女人出名了。
+	ELSEIF PLAY > 20
+		PRINTFORML %SAVESTR:(ARG:0)%在地下城居民中作为魔兽的变态便器而闻名。
+	ELSEIF PLAY > 15
+		PRINTFORML %SAVESTR:(ARG:0)%在魔王的直属部队里有着【比魔兽更下等的变态】的传言。
+	ELSEIF PLAY > 10
+		PRINTFORML %SAVESTR:(ARG:0)%在魔王的亲信之间流传着是变态的传言。
+	ELSEIF PLAY > 5
+		PRINTFORML %SAVESTR:(ARG:0)%在好事之徒之间有着喜欢厕所兽奸的传言。
+	ELSE
+		PRINTFORML %SAVESTR:(ARG:0)%的行为不为人知。
+	ENDIF
+	
+	A = ARG:0
+	TARGET = ARG:0
+	CALL BENKI_KOUJO
+	
+	;各種珠や経験
+	
+	PRINTFORML 阴核点数+{PLAY*10}
+	PRINTFORML 欲情点数+{PLAY*10}
+	PRINTFORML 耻情点数+{PLAY*5}
+	JUEL:(ARG:0):0 += PLAY*10
+	JUEL:(ARG:0):5 += PLAY*10
+	JUEL:(ARG:0):8 += PLAY*5
+	
+	IF BENKI_MENU:1 >= 3
+		;Vソース3以上
+		PRINTFORML 私处点数+{PLAY*10}
+		PRINTFORML 私处经验+{PLAY}
+		JUEL:(ARG:0):1 += PLAY*10
+		EXP:(ARG:0):0 += PLAY
+	ENDIF
+	IF BENKI_MENU:2 >= 3
+		;Aソース3以上
+		PRINTFORML 肛门点数+{PLAY*10}
+		PRINTFORML 肛门经验+{PLAY}
+		JUEL:(ARG:0):2 += PLAY*10
+		EXP:(ARG:0):1 += PLAY
+	ENDIF
+	
+	PRINTFORML 兽奸经验+{PLAY}
+	PRINTFORML 经验值+{PLAY}
+	EXP:(ARG:0):56 += PLAY
+	EXP:(ARG:0):80 += PLAY
+;------------------------	
+ELSEIF BENKI_MENU:0 >= 3 
+		;奉仕ソース3以上で最下层居民分岐
+		;例）侍奉精神3以上
+;------------------------	
+	;肉便器行動内容
+	FLAG:62 = 0
+	;相手：最下層民
+	FLAG:64 = 0
+	;妊娠
+	SIF TALENT:(ARG:0):妊娠
+		PRINTFORM 挺着怀孕的大肚子的
+	;乳内妊娠
+	SIF TALENT:(ARG:0):乳内妊娠
+		PRINTFORM 乳房不时胎动着的
+	;精巣妊娠
+	SIF TALENT:(ARG:0):精巣妊娠
+		PRINTFORM 性器不时鼓动着的
+	
+	;DUNGEON_BITCH_LOG.ERB参照
+	PRINTFORM %FS_BITCH("LOOKS", ARG)%
+	
+	;露出のソース3以上で公開
+	IF BENKI_MENU:5 >= 3
+		PRINTFORM 身边聚满了看热闹的人，
+		;露出ボーナス
+		PLAY += BENKI_MENU:5
+	ENDIF
+	
+	IF TALENT:(ARG:0):高贵 
+		;高贵ボーナス
+		PRINTFORM 举止高贵地
+		PLAY += 1
+	ELSEIF TALENT:(ARG:0):慈爱
+		;慈爱ボーナス
+		PRINTFORM 怀着慈爱之心地
+		PLAY += 1
+	ENDIF
+	
+	IF TALENT:(ARG:0):献身的
+		;献身的ボーナス
+		PRINTFORM 主动地
+		PLAY += 1
+	ENDIF
+	
+	PRINTFORML 作为侍奉用便器在地下城里服侍着
+	CALL BENKI_PLAYER_NAME
+	
+	PRINTFORML %SAVESTR:(ARG:0)%
+	
+	IF BENKI_MENU:1 >= 3 && BENKI_MENU:2 >= 3
+		;A&Vソース3以上で両穴プレイ
+		PRINTFORM 能用上的穴全用上了，
+		;A&Vボーナス
+		PLAY += BENKI_MENU:1 + BENKI_MENU:2
+	ELSEIF BENKI_MENU:1 >= 3
+		;Vソース3以上でVプレイ
+		PRINTFORM 用私处
+		;Vボーナス
+		PLAY += BENKI_MENU:1
+	ELSEIF BENKI_MENU:2 >= 3
+		;Aソース3以上でAプレイ
+		PRINTFORM 用菊花
+		;Aボーナス
+		PLAY += BENKI_MENU:2
+	ELSE
+		;そのほか
+		PRINTFORM 用嘴和手
+	ENDIF
+	
+	PRINTFORM 将底层种族
+	
+	IF TALENT:(ARG:0):反感污臭
+		;反感污臭ボーナス
+		PRINTFORM 满是污垢的肮脏的
+		PLAY += 1
+	ENDIF
+	
+	PRINTFORM 阴茎温柔地包裹在内，
+	
+	;奴隷の様子
+	IF FLAG:63 == 1
+		;常識改変
+		PRINTFORML 一如平常的面带微笑地交欢着……
+	ELSEIF TALENT:(ARG:0):崩坏
+		;崩坏
+		PRINTFORML 浮现出被玩坏的痴笑。
+	ELSEIF EXP:(ARG:0):侍奉快乐经验 > 100
+		;侍奉快乐经验100超
+		PRINTFORM 对底层
+		CALL BENKI_PLAYER_NAME
+		PRINTFORML 勃起的阴茎报以勉励式的温柔微笑。
+	ELSEIF EXP:(ARG:0):侍奉快乐经验 > 50
+		;侍奉快乐经验50超
+		PRINTFORM 对底层
+		CALL BENKI_PLAYER_NAME
+		PRINTFORML 温柔地微笑着。
+	ELSE
+		PRINTFORML 看起来很不自在。
+	ENDIF
+	
+	;奉仕ボーナス
+	PLAY += BENKI_MENU:0
+	
+	;最低一人
+	SIF PLAY < 1
+		PLAY = 1
+	
+	;清算
+	PRINTFORML %SAVESTR:(ARG:0)%共处理了{PLAY}个底层
+	CALL BENKI_PLAYER_NAME
+	PRINTFORM 的性欲。
+	
+	;処理数に応じて噂が広がる
+	IF PLAY > 30
+		PRINTFORML %SAVESTR:(ARG:0)%拥有肮脏欲望和差劲眼光的传闻扩散到了故乡，以无论多脏的东西会乐意给予性施舍的圣女而闻名。
+	ELSEIF PLAY > 25
+		PRINTFORML %SAVESTR:(ARG:0)%的痴态传到了地下城外，以无论多脏的东西会乐意给予性施舍的圣女而闻名。
+	ELSEIF PLAY > 20
+		PRINTFORML %SAVESTR:(ARG:0)%在地下城内被广泛讨论，以无论多脏的东西会乐意给予性施舍的欲女而闻名。
+	ELSEIF PLAY > 15
+		PRINTFORML %SAVESTR:(ARG:0)%在魔王的直属部队里有着无论多脏都愿意上的传闻。
+	ELSEIF PLAY > 10
+		PRINTFORML %SAVESTR:(ARG:0)%在魔王的亲信中有着纯粹的欲女这样的传闻。
+	ELSEIF PLAY > 5
+		PRINTFORML %SAVESTR:(ARG:0)%在好事之徒之中有着做侍奉便器的传闻。
+	ELSE
+		PRINTFORML %SAVESTR:(ARG:0)%的行为不为人知。
+	ENDIF
+	
+	A = ARG:0
+	TARGET = ARG:0
+	CALL BENKI_KOUJO
+	
+	PRINTFORML 阴核点数+{PLAY*10}
+	PRINTFORML 欲情点数+{PLAY*10}
+	PRINTFORML 耻情点数+{PLAY*5}
+	JUEL:(ARG:0):0 += PLAY*10
+	JUEL:(ARG:0):5 += PLAY*10
+	JUEL:(ARG:0):8 += PLAY*5
+	
+	IF BENKI_MENU:1 >= 3
+		;Vソース3以上
+		PRINTFORML 私处点数+{PLAY*10}
+		PRINTFORML 私处经验+{PLAY}
+		JUEL:(ARG:0):1 += PLAY*10
+		EXP:(ARG:0):0 += PLAY
+	ENDIF
+	IF BENKI_MENU:2 >= 3
+		;Aソース3以上
+		PRINTFORML 肛门点数+{PLAY*10}
+		PRINTFORML 肛门经验+{PLAY}
+		JUEL:(ARG:0):2 += PLAY*10
+		EXP:(ARG:0):1 += PLAY
+	ENDIF
+	
+	PRINTFORML 性交经验+{PLAY}
+	PRINTFORML 精液经验+{PLAY}
+	PRINTFORML 经验值+{PLAY}
+	EXP:(ARG:0):5 += PLAY
+	EXP:(ARG:0):20 += PLAY
+	EXP:(ARG:0):80 += PLAY
+;------------------------		
+ELSEIF BENKI_MENU:3 >= 3
+	;同性爱ソース3以上でレズ便器分岐
+	;例）百合中毒3以上
+;------------------------	
+
+	;肉便器行動内容
+	FLAG:62 = 1
+	IF TALENT:ARG:萝莉控
+		;幼い奴隷少女
+		FLAG:64 = 7
+	ELSE
+		;淫魔
+		FLAG:64 = 9
+	ENDIF
+	;妊娠
+	SIF TALENT:(ARG:0):妊娠
+		PRINTFORM 挺着怀孕的大肚子的
+	;乳内妊娠
+	SIF TALENT:(ARG:0):乳内妊娠
+		PRINTFORM 乳房不时胎动着的
+	;精巣妊娠
+	SIF TALENT:(ARG:0):精巣妊娠
+		PRINTFORM 性器不时鼓动着的
+	
+	;DUNGEON_BITCH_LOG.ERB参照
+	PRINTFORM %FS_BITCH("LOOKS", ARG)%，
+	
+	;露出のソース3以上で公開
+	IF BENKI_MENU:5 >= 3
+		PRINTFORM 在围观群众的视线下，
+		;露出ボーナス
+		PLAY += BENKI_MENU:5
+	ENDIF
+	
+	PRINTFORML 与性欲旺盛的淫魔们相拥着。
+	
+	;扶她
+	SIF TALENT:(ARG:0):扶她
+		PRINTFORM 双性人的
+	
+	PRINTFORM %SAVESTR:(ARG:0)%
+	
+	IF TALENT:(ARG:0):扶她 && TALENT:(ARG:0):萝莉控
+		;扶她萝莉控ボーナス
+		PRINTFORM 在精囊被掏空之前，都在和年轻淫魔扭动着腰。
+		PLAY += 6
+	ELSEIF TALENT:(ARG:0):扶她
+		;扶她ボーナス
+		PRINTFORM 在精囊被掏空之前，不停被吸取着精液。
+		PLAY += 3
+	ELSEIF TALENT:(ARG:0):萝莉控
+		;萝莉控ボーナス
+		PRINTFORM 被年幼的
+		CALL BENKI_PLAYER_NAME
+		PRINTFORM 诱惑了，
+		PLAY += 3
+	ELSE
+		;そのほか
+		PRINTFORM 被
+		CALL BENKI_PLAYER_NAME
+		PRINTFORM 诱惑了，
+	ENDIF
+	
+	;奴隷の様子
+	IF FLAG:63 == 1
+		;常識改変
+		PRINTFORML 一如平常的面带微笑地交欢着……
+	ELSEIF TALENT:(ARG:0):崩坏
+		;崩坏
+		PRINTFORML 浮现出被玩坏的痴笑……
+	ELSEIF EXP:(ARG:0):百合经验 > 1000
+		;百合经验1000超
+		PRINTFORML 快乐得快要晕过去了……
+	ELSEIF EXP:(ARG:0):百合经验 > 500
+		;百合经验500超
+		PRINTFORML 沉醉在这种缠绵之中……
+	ELSE
+		PRINTFORML 看起来很不自在……
+	ENDIF
+	
+	;同性爱ボーナス
+	PLAY += BENKI_MENU:3
+	
+	;最低一人
+	SIF PLAY < 1
+		PLAY = 1
+	
+	;清算
+	PRINTFORML %SAVESTR:(ARG:0)%一共处理了{PLAY}个
+	CALL BENKI_PLAYER_NAME
+	PRINTFORM 的性欲。
+	
+	;処理数に応じて噂が広がる
+	IF PLAY > 30
+		PRINTFORML %SAVESTR:(ARG:0)%是个喜欢强奸女人的女勇者，这样的传闻传到了故乡，被朋友的女儿们嫌弃了。以变态百合女而闻名。
+	ELSEIF PLAY > 25
+		PRINTFORML %SAVESTR:(ARG:0)%的痴态传到了地下城外，以女勇者是个彻底的变态百合女而闻名。
+	ELSEIF PLAY > 20
+		PRINTFORML %SAVESTR:(ARG:0)%的传闻在地下城内流传，以女勇者是个强奸女人的不得了的变态女而闻名。
+	ELSEIF PLAY > 15
+		PRINTFORML %SAVESTR:(ARG:0)%在魔王的直属部队里有着只要是女人来者不拒的传闻。
+	ELSEIF PLAY > 10
+		PRINTFORML %SAVESTR:(ARG:0)%在魔王的亲信之间流传着作为变态百合女的传闻。
+	ELSEIF PLAY > 5
+		PRINTFORML %SAVESTR:(ARG:0)%在好事之徒之间有着百合便器的传闻。
+	ELSE
+		PRINTFORML %SAVESTR:(ARG:0)%的行为不为人知。
+	ENDIF
+	
+	A = ARG:0
+	TARGET = ARG:0
+	CALL BENKI_KOUJO
+	
+	PRINTFORML 阴核点数+{PLAY*10}
+	PRINTFORML 欲情点数+{PLAY*10}
+	PRINTFORML 耻情点数+{PLAY*5}
+	JUEL:(ARG:0):0 += PLAY*10
+	JUEL:(ARG:0):5 += PLAY*10
+	JUEL:(ARG:0):8 += PLAY*5
+	
+	IF TALENT:(ARG:0):扶她
+		;扶她ボーナス
+		PRINTFORML 射精经验+{PLAY}
+		EXP:(ARG:0):3 += PLAY
+	ENDIF
+	
+	PRINTFORML 百合经验+{PLAY}
+	PRINTFORML 经验值+{PLAY}
+	EXP:(ARG:0):40 += PLAY
+	EXP:(ARG:0):80 += PLAY
+	
+;------------------------
+ELSE
+	;さらにAとVで分岐
+;------------------------
+	IF BENKI_MENU:1 >= 3 && BENKI_MENU:2 >= 3
+		;A&Vソース3以上で両穴プレイ
+		;例）私处感觉3以上かつ肛门感觉3以上
+		
+		;肉便器行動内容
+		FLAG:62 = 3
+	ELSEIF BENKI_MENU:1 >= 3
+		;Vソース3以上でVプレイ
+		;例）私处感觉3以上
+		
+		;肉便器行動内容
+		FLAG:62 = 4
+	ELSEIF BENKI_MENU:2 >= 3
+		;Aソース3以上でAプレイ
+		;例）肛门感觉3以上
+		
+		;肉便器行動内容
+		FLAG:62 = 5
+	ELSE
+		;その他。フェラ便器
+		
+		;肉便器行動内容
+		FLAG:62 = 6
+	ENDIF
+	
+	
+	;妊娠
+	SIF TALENT:(ARG:0):妊娠
+		PRINTFORM 挺着怀孕的大肚子的
+	;乳内妊娠
+	SIF TALENT:(ARG:0):乳内妊娠
+		PRINTFORM 乳房不时胎动着的
+	;精巣妊娠
+	SIF TALENT:(ARG:0):精巣妊娠
+		PRINTFORM 性器不时鼓动着的
+	
+	;DUNGEON_BITCH_LOG.ERB参照
+	PRINTFORM %FS_BITCH("LOOKS", ARG)%的
+	
+	;露出のソース3以上で公開
+	IF BENKI_MENU:5 >= 3
+		PRINTFORM 身边聚满了看热闹的人，
+		;露出ボーナス
+		PLAY += BENKI_MENU:5
+	ENDIF
+	
+	PRINTFORM 成为了公共便器。
+
+	IF TALENT:(ARG:0):正太控
+		PRINT 魔族的少年在
+	ELSE
+		PRINT 魔族的男人在
+	ENDIF
+	
+	IF BENKI_MENU:1 >= 3 && BENKI_MENU:2 >= 3
+		;A&Vソース3以上で両穴プレイ
+		PRINTFORM 她的子宫、直肠、嘴巴里都灌满了精液。
+	ELSEIF BENKI_MENU:1 >= 3
+		;Vソース3以上でVプレイ
+		PRINTFORM 她的子宫和嘴巴里都灌满了精液。
+	ELSEIF BENKI_MENU:2 >= 3
+		;Aソース3以上でAプレイ
+		PRINTFORM 她的直肠和嘴巴里都灌满了精液。
+	ELSE
+		;その他。フェラ便器
+		PRINTFORM 她的嘴里灌满了精液。
+	ENDIF
+	
+	PRINTFORM %SAVESTR:(ARG:0)%
+	
+	;胆怯・悲观的
+	SIF TALENT:(ARG:0):悲观的 || TALENT:(ARG:0):胆怯
+		PRINTFORM 最初是恐惧，之后就
+	
+	;看轻贞操
+	SIF TALENT:(ARG:0):看轻贞操
+		PRINTFORM 主动分开双腿，
+	
+	
+	;奴隷の様子
+	IF FLAG:63 == 1
+		;常識改変
+		PRINTFORML 像家常便饭似的一边聊着天一边交欢着……
+	ELSEIF TALENT:(ARG:0):崩坏
+		;崩坏
+		PRINTFORML 浮现出被玩坏的痴笑……
+	ELSEIF TALENT:(ARG:0):淫乱
+		;淫乱
+		PRINTFORML 带着淫乱的表情，发出野兽般的娇喘……
+	ELSEIF TALENT:(ARG:0):爱慕
+		;爱慕
+		PRINTFORML 泪流满面地在嘴里叨念着你的名字……
+	;精液経験で分岐
+	ELSEIF EXP:(ARG:0):20 > 1000
+		PRINTFORML 带着谦卑的微笑央求着精液……
+	ELSEIF EXP:(ARG:0):20 > 500
+		PRINTFORML 带着谦卑的表情不时吐露着淫语……
+	ELSEIF EXP:(ARG:0):20 > 250
+		PRINTFORML 带着生硬的笑容做着V字手势，乞求着原谅……
+	ELSEIF EXP:(ARG:0):20 > 100
+		PRINTFORML 带着生硬的笑容被强行做着V字手势……
+	ELSEIF EXP:(ARG:0):20 > 50
+		PRINTFORML 不断重复着谢罪的话语……
+	ELSE
+		PRINTFORML 两眼无神地看着远方……
+	ENDIF
+	
+	
+	IF BENKI_MENU:1 >= 3 && BENKI_MENU:2 >= 3
+		;A&Vソース3以上で両穴プレイ
+		;A&Vボーナス
+		PLAY += BENKI_MENU:1 + BENKI_MENU:2
+	ELSEIF BENKI_MENU:1 >= 3
+		;Vソース3以上でVプレイ
+		;Vボーナス
+		PLAY += BENKI_MENU:1
+	ELSEIF BENKI_MENU:2 >= 3
+		;Aソース3以上でAプレイ
+		;Aボーナス
+		PLAY += BENKI_MENU:2
+	ELSE
+		;その他。フェラ便器
+		;奉仕ボーナス
+		PLAY += BENKI_MENU:0
+	ENDIF
+	
+	;最低一人
+	SIF PLAY < 1
+		PLAY = 1
+	
+	;清算
+	PRINTFORM %SAVESTR:(ARG:0)%共处理了{PLAY}个
+	CALL BENKI_PLAYER_NAME
+	PRINTFORM 的性欲。
+	
+	;処理数に応じて噂が広がる
+	IF PLAY > 30
+		PRINTFORML %SAVESTR:(ARG:0)%向魔族谄媚的传闻传到了故乡，被乡里鄙视了。%SAVESTR:(ARG:0)%作为最喜欢肮脏阴茎的变态公众便器而闻名。
+	ELSEIF PLAY > 25
+		PRINTFORML %SAVESTR:(ARG:0)%的痴态传到了地下城外，以最喜欢肮脏阴茎的变态公众便器而闻名。
+	ELSEIF PLAY > 20
+		PRINTFORML %SAVESTR:(ARG:0)%在地下城内被广泛讨论，作为每晚免费打开双腿的公众便器女而闻名。
+	ELSEIF PLAY > 15
+		PRINTFORML %SAVESTR:(ARG:0)%在魔王的直属部队里有着【公众便器】的传言。
+	ELSEIF PLAY > 10
+		PRINTFORML %SAVESTR:(ARG:0)%在魔王的亲信中有着来者不拒的传闻。
+	ELSEIF PLAY > 5
+		PRINTFORML %SAVESTR:(ARG:0)%在好事之徒之中有着做公众便器的传闻。
+	ELSE
+		PRINTFORML %SAVESTR:(ARG:0)%的行为不为人知。
+	ENDIF
+	
+	A = ARG:0
+	TARGET = ARG:0
+	CALL BENKI_KOUJO
+	
+	PRINTFORML 阴核点数+{PLAY*10}
+	PRINTFORML 欲情点数+{PLAY*10}
+	PRINTFORML 耻情点数+{PLAY*5}
+	JUEL:(ARG:0):0 += PLAY*10
+	JUEL:(ARG:0):5 += PLAY*10
+	JUEL:(ARG:0):8 += PLAY*5
+	
+	IF BENKI_MENU:1 >= 3
+		;Vソース3以上
+		PRINTFORML 私处点数+{PLAY*10}
+		PRINTFORML 私处经验+{PLAY}
+		JUEL:(ARG:0):1 += PLAY*10
+		EXP:(ARG:0):0 += PLAY
+	ENDIF
+	IF BENKI_MENU:2 >= 3
+		;Aソース3以上
+		PRINTFORML 肛门点数+{PLAY*10}
+		PRINTFORML 肛门经验+{PLAY}
+		JUEL:(ARG:0):2 += PLAY*10
+		EXP:(ARG:0):1 += PLAY
+	ENDIF
+	
+	IF BENKI_MENU:1 >= 3 || BENKI_MENU:2 >= 3
+		;AかVどちらかを満たせば性交经验
+		PRINTFORML 性交经验+{PLAY}
+		EXP:(ARG:0):5 += PLAY
+	ENDIF
+	
+	PRINTFORML 精液经验+{PLAY}
+	PRINTFORML 经验值+{PLAY}
+	
+	EXP:(ARG:0):20 += PLAY
+	EXP:(ARG:0):80 += PLAY
+ENDIF
+
+
+DRAWLINE
+PRINTW  
+
+TARGET = TARGET_POOL
+
+RETURN 0
+
+;----------------------------------------------
+@SELECT_BENKI_MENU(ARG, ARGS)
+#DIM ANSWER
+#DIM DICE
+;----------------------------------------------
+;ARG  参照キャラ
+;ARGS 参照内容
+;肉便器のアクションを振り分ける
+;ANSWER = 調教コマンドと同じ
+
+;デフォは愛撫
+ANSWER = 0
+DICE = 2
+
+IF ARGS == "戦闘"
+	;上書きする可能性のある後ろの判定ほど低確率に
+	
+	;技巧2以上で手淫分岐
+	IF ABL:(ARG):12 >= 2 && RAND:DICE == 0
+		ANSWER = 30
+		DICE += 1
+	ENDIF
+	
+	;奉仕技術2以上でフェラ分岐
+	IF ABL:(ARG):13 >= 2 && RAND:DICE == 0
+		ANSWER = 31
+		DICE += 1
+	ENDIF
+	
+	;露出癖2以上で自慰分岐
+	IF ABL:(ARG):17 >= 2 && RAND:DICE == 0
+		ANSWER = 3
+		DICE += 1
+	ENDIF
+	
+	;奉仕精神2以上でアナル奉仕分岐
+	IF ABL:(ARG):16 >= 2 && RAND:DICE == 0
+		ANSWER = 37
+		DICE += 1
+	ENDIF
+	
+	;V感覚2以上で正常位分岐
+	CALL V_ABLE,ARG
+	IF ABL:(ARG):2 >= 2 && RESULT == 1 && RAND:DICE == 0
+		ANSWER = 20
+		DICE += 1
+	ENDIF
+	
+	;V感覚2以上で後背位分岐
+	CALL V_ABLE,ARG
+	IF ABL:(ARG):2 >= 2 && RESULT == 1 && RAND:DICE == 0
+		ANSWER = 21
+		DICE += 1
+	ENDIF
+	
+	;A感覚2以上で正常位アナル分岐
+	IF ABL:(ARG):3 >= 2 && RAND:DICE == 0
+		ANSWER = 26
+		DICE += 1
+	ENDIF
+	
+	;A感覚2以上で後背位アナル分岐
+	IF ABL:(ARG):3 >= 2 && RAND:DICE == 0
+		ANSWER = 27
+		DICE += 1
+	ENDIF
+	
+ENDIF
+
+RETURN ANSWER
+
+;----------------------------------------------
+@NAME_BENKI_MENU(ARG)
+;----------------------------------------------
+;ARG  参照コマンド
+;基本的に調教コマンドと同じ
+
+SELECTCASE ARG
+CASE 0
+	PRINT 爱抚
+CASE 1
+	PRINT 舔阴
+CASE 2
+	PRINT 肛门爱抚
+CASE 3
+	PRINT 自慰
+CASE 4
+	PRINT 口交
+CASE 5
+	PRINT 胸爱抚
+CASE 6
+	PRINT 接吻
+CASE 7
+	PRINT 自己扒开
+CASE 8
+	PRINT 插入手指
+CASE 9
+	PRINT 舔肛
+CASE 10
+	PRINT 振动宝石
+CASE 11
+	PRINT 壶虫
+CASE 20
+	PRINT 正常位
+CASE 21
+	PRINT 背后位
+CASE 22
+	PRINT 对面座位
+CASE 23
+	PRINT 背面座位
+CASE 26
+	PRINT 正常位肛交
+CASE 27
+	PRINT 背后位肛交
+CASE 28
+	PRINT 对面座位肛交
+CASE 29
+	PRINT 背面座位肛交
+CASE 30
+	PRINT 手淫
+CASE 31
+	PRINT 口交
+CASE 32
+	PRINT 乳交
+CASE 33
+	PRINT 股间性交
+CASE 34
+	PRINT 骑乘位
+CASE 36
+	PRINT 骑乘位肛交
+CASE 37
+	PRINT 肛门侍奉
+CASE 38
+	PRINT 足交
+ENDSELECT
+
+RETURN 0
+
+;----------------------------------------------
+@GET_EXP_BENKI_MENU(ARG, ARG:1)
+#DIM PLAY
+#DIM GET_PALAM,15
+;----------------------------------------------
+;ARG:0  対象キャラ
+;ARG:1  参照コマンド
+;基本的に調教コマンドと同じ
+
+SIF TALENT:(ARG:0):肉便器 == 0
+	RETURN 0
+
+SIF TALENT:(ARG:0):281 == 0
+	RETURN 0
+
+GET_PALAM:0 = 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+PLAY = 10
+
+SELECTCASE ARG:1
+CASE 0
+	;愛撫
+	GET_PALAM:7 += PLAY / 10
+CASE 1
+	;クンニ
+	GET_PALAM:0 += PLAY
+CASE 2
+	;アナル愛撫
+	GET_PALAM:2 += PLAY / 2
+CASE 3
+	;自慰
+	GET_PALAM:7 += PLAY / 5
+	GET_PALAM:0 += PLAY
+	PRINTFORMW 自慰经验+{PLAY/10}
+	EXP:(ARG):10 += PLAY / 10
+CASE 4
+	;フェラする
+CASE 5
+	;胸愛撫
+CASE 6
+	;キス
+CASE 7
+	;秘貝開帳
+	GET_PALAM:7 += PLAY / 8
+	GET_PALAM:0 += PLAY
+	PRINTFORMW 自慰经验+{PLAY/10}
+	EXP:(ARG):10 += PLAY / 10
+CASE 8
+	;指挿入れ
+	GET_PALAM:1 += PLAY / 2
+	PRINTFORMW 私处经验+{PLAY/10}
+	EXP:(ARG):0 += PLAY / 10
+CASE 9
+	;アナル舐め
+CASE 10
+	;振動の宝石
+	GET_PALAM:0 += PLAY
+CASE 11
+	;壺ワーム
+	GET_PALAM:1 += PLAY
+	PRINTFORMW 私处经验+{PLAY/10}
+	EXP:(ARG):0 += PLAY / 10
+CASE 20
+	;正常位
+	GET_PALAM:7 += PLAY / 3
+	GET_PALAM:1 += PLAY
+	PRINTFORMW 私处经验+{PLAY/10}
+	EXP:(ARG):0 += PLAY / 10
+CASE 21
+	;後背位
+	GET_PALAM:7 += PLAY / 3
+	GET_PALAM:1 += PLAY
+	PRINTFORMW 私处经验+{PLAY/10}
+	EXP:(ARG):0 += PLAY / 10
+CASE 22
+	;対面座位
+	GET_PALAM:7 += PLAY / 3
+	GET_PALAM:1 += PLAY
+	PRINTFORMW 私处经验+{PLAY/10}
+	EXP:(ARG):0 += PLAY / 10
+CASE 23
+	;背面座位
+	GET_PALAM:7 += PLAY / 3
+	GET_PALAM:1 += PLAY
+	PRINTFORMW 私处经验+{PLAY/10}
+	EXP:(ARG):0 += PLAY / 10
+CASE 26
+	;正常位アナル
+	GET_PALAM:7 += PLAY / 3
+	GET_PALAM:2 += PLAY
+	PRINTFORMW 肛门经验+{PLAY/10}
+	EXP:(ARG):1 += PLAY / 10
+CASE 27
+	;後背位アナル
+	GET_PALAM:7 += PLAY / 3
+	GET_PALAM:2 += PLAY
+	PRINTFORMW 肛门经验+{PLAY/10}
+	EXP:(ARG):1 += PLAY / 10
+CASE 28
+	;対面座位アナル
+	GET_PALAM:7 += PLAY / 3
+	GET_PALAM:2 += PLAY
+	PRINTFORMW 肛门经验+{PLAY/10}
+	EXP:(ARG):1 += PLAY / 10
+CASE 29
+	;背面座位アナル
+	GET_PALAM:7 += PLAY / 3
+	GET_PALAM:2 += PLAY
+	PRINTFORMW 肛门经验+{PLAY/10}
+	EXP:(ARG):1 += PLAY / 10
+CASE 30
+	;手淫
+	GET_PALAM:7 += PLAY / 2
+	GET_PALAM:6 += PLAY / 3
+CASE 31
+	;フェラ
+	GET_PALAM:7 += PLAY / 2
+	GET_PALAM:6 += PLAY / 3
+	PRINTFORMW 口交经验+{PLAY/10}
+	EXP:(ARG):22 += PLAY / 10
+CASE 32
+	;パイズリ
+	GET_PALAM:7 += PLAY / 2
+	GET_PALAM:6 += PLAY / 3
+CASE 33
+	;素股
+	GET_PALAM:7 += PLAY / 2
+	GET_PALAM:0 += PLAY
+	GET_PALAM:6 += PLAY / 3
+CASE 34
+	;騎乗位
+	GET_PALAM:7 += PLAY / 2
+	GET_PALAM:1 += PLAY
+	GET_PALAM:6 += PLAY / 3
+	PRINTFORMW 私处经验+{PLAY/10}
+	EXP:(ARG):0 += PLAY / 10
+CASE 36
+	;騎乗位アナル
+	GET_PALAM:7 += PLAY / 2
+	GET_PALAM:2 += PLAY
+	GET_PALAM:6 += PLAY / 3
+	PRINTFORMW 肛门经验+{PLAY/10}
+	EXP:(ARG):1 += PLAY / 10
+CASE 37
+	;アナル奉仕
+	GET_PALAM:7 += PLAY / 2
+	GET_PALAM:6 += PLAY * 2
+CASE 38
+	;足コキ
+	GET_PALAM:7 += PLAY / 2
+ENDSELECT
+
+FOR LOCAL,0,15
+	SIF GET_PALAM:LOCAL
+		PRINTFORML %PALAMNAME:LOCAL%+{GET_PALAM:LOCAL}
+	JUEL:(ARG):LOCAL += GET_PALAM:LOCAL
+NEXT
+
+RETURN 0
+
+@BENKI_PLAYER_NAME
+
+;誰と？
+IF FLAG:64 == 0
+	PRINT 居住在地下城深渊中散发着恶臭的肮脏眷属
+ELSEIF FLAG:64 == 1
+	PRINT 妓女
+ELSEIF FLAG:64 == 2
+	PRINT 大型犬
+ELSEIF FLAG:64 == 3
+	PRINT 魔族男性
+ELSEIF FLAG:64 == 4
+	PRINT 黑暗精灵少年
+ELSEIF FLAG:64 == 5
+	PRINT 全身油脂的兽人
+ELSEIF FLAG:64 == 6
+	PRINT 中年兽人
+ELSEIF FLAG:64 == 7
+	PRINT 奴隶少女
+ELSEIF FLAG:64 == 8
+	PRINT 乞丐
+ELSEIF FLAG:64 == 9
+	PRINT 女淫魔
+ENDIF
+
+RETURN 0

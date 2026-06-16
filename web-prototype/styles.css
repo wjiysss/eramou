@@ -1,0 +1,519 @@
+:root {
+  --emuera-bg: #2d405f;
+  --emuera-bg-dark: #22324c;
+  --emuera-text: #f4f7ff;
+  --emuera-muted: #c9d0de;
+  --emuera-line: rgba(244, 247, 255, 0.86);
+  --emuera-hover: rgba(255, 255, 255, 0.12);
+  --emuera-focus: #f3d07d;
+  --menu-bg: #ececec;
+  --menu-text: #111;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #1d2430;
+  color: var(--emuera-text);
+  font-family:
+    "MS Gothic",
+    "Yu Gothic UI",
+    "Microsoft YaHei UI",
+    Consolas,
+    monospace;
+}
+
+body {
+  min-height: 100vh;
+}
+
+button {
+  color: inherit;
+  font: inherit;
+}
+
+.emuera-window {
+  min-width: 1040px;
+  min-height: 100vh;
+  background: var(--emuera-bg);
+  border-left: 1px solid #efe6ff;
+  border-right: 1px solid #efe6ff;
+}
+
+.menu-strip {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 6px;
+  gap: 2px;
+  background: var(--menu-bg);
+  color: var(--menu-text);
+  border-bottom: 1px solid #aaa;
+  font-size: 13px;
+}
+
+.menu-strip button {
+  border: 0;
+  background: transparent;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.menu-strip button:hover,
+.menu-strip button:focus-visible {
+  background: #d7e8ff;
+  outline: 1px solid #7aa7d9;
+}
+
+.emuera-screen {
+  min-height: calc(100vh - 24px);
+  padding: 0 4px;
+  overflow: auto;
+  background: var(--emuera-bg);
+  font-size: 18px;
+  line-height: 1.05;
+}
+
+.debug-line {
+  min-height: 31px;
+  display: flex;
+  align-items: center;
+  white-space: pre-wrap;
+}
+
+.rule {
+  height: 2px;
+  border-top: 1px solid var(--emuera-line);
+  border-bottom: 1px solid rgba(244, 247, 255, 0.42);
+}
+
+.date-line {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 28px 0 0;
+  white-space: pre-wrap;
+}
+
+.date-line span:last-child {
+  text-align: right;
+}
+
+.info-row {
+  display: grid;
+  min-height: 76px;
+  padding: 10px 28px;
+  column-gap: 34px;
+}
+
+.info-row--two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.info-row--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-height: 94px;
+}
+
+.info-cell {
+  min-width: 0;
+}
+
+.info-cell h2,
+.command-section h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.info-body {
+  min-height: 38px;
+  color: var(--emuera-text);
+  white-space: pre-wrap;
+}
+
+.command-section {
+  min-height: 148px;
+  padding: 9px 20px 8px;
+}
+
+.command-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 220px);
+  column-gap: 40px;
+  row-gap: 0;
+  max-width: 780px;
+}
+
+.command-column {
+  display: grid;
+  grid-auto-rows: 21px;
+}
+
+.command-button {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  align-items: center;
+  width: 100%;
+  min-height: 21px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.command-button:hover,
+.command-button:focus-visible {
+  background: var(--emuera-hover);
+  outline: 1px dotted var(--emuera-focus);
+}
+
+.command-code {
+  white-space: pre;
+}
+
+.command-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-section {
+  min-height: 84px;
+  padding: 8px 20px;
+}
+
+.message-output {
+  display: grid;
+  gap: 2px;
+  color: var(--emuera-muted);
+  white-space: pre-wrap;
+}
+
+.message-line:first-child {
+  color: var(--emuera-text);
+}
+
+body[data-mode="target-select"] .date-line,
+body[data-mode="target-select"] .info-row {
+  display: none;
+}
+
+body[data-mode="target-select"] .command-section {
+  min-height: 104px;
+  border-top: 1px dashed var(--emuera-line);
+  border-bottom: 1px dashed var(--emuera-line);
+}
+
+body[data-mode="target-select"] .command-grid {
+  grid-template-columns: repeat(2, 280px);
+  max-width: 760px;
+}
+
+body[data-mode="target-select"] .message-section {
+  min-height: 58px;
+  border-bottom: 1px dashed var(--emuera-line);
+}
+
+body[data-mode="training"] .date-line,
+body[data-mode="training"] .info-row,
+body[data-mode="training"] .message-section,
+body[data-mode="training"] .emuera-screen > .rule {
+  display: none;
+}
+
+body[data-mode="training"] .menu-strip {
+  display: none;
+}
+
+body[data-mode="training"] .emuera-screen {
+  min-height: 100vh;
+}
+
+body[data-mode="training"] .debug-line {
+  display: none;
+}
+
+body[data-mode="training"] .command-section {
+  min-height: calc(100vh - 28px);
+  padding: 0;
+}
+
+body[data-mode="training"] .command-section > h2 {
+  display: none;
+}
+
+body[data-mode="training"] .command-grid {
+  display: block;
+  max-width: none;
+}
+
+body[data-mode="ability"] .menu-strip,
+body[data-mode="ability"] .debug-line,
+body[data-mode="ability"] .date-line,
+body[data-mode="ability"] .info-row,
+body[data-mode="ability"] .message-section,
+body[data-mode="ability"] .command-section > h2,
+body[data-mode="ability"] .emuera-screen > .rule {
+  display: none;
+}
+
+body[data-mode="ability"] .emuera-screen {
+  min-height: 100vh;
+}
+
+body[data-mode="ability"] .command-section {
+  min-height: calc(100vh - 28px);
+  padding: 0 4px;
+}
+
+body[data-mode="ability"] .command-grid {
+  display: block;
+  max-width: none;
+}
+
+.training-room {
+  position: relative;
+  padding: 0 0 12px;
+  line-height: 1.08;
+}
+
+.training-pre {
+  margin: 0;
+  color: var(--emuera-text);
+  font: inherit;
+  line-height: 1.08;
+  white-space: pre;
+}
+
+.ability-layout {
+  display: grid;
+  grid-template-columns: minmax(560px, 0.9fr) minmax(520px, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.ability-pre {
+  margin: 0;
+  color: var(--emuera-muted);
+  font: inherit;
+  line-height: 1.08;
+  white-space: pre;
+}
+
+.ability-pre--full {
+  min-height: calc(100vh - 96px);
+  color: var(--emuera-text);
+}
+
+.character-detail {
+  border: 1px solid rgba(244, 247, 255, 0.58);
+  background: rgba(18, 31, 52, 0.28);
+  padding: 10px 12px 12px;
+}
+
+.character-detail__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(244, 247, 255, 0.5);
+  color: #ffffff;
+}
+
+.character-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 6px 0 2px;
+  color: var(--emuera-muted);
+  border-bottom: 1px dashed rgba(244, 247, 255, 0.32);
+}
+
+.detail-meta-item {
+  white-space: nowrap;
+}
+
+.detail-meta-label {
+  color: #f3d07d;
+  margin-right: 4px;
+}
+
+.character-detail__base {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(244, 247, 255, 0.42);
+}
+
+.detail-base-row,
+.detail-row {
+  display: grid;
+  grid-template-columns: minmax(92px, 1fr) auto;
+  gap: 10px;
+  min-height: 20px;
+}
+
+.detail-base-row {
+  grid-template-columns: 64px 1fr 112px;
+}
+
+.detail-bar {
+  white-space: pre;
+  color: #ffffff;
+}
+
+.character-detail__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px 16px;
+  padding-top: 10px;
+}
+
+.detail-section {
+  min-width: 0;
+}
+
+.detail-section--palam,
+.detail-section--chips {
+  grid-column: 1 / -1;
+}
+
+.detail-section h3 {
+  margin: 0 0 3px;
+  font-size: 18px;
+  color: #f3d07d;
+}
+
+.detail-section__body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+}
+
+.detail-section--chips .detail-section__body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+
+.detail-chip {
+  color: #ffe37a;
+  white-space: nowrap;
+}
+
+.detail-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-value {
+  text-align: right;
+  white-space: pre;
+}
+
+.detail-empty {
+  color: var(--emuera-muted);
+}
+
+.train-command-overlay {
+  margin-top: -110px;
+  padding-left: 72px;
+  width: 620px;
+}
+
+.train-command-row {
+  display: grid;
+  grid-template-columns: 150px 150px 150px;
+  column-gap: 28px;
+  min-height: 18px;
+}
+
+.ability-command-row {
+  display: flex;
+  gap: 24px;
+  min-height: 24px;
+}
+
+.ability-command-row .inline-command {
+  width: auto;
+  min-width: 96px;
+  text-align: left;
+}
+
+.inline-command {
+  display: inline-block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: right;
+  cursor: pointer;
+}
+
+.inline-command:hover,
+.inline-command:focus-visible {
+  background: var(--emuera-hover);
+  outline: 1px dotted var(--emuera-focus);
+}
+
+.command-tone-pink {
+  color: #ff8cc6;
+}
+
+.command-tone-red {
+  color: #ff4b4b;
+}
+
+.command-tone-blue {
+  color: #64a8ff;
+}
+
+.command-tone-yellow {
+  color: #ffd34d;
+}
+
+.input-line {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  gap: 2px;
+  border-top: 1px solid rgba(244, 247, 255, 0.25);
+}
+
+.caret {
+  display: inline-block;
+  min-width: 12px;
+  animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .emuera-screen {
+    font-size: 16px;
+  }
+
+  .date-line,
+  .info-row {
+    padding-right: 14px;
+  }
+
+  .ability-layout {
+    grid-template-columns: 1fr;
+  }
+}

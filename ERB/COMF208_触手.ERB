@@ -1,0 +1,71 @@
+﻿;eramaou追加コマンド
+
+;-------------------------------------------------
+;触手
+;触手コマンドと変わらないから考え中
+;-------------------------------------------------
+@COM208
+
+PRINTL 触手
+
+CALL TRAIN_MESSAGE_B
+
+;-------------------------------------------------
+;戦闘値の計算
+;-------------------------------------------------
+LOSEBASE:0 += 5
+LOSEBASE:1 += 100
+
+CALL ARENA_SLAVE_POINT
+TFLAG:402 += RAND:RESULT
+;戦闘点が低ければ追加ダメージ
+IF RESULT < (10 * CFLAG:0:9)
+	PRINTFORMW %SAVESTR:TARGET%被触手弄的手足无措。
+	LOSEBASE:0 += 10
+	LOSEBASE:1 += 200
+ELSE
+	PRINTFORMW %SAVESTR:TARGET%一瞬间就把触手打倒了。
+ENDIF
+
+TFLAG:400 = 208
+;戦闘後の処理
+CALL COM_AFTER_ARENA
+SIF RESULT == 0
+	RETURN 1
+
+$INPUT_LOOP_0
+PRINTL 对哪里进行凌辱？
+PRINTL [0] - 嘴巴
+PRINTL [1] - 胸部
+SIF TALENT:122 == 0
+	PRINTL [2] - 私处
+PRINTL [3] - 肛门
+PRINTL [999] 暂时放过
+
+INPUT
+
+IF RESULT == 0
+	SELECTCOM = 31
+	JUMP COM31
+ELSEIF RESULT == 1
+	SELECTCOM = 5
+	JUMP COM5
+ELSEIF RESULT == 2
+	;対象が男人なら戻る
+	SIF TALENT:122
+		RETURN 0
+	SELECTCOM = 21
+	JUMP COM21
+ELSEIF RESULT == 3
+	SELECTCOM = 27
+	JUMP COM27
+ELSEIF RESULT == 999
+ELSE
+	GOTO INPUT_LOOP_0
+ENDIF
+
+RETURN 1
+
+;
+;
+;

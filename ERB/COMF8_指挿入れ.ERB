@@ -1,0 +1,194 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;插入手指
+;爱抚系コマンド：調教者が調教対象のヴァギナを手で刺激
+;-------------------------------------------------
+@COM8
+;处女を奪うかどうかの確認
+CALL CONFIRM_LOST_VIRGIN
+SIF RESULT == 0
+	RETURN 0
+
+
+;-------------------------------------------------
+;跳转到进阶指令
+;-------------------------------------------------
+LOCAL = 8
+CALL GET_ADV_COM,LOCAL
+SIF RESULT != LOCAL
+	JUMPFORM COM{RESULT}
+
+
+
+PRINTL 插入手指
+;SAVESTR:22 = 插入手指
+CALL TRAIN_MESSAGE_B
+
+;-------------------------------------------------
+;ソースの計算
+;-------------------------------------------------
+LOSEBASE:0 += 30
+LOSEBASE:1 += 80
+
+SOURCE:12 = 300
+SOURCE:14 = 200
+
+;ABL:私处感觉をみる
+IF ABL:2 == 0
+	SOURCE:1 = 10
+	SOURCE:13 = 150
+ELSEIF ABL:2 == 1
+	SOURCE:1 = 50
+	SOURCE:13 = 250
+ELSEIF ABL:2 == 2
+	SOURCE:1 = 250
+	SOURCE:13 = 400
+ELSEIF ABL:2 == 3
+	SOURCE:1 = 600
+	SOURCE:13 = 700
+ELSEIF ABL:2 == 4
+	SOURCE:1 = 1200
+	SOURCE:13 = 1300
+ELSE
+	SOURCE:1 = 1800
+	SOURCE:13 = 2000
+ENDIF
+
+;EXP:私处经验をみる
+IF EXP:0 < EXPLV:1
+	TIMES SOURCE:1 , 0.20
+	TIMES SOURCE:13, 0.20
+	SOURCE:6 = 300
+ELSEIF EXP:0 < EXPLV:2
+	TIMES SOURCE:1 , 0.50
+	TIMES SOURCE:13, 0.50
+	SOURCE:6 = 180
+ELSEIF EXP:0 < EXPLV:3
+	TIMES SOURCE:1 , 1.00
+	TIMES SOURCE:13, 0.80
+	SOURCE:6 = 80
+ELSEIF EXP:0 < EXPLV:4
+	TIMES SOURCE:1 , 1.20
+	TIMES SOURCE:13, 1.00
+	SOURCE:6 = 30
+ELSEIF EXP:0 < EXPLV:5
+	TIMES SOURCE:1 , 1.60
+	TIMES SOURCE:13, 1.20
+	SOURCE:6 = 0
+ELSE
+	TIMES SOURCE:2 , 1.80
+	TIMES SOURCE:13, 1.50
+	SOURCE:6 = 0
+ENDIF
+
+;小人体型だと効果アップ
+SIF TALENT:263
+	TIMES SOURCE:1 , 1.50
+
+;PALAM:润滑をみる
+IF PALAM:3 < PALAMLV:1
+	TIMES SOURCE:1 , 0.10
+	SOURCE:6 += 700
+	TIMES SOURCE:6 , 3.00
+ELSEIF PALAM:3 < PALAMLV:2
+	TIMES SOURCE:1 , 0.20
+	SOURCE:6 += 200
+	TIMES SOURCE:6 , 1.00
+ELSEIF PALAM:3 < PALAMLV:3
+	TIMES SOURCE:1 , 0.60
+	TIMES SOURCE:6 , 0.80
+ELSEIF PALAM:3 < PALAMLV:4
+	TIMES SOURCE:1 , 1.00
+	TIMES SOURCE:6 , 0.50
+ELSEIF PALAM:3 >= PALAMLV:4
+	TIMES SOURCE:1 , 2.00
+	TIMES SOURCE:6 , 0.10
+ENDIF
+
+;PALAM:欲情をみる
+IF PALAM:5 < PALAMLV:1
+	TIMES SOURCE:1 , 0.50
+ELSEIF PALAM:5 < PALAMLV:2
+	TIMES SOURCE:1 , 0.80
+ELSEIF PALAM:5 < PALAMLV:3
+	TIMES SOURCE:1 , 1.20
+ELSEIF PALAM:5 < PALAMLV:4
+	TIMES SOURCE:1 , 1.50
+ELSEIF PALAM:5 >= PALAMLV:4
+	TIMES SOURCE:1 , 1.80
+ENDIF
+
+
+;私处敏感、鈍感をみる
+;私处自体のチェックは後でまとめてやる
+IF TALENT:103
+	TIMES SOURCE:6 , 1.50
+	TIMES SOURCE:13 , 1.50
+	TIMES SOURCE:14 , 1.50
+ELSEIF TALENT:104
+	TIMES SOURCE:6 , 0.60
+	TIMES SOURCE:13 , 0.60
+	TIMES SOURCE:14 , 0.60
+ENDIF
+
+;处女で看重贞操
+SIF EXP:0 == 0 && TALENT:30
+	TIMES SOURCE:13 , 2.00
+;未熟
+SIF TALENT:135
+	TIMES SOURCE:6 , 2.00
+
+;-------------------------------------------------
+;汚れの処理
+;-------------------------------------------------
+IF TEQUIP:90
+	;奴隷のＶに触手の汚れがつく
+	STAIN:3 |= 2
+	STAIN:3 |= 4
+ELSE
+	;奴隷のＶ⇔調教者の指の汚れが移動
+	STAIN:3 |= STAIN:PLAYER:1
+	STAIN:PLAYER:1 |= STAIN:3
+ENDIF
+
+;-------------------------------------------------
+;経験上昇
+;-------------------------------------------------
+S = 0
+;私处感觉が高いほど私处经验が入る
+IF ABL:2 <= 1
+	S = 1
+ELSEIF ABL:2 <= 4
+	S = 2
+ELSEIF ABL:2 <= 7
+	S = 3
+ELSE
+	S = 4
+ENDIF
+EXP:0 += S
+PRINTFORML 私处经验+{S}
+S = 0
+
+;百合经验
+IF TALENT:122 == 0 && TALENT:PLAYER:122 == 0
+	PRINTS EXPNAME:40
+	PRINTL +4
+	EXP:40 += 4
+ENDIF
+
+;爱情经验
+E = 1
+IF CFLAG:2 >= 1000 && ASSIPLAY == 0
+	PRINTFORML %EXPNAME:23%+{E}
+	EXP:23 += E
+ENDIF
+E = 0
+
+;-------------------------------------------------
+;その他の処理
+;-------------------------------------------------
+;私处经验を伴うコマンドのフラグ
+TFLAG:19 = 1
+
+RETURN 1

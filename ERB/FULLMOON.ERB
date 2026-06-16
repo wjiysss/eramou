@@ -1,0 +1,90 @@
+﻿;==================================================
+; 满月角色基础数值调整
+; CALLBY @WEAPON_RESTORE
+@FULLMOON_EFFECT
+;--------------------------------------------------
+
+IF TALENT:A:220 == 0
+	GOTO LABEL_种族
+ELSE
+	GOTO LABEL_种族2
+ENDIF
+
+$LABEL_种族
+SELECTCASE TALENT:A:种族
+	CASE 0
+		;人类
+	CASE 1
+		;精灵
+	CASE 2
+		;狼人
+		CFLAG:A:11 *= 10
+		CFLAG:A:12 *= 10
+		BASE:A:0 = MAXBASE:A:0
+		BASE:A:1 = MAXBASE:A:1
+	CASE 3
+		;吸血鬼
+		CFLAG:A:11 = MAX(CFLAG:A:11, CFLAG:A:13)
+		CFLAG:A:12 = MAX(CFLAG:A:12, CFLAG:A:14)
+		BASE:A:0 = MAXBASE:A:0 * 10
+		BASE:A:1 = MAXBASE:A:1 * 10
+	CASE 4
+		;无头骑士
+	CASE 5
+		;龙族
+	CASE 6
+		;天使
+		BASE:A:1 /= 2
+	CASE 7
+		;暗精灵
+		CFLAG:A:11 *= 2
+		BASE:A:0 = MAXBASE:A:0
+		BASE:A:1 = MAXBASE:A:1
+	CASE 8
+		;堕天使
+		CFLAG:A:11 *= 2
+	CASE 9
+		;魔族
+		CFLAG:A:11 *= 2
+	CASE 10
+		;霍比特人
+	CASE 11
+		;矮人
+ENDSELECT
+
+RETURN
+
+$LABEL_种族2
+
+SELECTCASE TALENT:A:种族2
+	; CASE 1
+		;兽人
+	; CASE 2
+		;史莱姆
+	; CASE 3
+		;昆虫
+	CASE 4
+		;植物
+		CFLAG:A:11 *= 2
+		BASE:A:0 = MAXBASE:A:0
+		BASE:A:1 = MAXBASE:A:1
+	CASE 5, 11
+		;触手
+		CFLAG:A:11 *= 5
+		BASE:A:0 = MAXBASE:A:0
+		BASE:A:1 = MAXBASE:A:1
+	CASE 6
+		;妖精
+		CFLAG:A:11 *= 2
+		BASE:A:0 = MAXBASE:A:0 *2
+		BASE:A:1 = MAXBASE:A:1 *2
+	; CASE 7
+		;巨人
+	; CASE 8,9
+		;魔族
+	; CASE 10, 12
+		;魔兽
+	CASEELSE
+		CFLAG:A:11 *= 2
+		BASE:A:1 = MAXBASE:A:1
+ENDSELECT

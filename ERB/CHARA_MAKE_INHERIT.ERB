@@ -1,0 +1,167 @@
+﻿;--------------------------------------------------
+;令角色A继承角色B和角色C（可选）的属性
+;不继承：崩坏，口上，调教素质，种族，职业，经历
+@CHARA_MAKE_INHERIT(L_A, L_B, L_C = -1)
+;--------------------------------------------------
+#DIM L_A
+#DIM L_B
+#DIM L_C
+#DIM L_I
+
+SIF L_B < 0
+	RETURN L_A
+	
+;性格,性への関心,乙女心,体質,技術,潔癖度,正直度,
+;性癖,魅了,身体特徴,,,,
+FOR L_I, 10, 153
+	;特殊性癖,扶她-疯狂,母乳体质-正太控,爱慕
+	SIF INRANGE(L_I,74,78) || INRANGE(L_I,121,123) || INRANGE(L_I,130,143) || L_I == 85
+		CONTINUE
+	CALL CMI_SETTALENT(L_I, L_A, L_B, L_C)
+NEXT
+
+
+SIF TALENT:L_A:扶她 || TALENT:L_A:男人 || !TALENT:L_A:处女
+	TALENT:私处封印 = 0
+
+;恋母情结等
+CALL CMI_MOM_COMPLEX(L_A, L_B)
+SIF L_C >= 0
+	CALL CMI_MOM_COMPLEX(L_A, L_C)
+
+;戦闘技能(战术~俊足~小人体型)
+FOR L_I, 240,264
+	;恶魔xx,魔之刻印
+	SIF INRANGE(L_I, 244,247) || L_I == 254
+		CONTINUE
+	CALL CMI_SETTALENT(L_I, L_A, L_B, L_C)
+NEXT
+
+;能力者
+FOR L_I, 275,280
+	CALL CMI_SETTALENT(L_I, L_A, L_B, L_C)
+NEXT
+
+;外貌
+FOR L_I, 300,314
+	CALL CMI_SETTALENT(L_I, L_A, L_B, L_C)
+NEXT
+
+;精英特技
+IF TALENT:L_B:精英
+	FOR L_I, 470,489
+		SIF TALENT:L_B:L_I
+			CALL CMI_SETTALENT(L_I, L_A, L_B)
+	NEXT
+ENDIF
+IF L_C >= 0 && TALENT:L_C:精英
+	FOR L_I, 470,489
+		SIF TALENT:L_C:L_I
+			CALL CMI_SETTALENT(L_I, L_A, L_C)
+	NEXT
+ENDIF
+
+;冲突检查
+CALL CMI_CONFLICT_CHECK(L_A)
+
+RETURN L_A
+
+
+;--------------------------------------------------
+;角色A从角色B和角色C（可选）继承素质I
+;--------------------------------------------------
+@CMI_SETTALENT(L_I, L_A, L_B, L_C = -1)
+#DIM L_A
+#DIM L_B
+#DIM L_C
+#DIM L_I
+
+IF L_C <= 0
+	;单亲或（stick增加）魔王为父 => A有3/4概率继承B的素质
+	SIF RAND:4
+		TALENT:L_A:L_I = TALENT:L_B:L_I
+ELSEIF 	L_B == 0
+    ;（stick增加、未测试）魔王为母 => A有2/3概率继承C的素质	
+	SIF RAND:3
+		TALENT:L_A:L_I = TALENT:L_C:L_I
+ELSE
+	;双亲 => A有15/16概率继承B或C的素质
+	SIF RAND:16
+		TALENT:L_A:L_I = RAND:2 ? TALENT:L_B:L_I # TALENT:L_C:L_I
+ENDIF
+
+
+;--------------------------------------------------
+;检查并设置恋母情结
+;--------------------------------------------------
+@CMI_MOM_COMPLEX(L_A, L_B)
+#DIM L_A
+#DIM L_B
+
+IF TALENT:L_B:讨厌男人 && (TALENT:L_A:男人 || TALENT:L_A:扶她)
+	;母亲讨厌男人，孩子是男人
+ELSEIF TALENT:L_B:男人婆 && (!TALENT:L_A:男人 && !TALENT:L_A:扶她)
+	;母亲讨厌女人，孩子是女人
+ELSE
+	SIF TALENT:L_B:母性 && RAND:2
+		TALENT:L_A:恋母情结 = 1
+	SIF TALENT:L_B:人妻 && RAND:3 == 1
+		TALENT:L_A:恋母情结 = 1
+	SIF TALENT:L_B:父性 && RAND:2
+		TALENT:L_A:恋父情结 = 1
+	IF (TALENT:L_B:未熟 || TALENT:L_B:娇小) && RAND:3 == 1
+		IF (TALENT:L_B:男人 || TALENT:L_B:扶她)
+			;父亲未熟娇小
+			TALENT:L_A:正太控 = 1
+		ELSE
+			;母亲未熟娇小
+			TALENT:L_A:萝莉控 = 1
+		ENDIF
+	ENDIF
+ENDIF
+
+
+;--------------------------------------------------
+;冲突检查 REF CHARA_CUSTOM2.ERB
+;--------------------------------------------------
+@CMI_CONFLICT_CHECK(L_A)
+#DIM L_A
+#DIM L_I
+#DIM L_J
+#DIM L_II
+{
+#DIM CONST PAIRS = 
+	10,12,	11,13,	14,16,	15,17,	17,18,	
+	20,23,	21,23,	22,23,
+	20,63,	21,63,	22,63,
+	23,24,	25,26,	27,28,
+	30,31,	32,33,	
+	35,36,	40,41,	42,43,	
+	44,45,	50,51,	61,62,	62,64,
+	70,71,	
+	79,80, 79,81, 79,82, 79,122,
+	80,81, 80,82, 81,82,	
+	99,100,		101,102,
+	103,104,	105,106,  103,122, 104,122,
+	107,108,	111,112,	
+	109,110,  109,114,  109,116,  119,109, 119,116, 119,114, 119,110, 122,109, 122,110, 122,114, 122,116, 122,119,
+	110,114,  110,116,  114,116, 
+	121,122,	153,154,	99,263,  153,122, 154,122, 130,122, 155,122, 157,122,
+	60,150,   82,143  
+}
+
+FOR L_II, 0, VARSIZE("PAIRS")/2
+	L_I = PAIRS:(L_II*2)
+	L_J = PAIRS:(L_II*2+1)
+	;printw 冲突检查
+	IF TALENT:L_A:L_I && TALENT:L_A:L_J
+		IF RAND:2
+			TALENT:L_A:L_I = 0
+		ELSE
+			TALENT:L_A:L_J = 0
+		ENDIF
+	ENDIF
+NEXT
+
+RETURN L_A
+

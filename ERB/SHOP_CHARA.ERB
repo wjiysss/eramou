@@ -1,0 +1,458 @@
+﻿;=================================================
+;異次元勇者の購入
+;=================================================;
+;更新履歴＠異次元勇者購入パッチ
+;基本は怪物購入パッチからの改造です
+;2016/09/24	作成開始
+;
+;=================================================
+;アイテム購入・売却処理画面
+;=================================================
+@CHARA_SIM_SHOP
+#DIM CHARA, 1
+#DIM SEXCOIN
+#DIM L_I
+
+;A=キャラクター用暫定変数値
+;TFLAG:100、TFLAG:101=怪物种族の保持
+;TFLAG:102=キャラクター番号保持
+
+;いずれもここで初期化させておく
+TFLAG:100 = 0
+TFLAG:101 = 0
+TFLAG:102 = 0
+
+$INPUT_LOOP_SEX
+
+CALL SHOW_SHOP_CHARA
+
+PRINTL 请选择要召唤的勇者的性别
+PRINTFORML [1]男性　　　　[2]女性　　　　[3]扶她
+[IF_DEBUG]
+	PRINTFORM [99] 强行召唤
+	PRINTL
+[ENDIF]
+DRAWLINE
+PRINTFORML [999] 返回
+
+INPUT
+
+IF RESULT == 999
+	CALL CLEAR_SHOP
+	RETURN 0
+;表示外の数字なら戻す
+ELSEIF RESULT > 3 && RESULT != 99
+	CLEARLINE 1
+	GOTO INPUT_LOOP_SEX
+ELSE
+	SEXCOIN = RESULT
+	SIF RESULT == 0
+		GOTO INPUT_LOOP_SEX
+ENDIF
+
+$ADD_CHARA
+CALL SHOW_SHOP_CHARA
+
+;异界勇者的种族
+
+
+;キャラのNOを選定
+IF SEXCOIN == 99
+	JUMP CHAR_IKAI_CREATE
+ENDIF
+CHARA = 211
+ADDCHARA CHARA
+CALL ADDCHARA_EX, CHARANUM-1
+A = CHARANUM - 1
+
+SIF SEXCOIN == 1
+	TALENT:A:122 = 1
+SIF SEXCOIN == 3
+	TALENT:A:121 = 1
+
+CALL CHAR_MAKE
+A = RESULT
+CFLAG:A:1 = 0
+
+;善良値調整、念のため
+SIF CFLAG:A:151 < -100
+	CFLAG:A:151 = -100
+
+PRINTL *****************************************
+PRINTFORML %SAVESTR:A%回应了你的召唤………
+PRINTL *****************************************
+PRINTW
+CALL SHOW_CHARA_INFO, A, -2
+A = CHARANUM - 1
+PRINTFORML 确定要召唤%SAVESTR:A%么？
+PRINTL
+PRINTL
+PRINT [0] 就是
+IF TALENT:A:122 != 0
+	PRINT 他
+ELSE 
+	PRINT 她
+ENDIF
+PRINT 了  [1] 再换一个（花费1500）
+
+INPUT
+IF RESULT == 1
+	
+	IF MONEY <= 1500
+		PRINTFORML 金钱不够！
+		WAIT
+	ELSE
+		CALL PARTY_CHAR_DEL, A
+		DELCHARA A
+		MONEY -= 1500
+		EX_FLAG:4444 -= 1500
+		CALL NAME_RESET
+		GOTO ADD_CHARA
+	ENDIF
+ELSEIF RESULT == 0
+	IF MONEY <= 1500
+		PRINTFORML 金钱不够！
+		WAIT
+	ELSEIF EXP:MASTER:81 < 1	
+		PRINTFORML 勋章不够！
+		WAIT
+	ELSE
+		MONEY -= 1500
+		EX_FLAG:4444 -= 1500
+		EXP:MASTER:81 -= 1
+		SIF CFLAG:A:999 == 0
+			CFLAG:A:999 = 1
+	ENDIF
+ENDIF
+
+RETURN 0
+
+
+
+;-----------------------------------------------------
+@SHOW_SHOP_CHARA
+;
+;SHOP_MONSTERで選択形式の入力を行う場面で表示させるヘッダ的部分
+;-----------------------------------------------------
+
+CUSTOMDRAWLINE =
+PRINTL 异界召唤
+PRINTL 《需要勋章经验来激活次元大门，并支付一定金钱来召唤异次元的勇者》
+DRAWLINE
+PRINTV DAY+1
+PRINT 日
+IF TIME == 0
+	PRINTL  午前
+ELSE
+	PRINTL  午后
+ENDIF
+
+PRINTFORML 所持金：{MONEY}点		勋章：{EXP:MASTER:81}点
+DRAWLINE
+
+
+;-----------------------------------------------------
+@SELECT_CHARA, ARG:0
+;
+;RETURN 0なら偽であり、MONSTER_SHOPでの入力まで返回
+;-----------------------------------------------------
+#DIM LCOUNT, 2
+#DIM MONS, 200, 10
+VARSET LOCAL
+
+;まず入力から対応する怪物种族（この場合は凌辱タイプ）を見る
+SELECTCASE ARG:0
+	CASE 1 TO 4, 6, 7
+		TFLAG:100 = ARG:0
+		TFLAG:101 = ARG:0
+	CASE 5
+		TFLAG:100 = 5
+		TFLAG:101 = 11
+	CASE 8
+		TFLAG:100 = 8
+		TFLAG:101 = 9
+	CASE 9
+		TFLAG:100 = 10
+		TFLAG:101 = 12
+	CASEELSE
+		RETURN 0
+ENDSELECT
+
+$INPUT_LOOP
+
+CALL SHOW_SHOP_CHARA
+PRINTFORML 需要献祭一定数量的怪物以符合其合计等级的要求，作为祭品的怪物还需满足最低等级才能作为祭品，
+PRINTFORML 还需要支付最低等级＊１３５的金钱来召唤精英魔物从者
+
+FOR LCOUNT, 201, 280
+	;価格があるか判定。ITEMPRICEの有無で判断する。
+	SIF ITEMPRICE:LCOUNT == 0
+		CONTINUE
+	;CSVABLで「种族2」を見て、選択された怪物タイプのキャラであれば表示。
+	IF CSVTALENT(LCOUNT,319,0) == TFLAG:100 || CSVTALENT(LCOUNT,319,0) == TFLAG:101
+		PRINTFORMLC %"["+TOSTR(LCOUNT,"000")+"]"% %ITEMNAME:LCOUNT,22,LEFT% 最低等级：%TOSTR(ITEMPRICE:LCOUNT),5,RIGHT%　　
+		;購入可能フラグを立てる
+		ITEMSALES:LCOUNT = 1
+		LOCAL += 1
+		SIF LOCAL%2 == 0
+			PRINTL 
+	ENDIF
+NEXT
+SIF LOCAL%2
+	PRINTL 
+
+DRAWLINE
+PRINTFORML [999] 返回
+IF LOCAL == 0
+	PRINTL 没有能召唤的魔物从者
+ELSE
+	PRINTL 请选择要召唤的魔物从者
+ENDIF
+
+INPUT
+IF RESULT == 999
+	RETURN 0
+;売値が所持金より多いなら再入力
+ELSEIF MONEY < (ITEMPRICE:RESULT * 135)
+	PRINTL 虽然魔物从者都不是物质的女孩，但必要的金钱总是要准备的吧～贫穷的魔王大人哦！
+	WAIT
+	GOTO INPUT_LOOP
+ELSEIF MONEY < (ITEMPRICE:RESULT * 135) && TALENT:A:122
+	PRINTL 虽然魔物从者都不是势利的家伙，但必要的金钱总是要准备的吧～贫穷的魔王大人哦！
+	WAIT
+	GOTO INPUT_LOOP
+ENDIF
+
+;TFLAG:102 = キャラ番号保持
+TFLAG:102 = RESULT
+
+CALL BUY_MONSTER
+
+SIF RESULT == 0
+	GOTO INPUT_LOOP
+
+RETURN 1
+
+;-----------------------------------------------------
+@BUY_CHARA, ARG:0
+;-----------------------------------------------------
+#DIM LCOUNT, 2
+#DIM DYNAMIC MONS , 200, 10
+VARSET LOCAL
+
+;各怪物の凌辱タイプと数を確認し、選択されたタイプの怪物のレベルと所持数を表示
+;条件を満たしている怪物の番号、レベル、所持数を三次元変数「MONS」に記録
+;MONS:A = 番号
+;MONS:A:0 = レベル
+;MONS:A:1 = 所持数
+;MONS:A:2 = 選択数
+
+FOR LCOUNT, 100, 200
+	CALL MONSTER_DATA, LCOUNT, 5
+	IF (E:507 == TFLAG:100 || E:507 == TFLAG:101) && ITEM:LCOUNT > 0
+		MONS:LCOUNT:0 = E:501
+		MONS:LCOUNT:1 = ITEM:LCOUNT
+		LOCAL:1 += ITEM:LCOUNT * E:501
+		LOCAL += 1
+	ENDIF
+NEXT
+
+;怪物が足りない場合の処理
+IF LOCAL == 0
+	PRINTW 没有能作为祭品的怪物
+	RETURN 0
+ELSEIF LOCAL:1 < ITEMPRICE:(TFLAG:102)
+	PRINTW ＊作为祭品的怪物等级不足＊
+	RETURN 0
+ENDIF
+
+
+;LOCAL:1に生贄に捧げた怪物のレベルの合計を保存
+LOCAL:1 = 0
+
+;条件を満たした怪物を実際に表示
+$SHOW_CHARA
+CALL SHOW_SHOP_CHARA
+
+IF ITEMPRICE:(TFLAG:102) - LOCAL:1 <= 0
+	PRINTFORML 现在被选择的怪物
+	LOCAL = 0
+	FOR LCOUNT, 100, 200
+		SIF MONS:LCOUNT:2 == 0
+			CONTINUE
+		PRINTFORMLC %ITEMNAME:LCOUNT,22,LEFT% LV:{MONS:LCOUNT:0} %TOSTR(MONS:LCOUNT:2),7,RIGHT%只　　
+		LOCAL += 1
+		SIF LOCAL%2 == 0
+			PRINTL 
+	NEXT
+	SIF !LINEISEMPTY()
+		PRINTL 
+	PRINTFORML 合计等级：{LOCAL:1}
+	DRAWLINE
+	PRINTFORML 要以这些怪物为代价，加上{ITEMPRICE:(TFLAG:102) * 135}点金钱，来召唤%ITEMNAME:(TFLAG:102)%吗？
+	PRINTL [0] 好的  [1] 不要
+	INPUT
+	IF RESULT == 1
+		RETURN 0
+	ELSEIF RESULT == 0
+		MONEY -= ITEMPRICE:(TFLAG:102) * 135
+		EX_FLAG:4444 -= ITEMPRICE:(TFLAG:102) * 135
+		FOR LCOUNT, 100, 200
+			SIF MONS:LCOUNT:2 == 0
+				CONTINUE
+			ITEM:LCOUNT -= MONS:LCOUNT:2
+		NEXT
+		RETURN 1
+	ENDIF
+ELSE
+	PRINTFORML 请选择满足最低等级要求的怪物作为祭品
+	;LOCAL:0は表示した怪物の数。表示のたびにリセット
+	LOCAL:0 = 0
+	PRINTFORML 剩余等级：{ITEMPRICE:(TFLAG:102) - LOCAL:1}
+	PRINTFORML 现在被选择的怪物
+	LOCAL = 0
+	FOR LCOUNT, 100, 200
+		SIF MONS:LCOUNT:2 == 0
+			CONTINUE
+		PRINTFORMLC %ITEMNAME:LCOUNT,22,LEFT% LV:{MONS:LCOUNT:0} %TOSTR(MONS:LCOUNT:2),7,RIGHT%只　　
+		LOCAL += 1
+		SIF LOCAL%2 == 0
+			PRINTL 
+	NEXT
+	SIF !LINEISEMPTY()
+		PRINTL 
+	PRINTFORML 合计等级：{LOCAL:1}
+	DRAWLINE
+	LOCAL = 0
+	FOR LCOUNT, 100, 200
+		SIF MONS:LCOUNT:0 == 0
+			CONTINUE
+		PRINTFORM %"["+TOSTR(LCOUNT,"000")+"]"% %ITEMNAME:LCOUNT,20,LEFT% LV:{MONS:LCOUNT:0} %TOSTR(MONS:LCOUNT:1),5,RIGHT% 
+		PRINTFORM - %TOSTR(MONS:LCOUNT:2)% 只	
+		LOCAL += 1
+		SIF LOCAL%2 == 0
+			PRINTL 
+	NEXT
+	SIF !LINEISEMPTY()
+		PRINTL 
+	DRAWLINE
+	PRINTFORML [999] 返回
+	PRINTFORML 
+ENDIF
+
+$INPUT_LOOP_1
+INPUT
+
+IF RESULT == 999
+	RETURN 0
+ELSEIF RESULT < 100 || RESULT >= 200
+	GOTO INPUT_LOOP_1
+ELSEIF MONS:RESULT:0 == 0
+	GOTO INPUT_LOOP_1
+ELSEIF MONS:RESULT:1 == MONS:RESULT:2
+	PRINTW 已经没有了
+	GOTO INPUT_LOOP_1
+ENDIF
+
+MONS:RESULT:2 += 1
+LOCAL:1 += MONS:RESULT:0
+GOTO SHOW_CHARA
+
+@CHAR_IKAI_CREATE
+#DIM L_I
+DRAWLINE
+PRINTFORML 强行从异世界召唤魔王想要召唤的人
+PRINTFORML 这将耗费不少的金钱以及更多的勋章
+DRAWLINE
+PRINTL
+WAIT
+$INPUT_LOOP
+CALL SHOW_SHOP_CHARA
+LOCAL = 0
+FOR L_I, 10000, 100000
+	SIF !EXISTCSV(L_I)
+		CONTINUE
+	A = FINDCHARA(NO, L_I)
+	SIF A > 0
+		CONTINUE
+	PRINTFORM  [{L_I,2}] %CSVNAME(L_I),14,LEFT%
+	CALL  CHARA_IKAI_COST
+	PRINTFORM ({RESULT:0}勋章&{RESULT:1}金)
+	LOCAL ++
+	SIF LOCAL % 5 == 0
+		PRINTL
+NEXT
+SIF !LINEISEMPTY()
+	PRINTL
+	
+DRAWLINE
+PRINT [999] 返回
+
+INPUT 1
+
+SELECTCASE RESULT
+CASE 999
+	RETURN 0
+CASEELSE
+	L_I = RESULT
+ENDSELECT
+
+IF !EXISTCSV(L_I)
+	CLEARLINE 1
+	GOTO INPUT_LOOP
+ENDIF
+
+A = -1
+
+;启用当前已登录的角色
+SIF INRANGE(L_I,10000,100000)
+	A = FINDCHARA(NO, L_I)
+;登录新的角色
+IF A < 0
+	CALL CHARA_IKAI_COST
+	IF MONEY < D
+		PRINTFORML 金钱不够！
+		WAIT
+		GOTO INPUT_LOOP
+	ELSEIF EXP:MASTER:81 < C
+		PRINTFORML 勋章不够！
+		WAIT
+		GOTO INPUT_LOOP
+	ELSE
+		MONEY -= D
+		EX_FLAG:4444 -= D
+		EXP:MASTER:81 -= C
+	ENDIF
+	CALL CHAR_IKAI_APPEND(L_I, 1)
+	A = RESULT
+	PRINTL *****************************************
+	PRINTFORML %NAME:A%被你强行召唤了………
+	PRINTL *****************************************
+	PRINTW
+ENDIF
+
+; ARG：csv编号（需要保证可用）
+@CHAR_IKAI_APPEND(ARG, ARG:1)
+ADDCHARA ARG
+LOCAL = TARGET
+CALL ADDCHARA_EX, CHARANUM-1
+TARGET = CHARANUM - 1
+A = CHARANUM - 1
+
+;異界人
+CALL CHAR_INIT
+
+
+CFLAG:A:1 = 0
+
+TARGET = LOCAL
+RETURN A
+
+@CHARA_IKAI_COST
+#DIM L_I
+	C = L_I % 10000
+	C = C / 5
+	SIF C < 3
+		C = 3
+	D = C * 2000
+RETURN C,D

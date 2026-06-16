@@ -1,0 +1,1333 @@
+﻿;=============================================================================
+;以下のeraバリアント内構文を使用・参考にさせて頂きました
+;
+;・eraMeiQ外伝
+;　身長・体重・3サイズの生成処理
+;
+;各製作者とこれらに関わったすべての方々への多大なる謝辞をこの場で申し上げます。
+
+;また、数値を決定する上で以下のサイトなどを参考にしています。
+;平均身長－日本人の平均身長 - ピュアサプリメント
+;http://www.pure-supplement.com/shintyo/002.html
+;BMIと身長・体重の関係 一覧表
+;http://diet.netabon.com/diet/basic/bmi_height_weight.html
+
+;---------------------------------------------------------
+@CHAR_BODY_GENERATE_WAPPED, ARG
+;---------------------------------------------------------
+SIF !GETBIT(FLAG:5,12) && !GETBIT(FLAG:5,15)
+	RETURN 
+
+;村娘Ａ・Ｂのみ年齢を指定してみる
+IF TALENT:ARG:165
+	CALL CHAR_SIZE_GENERATE, ARG, RAND:2 + 12
+ELSEIF TALENT:ARG:171
+	CALL CHAR_SIZE_GENERATE, ARG, RAND:2 + 17
+ELSE
+	CALL CHAR_SIZE_GENERATE, ARG
+ENDIF
+
+CFLAG:ARG:451 = RESULT:0
+CFLAG:ARG:452 = RESULT:1
+CFLAG:ARG:453 = RESULT:2
+CFLAG:ARG:454 = RESULT:3
+CFLAG:ARG:455 = RESULT:4
+CFLAG:ARG:456 = RESULT:5
+CFLAG:ARG:457 = RESULT:6
+
+;---------------------------------------------------------
+@CHAR_AGE_EXPECT(ARG)
+;---------------------------------------------------------
+;根据经历推算相对年龄
+;返回值位于(-16,+18~30)
+#FUNCTION
+#DIM EXP_AGE
+
+SWAP TARGET, ARG
+
+EXP_AGE = 0
+
+;魁梧		年齢较大
+	SIF TALENT:99 
+		EXP_AGE++
+
+;娇小		年齢较小
+	SIF TALENT:100
+		EXP_AGE--
+
+;娇小且為男性		年齢较小
+	SIF TALENT:100
+		EXP_AGE-=3		
+		
+;贫乳
+	SIF TALENT:109
+		EXP_AGE--
+
+;巨乳
+	SIF TALENT:110
+		EXP_AGE++
+
+;爆乳
+	SIF TALENT:114
+		EXP_AGE++
+;超乳
+	SIF TALENT:119
+		EXP_AGE++
+
+;绝壁
+	SIF TALENT:116
+		EXP_AGE--
+
+;幼稚
+	SIF TALENT:132
+		EXP_AGE-=2
+
+;未熟
+	SIF TALENT:135
+		EXP_AGE-=2
+		
+;恋母情结 恋父情结
+	SIF TALENT:140 || TALENT:141
+		EXP_AGE-=2
+
+;萝莉控 || 正太控
+	SIF TALENT:142 || TALENT:143
+		EXP_AGE+=2
+
+;人妻
+	SIF TALENT:157
+		EXP_AGE+=6
+
+;肌肉型
+	SIF TALENT:248
+		EXP_AGE++
+	
+	SELECTCASE TALENT:315
+;学生 小偷 乞丐 奴隶
+	CASE 1,6,7,20
+		EXP_AGE-=4
+;巫女 圣女
+	CASE 11,12
+		EXP_AGE--
+;妓女 軍人 
+	CASE 2,19
+		EXP_AGE+=4
+;主妇
+	CASE 21
+		EXP_AGE+=6
+	ENDSELECT
+
+;经历无尽悲伤后
+	SIF TALENT:316 == 6
+		EXP_AGE+=2
+		
+;故郷の恋人 憧憬的那个人
+	SIF TALENT:317 == 4 || TALENT:317 == 11
+		EXP_AGE+=2
+
+;生育经验
+	IF EXP:60
+		EXP_AGE+=6
+;性交経験
+	ELSEIF EXP:5
+		EXP_AGE+=4
+;自慰经验
+	ELSEIF EXP:10
+		EXP_AGE+=2
+;处女|童真
+	ELSEIF !TALENT:0 && !TALENT:1
+		EXP_AGE++
+	ENDIF
+
+SWAP TARGET, ARG
+
+RETURNF EXP_AGE
+
+
+;---------------------------------------------------------
+@CHAR_AGE_GENERATE, ARG
+;---------------------------------------------------------
+;キャラクターの年齢を設定
+;ARG	キャラクターID
+#DIM L_I
+#DIM CHAR_AGE
+#DIM RACE_AGE
+#DIM EXP_AGE
+#DIM KEEP_TARGET
+#DIM BORDER_AGE
+#DIM FAMILY_TYPE,10
+#DIM L_DATA,100
+#DIM L_B
+#DIM L_B_TYPE
+
+;TARGETを退避
+KEEP_TARGET = TARGET
+TARGET = ARG
+
+
+;===年齢の算出===
+
+;根据经历推测年龄
+EXP_AGE = CHAR_AGE_EXPECT(TARGET)
+;+18(31) -15
+
+EXP_AGE = 17 + EXP_AGE
+
+LOCAL = EXP_AGE
+
+EXP_AGE = LIMIT(EXP_AGE,12,35)
+
+CALL NORMAL_POINT_PICKUP(EXP_AGE)
+CHAR_AGE = RESULT
+
+;家族成员的年龄
+BORDER_AGE = -1
+
+
+; [IF_DEBUG]
+; ;家族
+; IF CFLAG:TARGET:604 > 0 && CFLAG:TARGET:605 > 0
+	; FAMILY_TYPE = CFLAG:TARGET:605
+	; FAMILY_TYPE:1 = FAMILY_TYPE % 10
+	; CALL SEARCH_FAMILY, TARGET
+	; FAMILY_TYPE:4 = RESULT
+	; SIF (FAMILY_TYPE:2 >= 0)
+		; BORDER_AGE = CFLAG:(FAMILY_TYPE:2):451
+; ENDIF
+
+; ;目标为孩子的母亲
+; IF (FAMILY_TYPE:1 == 7 || FAMILY_TYPE:1 == 8) && BORDER_AGE >= 0
+	; SIF BORDER_AGE + 12 > CHAR_AGE
+		; CHAR_AGE = BORDER_AGE + 12 + ABS(CHAR_AGE - 17)
+; ENDIF
+
+; ;原母亲与孩子的年龄数值
+; ;BORDER_AGE + 12 + RAND:6
+; ;RAND:7 + 12
+; [ENDIF]
+
+
+;新家族系统
+;1,兄 2,姊 3,弟 4,妹 5,父 6,母 7,儿 8,娘
+CALL RF_ALL(TARGET, -1, L_DATA, 1)
+FOR L_I, 0, RESULT
+	L_B = L_DATA:(L_I *2)
+	L_B_TYPE = L_DATA:(L_I *2+1)
+	IF (L_B == 1 || L_B == 2)
+		CHAR_AGE = MIN(CHAR_AGE, CFLAG:L_B:451)
+	ELSEIF (L_B == 3 || L_B == 4)
+		CHAR_AGE = MAX(CHAR_AGE, CFLAG:L_B:451)
+	ELSEIF (L_B == 5 || L_B == 6)
+		CHAR_AGE = MAX(10,MIN(CHAR_AGE,CFLAG:L_B:451-6))
+	ELSEIF (L_B == 7 || L_B == 8)
+		CHAR_AGE = MAX(CHAR_AGE, CFLAG:L_B:451+6)
+	ENDIF
+NEXT
+
+;（stick增加）后代年龄按相当于人类10岁设定
+SIF EX_TALENT:ARG:2
+    CHAR_AGE = 10
+	
+;PRINTFORML %SAVESTR:TARGET,10,LEFT%年龄期望{LOCAL,2,LEFT}实际{CHAR_AGE,2,LEFT}
+
+
+CALL RACE_AGE_GENERATE, CHAR_AGE, TALENT:314
+RACE_AGE = RESULT
+
+;TARGETを戻す
+TARGET = KEEP_TARGET
+;若是人类年龄低于14即为未熟
+SIF CHAR_AGE <= 14
+	TALENT:ARG:135 = 1
+RETURN CHAR_AGE, RACE_AGE
+
+;---------------------------------------------------------
+@RACE_AGE_GENERATE, ARG:0, ARG:1
+;---------------------------------------------------------
+;キャラクターの种族年齢を設定
+;ARG:0	人間換算年齢
+;ARG:1	TALENT:314の数値
+;1 精灵		0
+;2 人狼		1
+;3 吸血鬼	2
+;4 无头骑士	3
+;5 龙族		4
+;6 天使		5
+;10 霍比特人	6
+;11 矮人		7
+#DIM RACE_ID
+#DIM RACE_AGE
+#DIM RACE_CLA
+#DIM RACE_NUM
+#DIM RACE_DEG
+#DIM CAL_VAR, 2
+
+
+;一応堕落种族は別
+IF ARG:1 >= 7 && ARG:1 < 10
+;ダークエルフ
+	SIF ARG:1 == 7
+		RACE_ID = 0
+;堕天使
+	SIF ARG:1 == 8
+		RACE_ID = 5
+;魔族
+;細かいところは判定しようがないので人間換算年齢を返す
+	RETURN ARG:0
+
+ELSE
+;种族IDから処理用の数値へ
+	RACE_ID = ARG:1 - 1
+	SIF RACE_ID > 8
+		RACE_ID -= 3
+ENDIF
+
+;コンフィグで設定された种族ごとの設定値を取得
+IF RACE_ID < 0
+	RACE_CLA = 1
+ELSEIF RACE_ID > 5
+	RACE_CLA = FLAG:27 / POWER(1000, (RACE_ID - 6)) % 1000
+ELSE
+	RACE_CLA = FLAG:26 / POWER(1000, (RACE_ID)) % 1000
+ENDIF
+
+RACE_DEG = RACE_CLA / 10 % 10
+RACE_NUM = RACE_CLA % 10
+RACE_CLA = RACE_CLA / 100
+
+;年齢の整数倍
+IF RACE_CLA == 0
+	RACE_AGE = ARG:0 * RACE_NUM * POWER(10, RACE_DEG) + RAND:(RACE_NUM * POWER(10, RACE_DEG))
+;年齢の小数倍
+ELSEIF RACE_CLA == 1
+	RACE_AGE = ARG:0 * (RACE_DEG * 10 + RACE_NUM) / 10
+;0～上限
+ELSEIF RACE_CLA == 2
+;桁の出方を偏らせてみる
+	CAL_VAR:0 = RACE_NUM * POWER(10, RACE_DEG)
+	STRLENFORM {CAL_VAR:0}
+	CAL_VAR:1 = POWER(10, RAND:(RESULT + 1)) * 10
+	SIF CAL_VAR:0 > CAL_VAR:1
+		CAL_VAR:0 = CAL_VAR:1
+	RACE_AGE = RAND:(CAL_VAR:0)
+;上限 / 2～上限
+ELSEIF RACE_CLA == 3
+	RACE_AGE = RAND:(RACE_NUM * POWER(10, RACE_DEG) / 2) + RACE_NUM * POWER(10, RACE_DEG) / 2
+;年齢～上限
+ELSEIF RACE_CLA == 4
+;桁の出方を偏らせてみる
+;	RACE_AGE = RAND:(RACE_NUM * POWER(10, RACE_DEG) - ARG:0) + ARG:0
+	CAL_VAR:0 = (RACE_NUM * POWER(10, RACE_DEG))
+	STRLENFORM {CAL_VAR:0}
+	RACE_AGE = 10
+	FOR CAL_VAR:1, 0, RESULT + 1
+		IF RAND:5 < 2
+			BREAK
+		ELSE
+			RACE_AGE *= 10
+		ENDIF
+	NEXT
+	SIF RACE_AGE > CAL_VAR:0
+		RACE_AGE = CAL_VAR:0
+	SIF ARG:0 >= RACE_AGE
+		RACE_AGE = ARG:0 + 1
+	RACE_AGE = RAND:(RACE_AGE - ARG:0) + ARG:0
+ENDIF
+
+RETURN RACE_AGE
+
+;---------------------------------------------------------
+@HUMAN_AGE_GENERATE, ARG:0, ARG:1
+;---------------------------------------------------------
+;キャラクターの种族年齢を設定
+;ARG:0	种族年齢
+;ARG:1	人物ID
+;1 精灵		0
+;2 人狼		1
+;3 吸血鬼	2
+;4 无头骑士	3
+;5 龙族		4
+;6 天使		5
+;10 霍比特人	6
+;11 矮人		7
+#DIM RACE_NO
+#DIM RACE_ID
+#DIM HUMAN_AGE
+#DIM RACE_CLA
+#DIM RACE_NUM
+#DIM RACE_DEG
+#DIM CAL_VAR, 2
+
+RACE_NO = TALENT:(ARG:1):314
+
+;一応堕落种族は別
+IF RACE_NO >= 7 && RACE_NO < 10
+;ダークエルフ
+	SIF RACE_NO == 7
+		RACE_ID = 0
+;堕天使
+	SIF RACE_NO == 8
+		RACE_ID = 5
+;魔族
+;細かいところは判定しようがないので人間換算年齢を返す
+	RETURN ARG:0
+
+ELSE
+;种族IDから処理用の数値へ
+	RACE_ID = RACE_NO - 1
+	SIF RACE_ID > 8
+		RACE_ID -= 3
+ENDIF
+
+;コンフィグで設定された种族ごとの設定値を取得
+IF RACE_ID < 0
+	RACE_CLA = 1
+ELSEIF RACE_ID > 5
+	RACE_CLA = FLAG:27 / POWER(1000, (RACE_ID - 6)) % 1000
+ELSE
+	RACE_CLA = FLAG:26 / POWER(1000, (RACE_ID)) % 1000
+ENDIF
+
+RACE_DEG = RACE_CLA / 10 % 10
+RACE_NUM = RACE_CLA % 10
+RACE_CLA = RACE_CLA / 100
+
+;年齢の整数倍
+IF RACE_CLA == 0
+	HUMAN_AGE = ARG:0 /(RACE_NUM * POWER(10, RACE_DEG)) 
+;年齢の小数倍
+ELSEIF RACE_CLA == 1
+	HUMAN_AGE = (ARG:0 * 10 + 5) /(RACE_DEG * 10 + RACE_NUM)
+;0～上限
+ELSE
+    HUMAN_AGE = CFLAG:(ARG:1):452
+ENDIF
+
+RETURN HUMAN_AGE
+;---------------------------------------------------------
+@CHAR_SIZE_GENERATE, ARG:0, CHAR_AGE = 0, ARG:2 = 0
+;---------------------------------------------------------
+;キャラクターの身長などを設定
+;ARG:0	キャラクターID
+;CHAR_AGE	キャラクターの年齢（必須ではない）
+;ARG:2	サイズ決定モード … 0:通常用  1:胸围変化用
+#DIM CHAR_AGE
+#DIM RACE_AGE
+#DIM CHAR_HEIGHT
+#DIM CHAR_WEIGHT
+#DIM CHAR_BUST
+#DIM CHAR_BUST_T
+#DIM CHAR_BUST_U
+#DIM CHAR_WAIST
+#DIM CHAR_HIP
+#DIM LCOUNT
+#DIM CAL_VAR
+
+#DIM HEIGHT_MAX
+#DIM HEIGHT_MIN
+
+#DIM KEEP_TARGET
+#DIM CHAR_BUST_BEFORE
+#DIM CHAR_BUST_T_BEFORE
+#DIM CHAR_BUST_U_BEFORE
+#DIM CAL_VAR_BEFORE
+;TARGETを退避
+KEEP_TARGET = TARGET
+TARGET = ARG:0
+
+;===年齢の算出===
+IF CHAR_AGE <= 0
+	CALL CHAR_AGE_GENERATE, ARG:0
+	CHAR_AGE = RESULT:0
+	RACE_AGE = RESULT:1
+ENDIF
+
+;===只变化胸围===
+IF ARG:2 == 1
+	CHAR_HEIGHT = CFLAG:453 * 100
+	CHAR_WEIGHT = CFLAG:454 * 100
+	CHAR_BUST_BEFORE = CFLAG:455 * 100
+	CHAR_BUST_T_BEFORE = CFLAG:458 * 100
+	CHAR_BUST_U_BEFORE = CFLAG:459 * 100
+	GOTO CALC_BUST
+	;CALL CHAR_BUST_GENERATE(CHAR_AGE, CHAR_HEIGHT)
+	;CHAR_BUST_U = RESULT:1
+	;CHAR_BUST_T = RESULT:2
+	;RETURN CHAR_WEIGHT / 100, CHAR_BUST / 100
+ENDIF
+
+;IF ARG:2 == 1
+;	CHAR_AGE = ARG:1
+;	CHAR_HEIGHT = CFLAG:(ARG:0):453 * 100
+;	GOTO CALC_BUST
+;ENDIF
+;===身高/体重的计算===
+HEIGHT_MAX = 180000
+HEIGHT_MIN = 140000
+
+SIF TALENT:122
+	HEIGHT_MAX += 25000
+
+;大柄の身長最低値を設定
+IF TALENT:99
+	HEIGHT_MAX = 999000
+	HEIGHT_MIN = 170000
+ENDIF
+
+;小柄体型の身長最高値を設定
+IF TALENT:100
+	HEIGHT_MAX = 160000
+	HEIGHT_MIN = 0
+ENDIF
+
+
+
+
+
+CALL CHAR_HWEIGHT_GENERATE(CHAR_AGE)
+CHAR_HEIGHT = RESULT
+CHAR_WEIGHT = RESULT:1
+;==============原版身高計算START=============
+;DO
+
+;体型素質に合致する身長が出るまで何回かループ
+;	FOR LCOUNT, 0, 5
+;===身長の算出===
+;乱数値＋性別による基礎が身長である
+;		IF TALENT:122
+;			CHAR_HEIGHT = 115000
+;		ELSE
+;			CHAR_HEIGHT = 110000 + (RAND:134 + RAND:134 + RAND:133) * 100
+;			SIF RAND:5 == 0
+;				CHAR_HEIGHT += RAND:100 * 100
+;			SIF RAND:5 == 0
+;				CHAR_HEIGHT -= RAND:100 * 100
+;		ENDIF
+
+;精灵は身長高め
+;		SIF TALENT:314 == 1
+;			CHAR_HEIGHT += (RAND:8 * 1000)
+
+;龙族は身長高め
+;		SIF TALENT:314 == 5
+;			CHAR_HEIGHT += RAND:16 * 1000
+
+;暗黑精灵は身長高め
+;		SIF TALENT:314 == 7
+;			CHAR_HEIGHT += RAND:8 * 1000
+
+;霍比特人は身長低め
+;		SIF TALENT:314 == 10
+;			CHAR_HEIGHT -= RAND:8 * 1000
+
+;矮人は身長低め
+;		SIF TALENT:314 == 11
+;			CHAR_HEIGHT -= RAND:8 * 1000
+
+;年齢補正（1から17までを-補正）
+;		IF CHAR_AGE < 13
+;			CHAR_HEIGHT = CHAR_HEIGHT * (18 + CHAR_AGE) / 32
+;		ELSEIF CHAR_AGE == 13
+;			CHAR_HEIGHT = CHAR_HEIGHT * 77 / 80
+;		ELSEIF CHAR_AGE < 18
+;			CHAR_HEIGHT = CHAR_HEIGHT * (160 - CHAR_AGE) / 160
+;		ENDIF
+
+;身長決定
+;		CHAR_HEIGHT += (250 + RAND:20 + RAND:20 + RAND:20 + RAND:20 + RAND:20) * 100
+
+		;体型素質に合致した時点でループを抜ける
+		SIF CHAR_HEIGHT > HEIGHT_MIN && CHAR_HEIGHT < HEIGHT_MAX
+;			BREAK
+;	NEXT
+
+;何度かループしても合致しなかったら年齢から見直す
+;LOOP CHAR_HEIGHT <= HEIGHT_MIN || CHAR_HEIGHT >= HEIGHT_MAX
+;==============原版身高計算END===============
+
+;===ウェストの算出===
+;ウェストの基礎値算出
+CHAR_WAIST = (CHAR_HEIGHT * (3700 + TALENT:308)) / 10000
+;性別補正
+IF TALENT:122
+	CHAR_WAIST += 8000 
+	CHAR_WAIST -= RAND:4000
+ENDIF
+;非現実補正
+SIF CHAR_WAIST > 60000
+	CHAR_WAIST = CHAR_WAIST * 983 / 1000
+;素質による修正
+;魅惑
+SIF TALENT:91
+	CHAR_WAIST = CHAR_WAIST * 96 /100
+;肌肉型
+SIF TALENT:248
+	CHAR_WAIST = CHAR_WAIST * 102 /100
+SIF TALENT:248 && TALENT:122
+	CHAR_WAIST = CHAR_WAIST * 105 /100
+;肥胖
+SIF TALENT:115
+	CHAR_WAIST = CHAR_WAIST * 115 /100
+;虚弱
+SIF TALENT:256
+	CHAR_WAIST = CHAR_WAIST * 98 /100
+;ドワーフを寸胴気味に
+SIF TALENT:314 == 11
+	CHAR_WAIST = CHAR_WAIST * 104 /100
+;ウェスト決定
+
+
+;===胸围の算出===
+$CALC_BUST
+CALL CHAR_BUST_GENERATE(CHAR_AGE, CHAR_HEIGHT)
+CHAR_BUST_U = RESULT:1
+CHAR_BUST_T = RESULT:2
+
+;===========================原版胸圍算法START=====================
+;CALL UNDER_BUST, ARG:0, CHAR_HEIGHT / 100
+;CHAR_BUST_U = RESULT * 100
+
+;胸系素質で基礎値変化 
+
+;絶壁のサイズ指定
+;IF TALENT:116
+;	CHAR_BUST_T = 1000 + RAND:40 * 100
+;貧乳のサイズ指定
+;ELSEIF TALENT:109
+;	CHAR_BUST_T = 7000 + RAND:60 * 100
+;巨乳のサイズ指定
+;ELSEIF TALENT:110 || TALENT:114 || TALENT:119
+;	CHAR_BUST_T = 20000 + RAND:2500
+;爆乳のサイズ指定
+;	IF TALENT:114
+;		CHAR_BUST_T += 5000 + RAND:5000
+;ランダムでさらに巨きく
+;		IF RAND:2 == 0
+;			CHAR_BUST_T += 18000 + RAND:2000 + RAND:2000 + RAND:3000
+;		ENDIF
+;超乳のサイズ指定
+;	ELSEIF TALENT:119
+		;爆乳のランダムをこちらへ
+;		CHAR_BUST_T += 5000 + RAND:5000
+;		CHAR_BUST_T += 18000 + RAND:2000 + RAND:2000 + RAND:3000
+;	ENDIF
+;普乳のサイズ指定
+;ELSE
+;	CHAR_BUST_T = 13200 + RAND:40 * 100
+;ENDIF
+
+
+;年齢補正(微量)
+;SIF CHAR_AGE < 16
+;	CHAR_BUST_T -= 2000 - CHAR_AGE * 100
+;===========================原版胸圍算法END========================
+;$CALC_BUST
+;小柄だからって貧乳とも限らないよね補正(巨乳未満)
+SIF TALENT:100 && TALENT:110
+	CHAR_BUST_T += 1500 + RAND:1000
+;大柄時のマイナス補正
+SIF TALENT:99
+	CHAR_BUST_T -= 2000 + RAND:1000
+;出産経験があれば微量にサイズ補正
+SIF EXP:60 > 0
+	CHAR_BUST_T += 200 + RAND:800
+;超乳で母乳素質
+SIF TALENT:130 && TALENT:119
+	CHAR_BUST_T += 8500 + RAND:4000
+;バスト決定
+CHAR_BUST = CHAR_BUST_U + CHAR_BUST_T
+CFLAG:458 = CHAR_BUST_T / 100
+CFLAG:459 = CHAR_BUST_U / 100
+;おっぱい変化のために飛んで来た方、次は体重測定ですよ
+SIF ARG:2 == 1
+	GOTO CALC_WEIGHT
+
+;===ヒップの算出===
+;ヒップの基礎値算出
+CHAR_HIP = (CHAR_HEIGHT * (5300 + TALENT:308)) / 10000
+
+;魅惑
+SIF TALENT:91
+	CHAR_HIP += 1500
+;肌肉型
+SIF TALENT:248
+	CHAR_HIP = CHAR_HIP * 102 /100
+;虚弱
+SIF TALENT:256
+	CHAR_HIP = CHAR_HIP * 98 /100
+;小柄と妹はやや小さめに補正してみる
+SIF TALENT:100
+	TIMES CHAR_HIP , 0.96
+;男性臀部稍微縮小
+SIF TALENT:122
+	TIMES CHAR_HIP , 0.90
+;肥胖
+SIF TALENT:115
+	CHAR_HIP = CHAR_HIP * 115 /100
+;ヒップ決定
+
+
+;修正年龄较小时大臀瘦胸的问题
+SIF CHAR_AGE < 16
+	CHAR_HIP = MAX(MIN(CHAR_HIP, CHAR_BUST + MAX(CHAR_AGE - 12,0)*1000), CHAR_WAIST)
+
+;#;LOCAL = CHAR_WEIGHT
+$CALC_WEIGHT
+;==============原版體重計算START=============
+;===体重の算出===
+;BMIを基準に基本値を算出
+;CHAR_WEIGHT = CHAR_HEIGHT * CHAR_HEIGHT * 21 / (1250 - TALENT:308) / 10000
+
+;筋肉質
+;SIF TALENT:248
+;	CHAR_WEIGHT = CHAR_WEIGHT * 107 /100
+;虚弱
+;SIF TALENT:256
+;	CHAR_WEIGHT = CHAR_WEIGHT * 98 /100
+
+;==============原版體重計算END=============
+;バストによる重量加算（オーバーフロー対策の小分け）
+CAL_VAR = CHAR_BUST_U * CHAR_BUST_U / 100000000
+CAL_VAR = CAL_VAR * CHAR_BUST_T / 100000
+CAL_VAR = CAL_VAR * CHAR_BUST_T / 100000
+;僅胸圍變化的情況
+IF ARG:2 == 1
+	CAL_VAR_BEFORE = CHAR_BUST_U_BEFORE * CHAR_BUST_U_BEFORE / 100000000
+	CAL_VAR_BEFORE = CAL_VAR_BEFORE * CHAR_BUST_T_BEFORE / 100000
+	CAL_VAR_BEFORE = CAL_VAR_BEFORE * CHAR_BUST_T_BEFORE / 100000
+	CAL_VAR = CAL_VAR - CAL_VAR_BEFORE
+	E:1 = CAL_VAR
+ENDIF
+;合計
+CHAR_WEIGHT = CHAR_WEIGHT + ( CAL_VAR * 250 )
+;体重決定
+
+
+;种族年齢の設定
+SIF TALENT:314 == 0
+	RACE_AGE = CHAR_AGE
+
+
+; [IF_DEBUG]
+
+; PRINTFORM %SAVESTR:TARGET,10,LEFT%{CHAR_AGE,2}岁 身高{CHAR_HEIGHT/100,4} 体重{CHAR_WEIGHT/100,3} 三围{CHAR_BUST/100,4},{CHAR_WAIST/100,4},{CHAR_HIP/100,4} 
+
+; CFLAG:455 = CHAR_BUST / 100
+; CFLAG:453 = CHAR_HEIGHT / 100
+
+; CALL CUP_SIZE, TARGET
+	; PRINTS RESULTS
+; PRINT  
+
+; SIF TALENT:116
+	; PRINT [绝壁]
+; SIF TALENT:109
+	; PRINT [贫乳]
+
+; SIF TALENT:110
+	; PRINT [巨乳]
+; SIF TALENT:114
+	; PRINT [爆乳]
+; SIF TALENT:119
+	; PRINT [超乳]
+	
+; SIF TALENT:100
+	; PRINT [娇小]
+; SIF TALENT:99
+	; PRINT [魁梧]
+
+; SIF TALENT:314 == 1 || TALENT:314 == 7
+	; PRINT [精灵]
+; SIF TALENT:314 == 5
+	; PRINT [龙族]
+; SIF TALENT:314 == 10
+	; PRINT [霍比特]
+; SIF TALENT:314 == 11
+	; PRINT [矮人]
+	
+; SIF TALENT:种族2 == 7
+	; PRINT [巨人]
+; SIF TALENT:种族2 == 6
+	; PRINT [妖精]	
+	
+; PRINTL
+; [ENDIF]
+
+
+;TARGETを戻す
+TARGET = KEEP_TARGET
+
+RETURN CHAR_AGE, RACE_AGE, CHAR_HEIGHT / 100, CHAR_WEIGHT / 100, CHAR_BUST / 100, CHAR_WAIST / 100, CHAR_HIP / 100
+
+;---------------------------------------------------------
+@UNDER_BUST, ARG:0, ARG:1
+;---------------------------------------------------------
+;下胸围的计算
+;ARG:0	キャラクターID
+;ARG:1	キャラクターの身長
+#DIM CHAR_BUST_U
+CHAR_BUST_U = ARG:1 * (43100 + TALENT:(ARG:0):308) / 100000
+
+;肌肉型
+SIF TALENT:(ARG:0):248
+	CHAR_BUST_U = CHAR_BUST_U * 105 /100
+;虚弱
+SIF TALENT:(ARG:0):256
+	CHAR_BUST_U = CHAR_BUST_U * 98 /100
+
+RETURN CHAR_BUST_U
+
+;---------------------------------------------------------
+@CUP_SIZE, ARG
+;---------------------------------------------------------
+;罩杯=(上胸围 - 下胸围)/2.5cm
+; A - 10cm; B - 12.5cm; C - 15cm
+;ARG	キャラクターID
+#DIM CAL_VAR
+
+CALL UNDER_BUST, ARG, CFLAG:ARG:453
+
+CAL_VAR = (CFLAG:ARG:455 - RESULT) / 25
+SIF CAL_VAR <= 1
+	RESULTS:0 = -
+SIF CAL_VAR == 2
+	RESULTS:0 = AAA
+SIF CAL_VAR == 3
+	RESULTS:0 = AA
+SIF CAL_VAR == 4
+	RESULTS:0 = A
+SIF CAL_VAR == 5
+	RESULTS:0 = B
+SIF CAL_VAR == 6
+	RESULTS:0 = C
+SIF CAL_VAR == 7
+	RESULTS:0 = D
+SIF CAL_VAR == 8
+	RESULTS:0 = E
+SIF CAL_VAR == 9
+	RESULTS:0 = F
+SIF CAL_VAR == 10
+	RESULTS:0 = G
+SIF CAL_VAR == 11
+	RESULTS:0 = H
+SIF CAL_VAR == 12
+	RESULTS:0 = I
+SIF CAL_VAR == 13
+	RESULTS:0 = J
+SIF CAL_VAR == 14
+	RESULTS:0 = K
+SIF CAL_VAR == 15
+	RESULTS:0 = L
+SIF CAL_VAR == 16
+	RESULTS:0 = M
+SIF CAL_VAR == 17
+	RESULTS:0 = N
+SIF CAL_VAR == 18
+	RESULTS:0 = O
+SIF CAL_VAR == 19
+	RESULTS:0 = P
+SIF CAL_VAR == 20
+	RESULTS:0 = Q
+SIF CAL_VAR == 21
+	RESULTS:0 = R
+SIF CAL_VAR == 22
+	RESULTS:0 = S
+SIF CAL_VAR == 23
+	RESULTS:0 = T
+SIF CAL_VAR == 24
+	RESULTS:0 = U
+SIF CAL_VAR == 25
+	RESULTS:0 = V
+SIF CAL_VAR == 26
+	RESULTS:0 = W
+SIF CAL_VAR == 27
+	RESULTS:0 = X
+SIF CAL_VAR == 28
+	RESULTS:0 = Y
+SIF CAL_VAR == 29
+	RESULTS:0 = Z
+
+RETURN 0
+
+;--------------------------------------------------
+@CONFIG_AGE_SETTING
+;--------------------------------------------------
+;年齢・スリーサイズの設定を変更する
+#DIM LCOUNT
+
+DO
+	PRINTFORML 　　[0] 年龄的显示　　　　　　　　　　　　\@ GETBIT(FLAG:5,12) ? ON # OFF \@
+
+	SIF GETBIT(FLAG:5,12) == 0
+		SETCOLOR 112, 112, 112
+	PRINTFORM 　　　　[\@ GETBIT(FLAG:5,12) ? 1 # - \@] 使用不同种族的年龄设定　　　　\@ GETBIT(FLAG:5,13) ? ON # OFF \@
+
+	SIF GETBIT(FLAG:5,13)
+		PRINTFORM 　　[9] 详细设定
+	PRINTL
+	RESETCOLOR
+
+	SIF GETBIT(FLAG:5,13) == 0
+		SETCOLOR 112, 112, 112
+	PRINTFORML 　　　　　　[\@ GETBIT(FLAG:5,13) ? 2 # - \@] 显示换算成人类的年龄　　　\@ GETBIT(FLAG:5,14) ? ON # OFF \@
+	RESETCOLOR
+
+	PRINTFORML 　　[3] 显示三围数据　　　　　　　　　　　\@ GETBIT(FLAG:5,15) ? ON # OFF \@
+	DRAWLINE
+	PRINTL [100] 返回
+	INPUT
+
+	IF RESULT == 0
+		INVERTBIT FLAG:5,12
+	ELSEIF RESULT == 1
+		INVERTBIT FLAG:5,13
+	ELSEIF RESULT == 2
+		INVERTBIT FLAG:5,14
+	ELSEIF RESULT == 3
+		INVERTBIT FLAG:5,15
+	ELSEIF RESULT == 9
+		IF FLAG:26 == 0
+			FLAG:26 = 232015325431115011
+			FLAG:27 = 001001
+		ENDIF
+
+		CALL RACE_CONFIG
+	ELSEIF RESULT == 100
+		BREAK
+	ENDIF
+LOOP 1
+;年齢・身長などを使用する場合は全キャラに設定
+IF GETBIT(FLAG:5,12) || GETBIT(FLAG:5,15)
+
+	IF FLAG:26 == 0
+		FLAG:26 = 232015325431115011
+		FLAG:27 = 001001
+	ENDIF
+	
+	RANDOMIZE GETMILLISECOND()
+	FOR LCOUNT, 0, CHARANUM
+		SIF LCOUNT == 0
+			CONTINUE
+		IF CFLAG:(LCOUNT):451 == 0
+;村娘Ａ・Ｂのみ年齢を指定してみる
+			IF TALENT:LCOUNT:165
+				CALL CHAR_SIZE_GENERATE, LCOUNT, RAND:5 + 11
+			ELSEIF TALENT:LCOUNT:171
+				CALL CHAR_SIZE_GENERATE, LCOUNT, RAND:5 + 14
+			ELSE
+				CALL CHAR_SIZE_GENERATE, LCOUNT
+			ENDIF
+			CFLAG:(LCOUNT):451 = RESULT:0
+			CFLAG:(LCOUNT):452 = RESULT:1
+			CFLAG:(LCOUNT):453 = RESULT:2
+			CFLAG:(LCOUNT):454 = RESULT:3
+			CFLAG:(LCOUNT):455 = RESULT:4
+			CFLAG:(LCOUNT):456 = RESULT:5
+			CFLAG:(LCOUNT):457 = RESULT:6
+		ENDIF
+	NEXT
+ENDIF
+;---------------------------------------------------------
+@RACE_CONFIG
+;---------------------------------------------------------
+;実際の素質表示に使われる种族ID
+;1 エルフ	0
+;2 人狼		1
+;3 吸血鬼	2
+;4 デュラハン	3
+;5 ドラゴン	4
+;6 天使		5
+;10 ホビット	6
+;11 ドワーフ	7
+#DIM LCOUNT
+;計算用変数
+#DIM CAL_VAR
+;现在表示している种族
+#DIM RACE_FLAG
+;种族ごとの設定値
+#DIM RACE_CLA, 10
+#DIM RACE_NUM, 10
+#DIM RACE_DEG, 10
+;変更中种族の表示用変数
+;0:方法　1:整数倍の桁　2:整数倍のn　3:ランダムの下限　4:ランダムの桁　5:ランダムのn
+#DIM SET_VAR, 6
+#DIM DIS_FLAG
+#DIMS PRINT_STR, 2
+
+;計算用変数にフラグを代入
+CAL_VAR = FLAG:26
+FOR LCOUNT, 0, 8
+;フラグの3桁の数値を切り分け
+	RACE_CLA:LCOUNT = CAL_VAR % 1000 / 100
+	RACE_DEG:LCOUNT = CAL_VAR % 100 / 10
+	RACE_NUM:LCOUNT = CAL_VAR % 10
+;1/1000して次の种族へ
+	CAL_VAR /= 1000
+	SIF LCOUNT == 5
+		CAL_VAR = FLAG:27
+NEXT
+
+$SETTING_TOP
+
+PRINTFORM 　　 种族　　　　设定　　　　　　　　　　　　　　　
+SETCOLOR 40, 128, 255
+PRINTFORML 相当于人类17岁的年龄
+RESETCOLOR
+
+;各种族の现在設定を表示
+FOR LCOUNT, 0, 8
+	IF LCOUNT == 0
+		PRINTFORM [{LCOUNT}] 精灵　　　　
+	ELSEIF LCOUNT == 1
+		PRINTFORM [{LCOUNT}] 狼人　　　　
+	ELSEIF LCOUNT == 2
+		PRINTFORM [{LCOUNT}] 吸血鬼　　　
+	ELSEIF LCOUNT == 3
+		PRINTFORM [{LCOUNT}] 无头骑士　　
+	ELSEIF LCOUNT == 4
+		PRINTFORM [{LCOUNT}] 龙族　　　　
+	ELSEIF LCOUNT == 5
+		PRINTFORM [{LCOUNT}] 天使　　　　
+	ELSEIF LCOUNT == 6
+		PRINTFORM [{LCOUNT}] 霍比特人　　
+	ELSEIF LCOUNT == 7
+		PRINTFORM [{LCOUNT}] 矮人　　　　
+	ENDIF
+
+	IF RACE_CLA:LCOUNT == 0 && RACE_NUM:LCOUNT == 1 && RACE_DEG:LCOUNT == 0
+		PRINT_STR:0 = 和人类一样
+		PRINT_STR:1 = 　　　　　17 岁
+	ELSEIF RACE_CLA:LCOUNT == 0
+		PRINT_STR:0 = 换算成人类年龄的{RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT), 4} 倍
+		PRINT_STR:1 = {17 * RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT), 4} ～ {17 * RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT) + RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT) - 1, 4} 岁
+	ELSEIF RACE_CLA:LCOUNT == 1
+		PRINT_STR:0 = 换算成人类年龄的{RACE_DEG:LCOUNT, 2}.{RACE_NUM:LCOUNT} 倍
+		PRINT_STR:1 = 　　　　{17 * (RACE_DEG:LCOUNT * 10 + RACE_NUM:LCOUNT) / 10, 4} 岁
+	ELSEIF RACE_CLA:LCOUNT == 2
+		PRINT_STR:0 = 　 0 ～ {RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT), 4} 的随机范围
+		PRINT_STR:1 = 　 0 ～ {RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT), 4} 岁
+	ELSEIF RACE_CLA:LCOUNT == 3
+		PRINT_STR:0 = {RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT) / 2, 4} ～ {RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT), 4} 的随机范围
+		PRINT_STR:1 = {RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT) / 2, 4} ～ {RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT), 4} 岁
+	ELSEIF RACE_CLA:LCOUNT == 4
+		PRINT_STR:0 = 年龄 ～ {RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT), 4} 的随机范围
+		PRINT_STR:1 = 　17 ～ {RACE_NUM:LCOUNT * POWER(10, RACE_DEG:LCOUNT), 4} 岁
+	ELSE
+	ENDIF
+	PRINTFORM %PRINT_STR:0, 36, LEFT%
+
+	SETCOLOR 40, 128, 255
+	PRINTFORML %PRINT_STR:1%
+	RESETCOLOR
+NEXT
+
+PRINTL 
+PRINTFORML 　　[98] 使用默认设定　　　　　　　[99] 重新设定种族年龄
+DRAWLINE
+PRINTL [100] 返回
+
+;入力（种族選択）処理
+$INPUT_LOOP1
+INPUT
+
+;种族処理用IDなら次へ
+IF RESULT >= 0 && RESULT < 8
+ELSEIF RESULT == 98
+	PRINTL 全种族的年龄均返回默认值。
+	PRINTL 确认吗？
+	PRINTL 
+	PRINTL [0] 好的
+	PRINTL [1] 呃……年龄这个问题是个大事啊……让我再想想……
+	INPUT
+	IF RESULT == 0
+		FLAG:26 = 232015325431115011
+		FLAG:27 = 001001
+		RETURN 0
+	ELSE
+		GOTO SETTING_TOP
+	ENDIF
+ELSEIF RESULT == 99 || RESULT == 100
+;作業に使っていた変数をFLAG:26、FLAG:27に保存
+	FLAG:26 = 0
+	FOR LCOUNT, 0, 6
+		FLAG:26 *= 1000
+		FLAG:26 += RACE_CLA:(5 - LCOUNT) * 100 + RACE_DEG:(5 - LCOUNT) * 10 + RACE_NUM:(5 - LCOUNT)
+	NEXT
+	FLAG:27 = RACE_CLA:7 * 100 + RACE_DEG:7 * 10 + RACE_NUM:7
+	FLAG:27 = FLAG:27 * 1000 + RACE_CLA:6 * 100 + RACE_DEG:6 * 10 + RACE_NUM:6
+
+	IF RESULT == 99
+		PRINTL 全种族的年龄按现在的设定重新计算。
+		PRINTL 确认吗？
+		PRINTL 
+		PRINTL [0] 好的
+		PRINTL [1] 呃……年龄这个问题是个大事啊……让我再想想……
+		INPUT
+		IF RESULT == 0
+			RANDOMIZE GETMILLISECOND()
+			FOR LCOUNT, 0, CHARANUM
+				SIF LCOUNT == 0
+					CONTINUE
+				CALL RACE_AGE_GENERATE, CFLAG:LCOUNT:451, TALENT:LCOUNT:314
+				CFLAG:LCOUNT:452 = RESULT
+			NEXT
+			GOTO SETTING_TOP
+		ELSE
+			GOTO SETTING_TOP
+		ENDIF
+
+	ENDIF
+
+;設定終了
+	SIF RESULT == 100
+		RETURN 0
+ELSE
+	GOTO INPUT_LOOP1
+ENDIF
+
+;保存されていた种族用フラグを表示用フラグにコピー
+RACE_FLAG = RESULT
+SET_VAR:0 = RACE_CLA:RESULT
+IF SET_VAR:0 <= 1
+	SET_VAR:1 = RACE_DEG:RESULT
+	SET_VAR:2 = RACE_NUM:RESULT
+	SET_VAR:3 = -1
+	SET_VAR:4 = -1
+	SET_VAR:5 = -1
+	DIS_FLAG = SET_VAR:0
+;
+	SIF SET_VAR:0 == 0 && SET_VAR:1 == 0 && SET_VAR:2 == 1
+		DIS_FLAG:0 = -1
+ELSE
+	SET_VAR:1 = -1
+	SET_VAR:2 = -1
+	SET_VAR:3 = RACE_CLA:RESULT
+	SET_VAR:4 = RACE_DEG:RESULT
+	SET_VAR:5 = RACE_NUM:RESULT
+	DIS_FLAG = SET_VAR:0
+ENDIF
+
+DO
+	PRINTL 
+	PRINT ■ 种族 [
+	SIF RACE_FLAG == 0
+		PRINT 精灵
+	SIF RACE_FLAG == 1
+		PRINT 狼人
+	SIF RACE_FLAG == 2
+		PRINT 吸血鬼
+	SIF RACE_FLAG == 3
+		PRINT 无头骑士
+	SIF RACE_FLAG == 4
+		PRINT 龙族
+	SIF RACE_FLAG == 5
+		PRINT 天使
+	SIF RACE_FLAG == 6
+		PRINT 霍比特人
+	SIF RACE_FLAG == 7
+		PRINT 矮人
+	PRINT ] 的年龄设定：
+	IF SET_VAR:0 == 0 && SET_VAR:1 == 0 && SET_VAR:2 == 1
+		PRINTFORML 和人类一样
+	ELSEIF SET_VAR:0 == 0
+		PRINTFORML 换算成人类年龄的{SET_VAR:2 * POWER(10, SET_VAR:1), 4} 倍
+	ELSEIF SET_VAR:0 == 1
+		PRINTFORML 换算成人类年龄的{SET_VAR:1, 2}.{SET_VAR:2} 倍
+	ELSEIF SET_VAR:3 == 2
+		PRINTFORML 　 0 ～ {SET_VAR:5 * POWER(10, SET_VAR:4), 4} 的随机范围
+	ELSEIF SET_VAR:3 == 3
+		PRINTFORML {SET_VAR:5 * POWER(10, SET_VAR:4) / 2, 4} ～ {SET_VAR:5 * POWER(10, SET_VAR:4), 4} 的随机范围
+	ELSEIF SET_VAR:3 == 4
+		PRINTFORML 年龄 ～ {SET_VAR:5 * POWER(10, SET_VAR:4), 4} 的随机范围
+	ELSE
+	ENDIF
+
+	SETCOLOR 40, 128, 255
+	PRINT 　 换算人类 17 岁左右 
+	IF SET_VAR:0 == 0 && SET_VAR:1 == 0 && SET_VAR:2 == 1
+		PRINTL 17 岁
+	ELSEIF SET_VAR:0 == 0
+		PRINTFORML {17 * SET_VAR:2 * POWER(10, SET_VAR:1), 4} ～ {17 * SET_VAR:2 * POWER(10, SET_VAR:1) + SET_VAR:2 * POWER(10, SET_VAR:1) - 1, 4} 岁
+	ELSEIF SET_VAR:0 == 1
+		PRINTFORML {17 * (SET_VAR:1 * 10 + SET_VAR:2) / 10, 4} 岁
+	ELSE
+		IF SET_VAR:3 == 2
+			PRINT  0
+		ELSEIF SET_VAR:3 == 3
+			PRINTFORM {SET_VAR:5 * POWER(10, SET_VAR:4) / 2, 4}
+		ELSE
+			PRINT 　17
+		ENDIF
+		PRINTFORML  ～ {SET_VAR:5 * POWER(10, SET_VAR:4), 4} 岁
+	ENDIF
+	RESETCOLOR
+
+	SIF DIS_FLAG == -1
+		SETCOLOR 0, 255, 80
+	PRINTL 　[101] 和人类一样
+	RESETCOLOR
+	SIF DIS_FLAG == 0
+		SETCOLOR 0, 255, 80
+	PRINTL 　[102] 换算成人类年龄的整数倍
+	RESETCOLOR
+	SIF DIS_FLAG == 1
+		SETCOLOR 0, 255, 80
+	PRINTL 　[103] 换算成人类年龄的小数倍
+	RESETCOLOR
+	SIF DIS_FLAG > 1
+		SETCOLOR 0, 255, 80
+	PRINTL 　[104] 在一定范围内随机
+	RESETCOLOR
+	PRINTL 
+
+	IF DIS_FLAG == 0
+		FOR LCOUNT, 0, 30
+			SIF LCOUNT % 10 > 3 && LCOUNT % 10 != 9
+				CONTINUE
+			SIF LCOUNT % 10 == 0
+				PRINT 　　
+			SIF LCOUNT + 2 == SET_VAR:1 * 10 + SET_VAR:2
+				SETCOLOR 0, 255, 80
+			PRINTFORM [{LCOUNT + 2, 2}]{(LCOUNT + 2) % 10 * POWER(10, (LCOUNT + 2) / 10), 5} 倍　
+			RESETCOLOR
+			SIF LCOUNT % 10 == 9
+				PRINTL 
+		NEXT
+	ELSEIF DIS_FLAG == 1
+		SIF SET_VAR:1 == 0 && SET_VAR:2 == 0
+			SETCOLOR 0, 255, 80
+		PRINTL 　　[ 0]  0.0 倍 （种族的寿命1年以内）
+		RESETCOLOR
+
+		FOR LCOUNT, 0, 30
+			SIF LCOUNT % 10 > 4 && LCOUNT % 10 != 9
+				CONTINUE
+			SIF LCOUNT % 10 == 0
+				PRINT 　　
+			SIF SET_VAR:0 == 1 && LCOUNT + 1 == SET_VAR:1 * 10 + SET_VAR:2
+				SETCOLOR 0, 255, 80
+			PRINTFORM [{LCOUNT + 1, 2}]{(LCOUNT + 1) / 10, 3}.{(LCOUNT + 1) % 10} 倍　
+			RESETCOLOR
+			SIF LCOUNT % 10 == 9
+				PRINTL 
+		NEXT
+	ELSEIF DIS_FLAG > 1
+		PRINTL 　　■ 下限
+
+		SIF SET_VAR:3 == 2
+			SETCOLOR 0, 255, 80
+		PRINTL 　　　[110]  0 岁
+		RESETCOLOR
+
+		SIF SET_VAR:3 == 3
+			SETCOLOR 0, 255, 80
+		PRINTL 　　　[111] 上限的1 / 2
+		RESETCOLOR
+
+		SIF SET_VAR:3 == 4
+			SETCOLOR 0, 255, 80
+		PRINTL 　　　[112] 换算成人类年龄
+		RESETCOLOR
+
+		PRINTL 
+		PRINTL 　　■ 上限
+		FOR LCOUNT, 0, 30
+			SIF LCOUNT % 10 > 4
+				CONTINUE
+			SIF LCOUNT % 10 == 0
+				PRINT 　　　
+			SIF LCOUNT + 21 == SET_VAR:4 * 10 + SET_VAR:5
+				SETCOLOR 0, 255, 80
+			PRINTFORM [{LCOUNT + 21, 2}]{(LCOUNT + 21) % 10 * POWER(10, (LCOUNT + 21) / 10), 5} 岁　
+			RESETCOLOR
+			SIF LCOUNT % 10 == 4
+				PRINTL 
+		NEXT
+		
+	ENDIF
+
+	PRINTL 
+	PRINTL 　[999] 决定
+	DRAWLINE
+	PRINTL [100] 返回
+
+	$INPUT_LOOP2
+	INPUT
+
+;入力した数値が0以上99以下
+	IF RESULT >= 0 && RESULT < 100 && (RESULT % 10 != 0 || DIS_FLAG == 1)
+		IF DIS_FLAG <= 1
+			SET_VAR:0 = DIS_FLAG
+			SET_VAR:1 = RESULT / 10
+			SET_VAR:2 = RESULT % 10
+			SET_VAR:3 = -1
+			SET_VAR:4 = -1
+			SET_VAR:5 = -1
+		ELSE
+			IF SET_VAR:3 > 1
+				SET_VAR:0 = DIS_FLAG
+				SET_VAR:1 = -1
+				SET_VAR:2 = -1
+			ENDIF
+			SET_VAR:4 = RESULT / 10
+			SET_VAR:5 = RESULT % 10
+		ENDIF
+;設定を保存せずに戻る
+	ELSEIF RESULT == 100
+		GOTO SETTING_TOP
+;人間と同じ
+	ELSEIF RESULT == 101
+		DIS_FLAG = -1
+		SET_VAR:0 = 0
+		SET_VAR:1 = 0
+		SET_VAR:2 = 1
+		SET_VAR:3 = -1
+;人間換算年齢の整数倍
+	ELSEIF RESULT == 102
+		DIS_FLAG = 0
+;人間換算年齢の小数倍
+	ELSEIF RESULT == 103
+		DIS_FLAG = 1
+;一定の範囲内からランダム
+	ELSEIF RESULT == 104
+		DIS_FLAG = 10
+;下限	0
+	ELSEIF RESULT == 110
+		SET_VAR:3 = 2
+		IF SET_VAR:4 > 0
+			SET_VAR:0 = DIS_FLAG
+			SET_VAR:1 = -1
+			SET_VAR:2 = -1
+		ENDIF
+;下限	上限の1 / 2
+	ELSEIF RESULT == 111
+		SET_VAR:3 = 3
+		IF SET_VAR:4 > 0
+			SET_VAR:0 = DIS_FLAG
+			SET_VAR:1 = -1
+			SET_VAR:2 = -1
+		ENDIF
+;下限	人間換算年齢
+	ELSEIF RESULT == 112
+		SET_VAR:3 = 4
+		IF SET_VAR:4 > 0
+			SET_VAR:0 = DIS_FLAG
+			SET_VAR:1 = -1
+			SET_VAR:2 = -1
+		ENDIF
+;設定を保存して戻る
+	ELSEIF RESULT == 999
+		IF SET_VAR:0 <= 1
+			RACE_CLA:RACE_FLAG = SET_VAR:0
+			RACE_DEG:RACE_FLAG = SET_VAR:1
+			RACE_NUM:RACE_FLAG = SET_VAR:2
+		ELSE
+			RACE_CLA:RACE_FLAG = SET_VAR:3
+			RACE_DEG:RACE_FLAG = SET_VAR:4
+			RACE_NUM:RACE_FLAG = SET_VAR:5
+		ENDIF
+		GOTO SETTING_TOP
+	ELSE
+	ENDIF
+LOOP 1
+

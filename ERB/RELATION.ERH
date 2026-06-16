@@ -1,0 +1,18 @@
+﻿; C_RELATION是一个(0,0)~(_R_SIZE,CHARANUM-1)的表格
+;
+; | 0			...		_R_SIZE	|
+; | .			...			.	|
+; |CHARANUM-1	...			.	|
+; 
+; 纵轴为登录角色，横轴为C_RELATION的序号
+; (0,0)~(CHARANUM-1,CHARANUM-1)记录了登录角色之间的对应关系
+; 对角线元素为该角色的NID，用于实现行列同步（见CHARA_NAME.ERB）
+; 应当保证 CHARANUM <= _R_SIZE 始终成立
+; 第0行的[CHARANUM,_R_SIZE]内的元素应当为-1
+;
+; C_RELATION_SUB记录了登录角色与虚拟角色（狂王等）的对应关系
+; 1=娼館客 2=良犬 3=魔物 4=狂王
+#DIM SAVEDATA CHARADATA C_RELATION, 200
+#DIM SAVEDATA CHARADATA C_RELATION_SUB, 10
+
+

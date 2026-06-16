@@ -1,0 +1,418 @@
+﻿;=================================================
+;調教可能怪物の購入
+;=================================================;
+;
+;更新履歴＠怪物購入パッチ
+;2015/01/14	作成開始
+;			ENDING.ERBからキャラ追加処理を流用
+;			eraSQNの『召喚』から表示周りの処理を流用
+;2015/01/19	召喚キャラ選択後、召喚を取り消せなかった仕様を修正。
+;			また、召喚を行った後、通常ショップに怪物が販売されるようになるバグを解消。
+;2015/01/31		汎用性アップのため、極力変数を変数名で指定するように改変。
+;				UIを大幅改造。怪物种族で分けるように変更。
+;				従来の点での購入から、召喚先と同系統の怪物を生贄に捧げることで召喚するように変更。
+;
+;=================================================
+;アイテム購入・売却処理画面
+;=================================================
+@MONSTER_SHOP
+#DIM CHARA, 1
+#DIM SEXCOIN
+
+;A=キャラクター用暫定変数値
+;TFLAG:100、TFLAG:101=怪物种族の保持
+;TFLAG:102=キャラクター番号保持
+
+;いずれもここで初期化させておく
+TFLAG:100 = 0
+TFLAG:101 = 0
+TFLAG:102 = 0
+DRAWLINE
+PRINTL [1]召唤魔物从者
+[IF DEBUG]
+PRINT
+PRINTL [2]召唤异界勇者
+[ENDIF]
+DRAWLINE
+PRINTL [999] 返回
+INPUT
+IF RESULT == 999
+	CALL CLEAR_SHOP
+	RETURN 0
+ELSEIF RESULT == 1
+	GOTO MONSTER_SHOP_TAG
+ELSEIF RESULT == 2
+	JUMP CHARA_SIM_SHOP
+ENDIF
+;限制召唤魔物从者数量为30以下。
+$MONSTER_SHOP_TAG
+COUNT = 0
+COUNT:1 = 0
+FOR COUNT, 0 , CHARANUM
+    SIF TALENT:COUNT:220
+	    COUNT:1 += 1
+NEXT
+IF COUNT:1 >= 30
+	PRINTL 召唤的魔物从者数量太多，魔界已经没有志愿者了……
+	WAIT
+	CALL CLEAR_SHOP
+	COUNT = 0
+    COUNT:1 = 0
+	RETURN 0
+ENDIF
+COUNT = 0
+COUNT:1 = 0
+
+$INPUT_LOOP_SEX
+
+CALL SHOW_SHOP_MONSTER
+
+PRINTL 请选择要召唤的魔物从者的性别
+PRINTFORML [1]男性　　　　[2]女性　　　[3]扶她
+DRAWLINE
+PRINTFORML [999] 返回
+
+INPUT
+
+IF RESULT == 999
+	CALL CLEAR_SHOP
+	RETURN 0
+;表示外の数字なら戻す
+ELSEIF RESULT > 3
+	CLEARLINE 1
+	GOTO INPUT_LOOP_SEX
+ELSE
+	SEXCOIN = RESULT
+	SIF RESULT == 0
+		GOTO INPUT_LOOP_SEX
+ENDIF
+	
+	
+$INPUT_LOOP
+
+CALL SHOW_SHOP_MONSTER
+
+;怪物种族、种族2をそれ単体で用意していないので直接打ち込み。
+;もう少しいい方法があるか？
+PRINTFORML [1]兽人类　　　　[2]史莱姆类　　　[3]昆虫类
+PRINTFORML [4]植物类　　　　[5]触手类　　　　[6]妖精类
+PRINTFORML [7]巨人类　　　　[8]魔人类　　　　[9]魔兽类
+DRAWLINE
+PRINTFORML [999] 返回
+PRINTL 　请选择魔物从者的种类
+
+INPUT
+
+IF RESULT == 999
+	CALL CLEAR_SHOP
+	RETURN 0
+;表示外の数字なら戻す
+ELSEIF RESULT > 9
+	CLEARLINE 1
+	GOTO INPUT_LOOP
+ELSE
+	CALL SELECT_MONSTER, RESULT
+	SIF RESULT == 0
+		GOTO INPUT_LOOP
+ENDIF
+
+$ADD_CHARA
+;キャラのNOを選定
+CHARA = TFLAG:102
+ADDCHARA CHARA
+CALL ADDCHARA_EX, CHARANUM-1
+A = CHARANUM - 1
+
+SIF SEXCOIN == 1
+	TALENT:A:122 = 1
+SIF SEXCOIN == 3
+	TALENT:A:121 = 1
+
+CALL CHAR_MAKE
+A = RESULT
+CFLAG:A:1 = 0
+
+;善良値調整、念のため
+SIF CFLAG:A:151 < -100
+	CFLAG:A:151 = -100
+
+
+PRINTL *****************************************
+PRINTFORML %SAVESTR:A%回应了你的召唤………
+PRINTL *****************************************
+PRINTW
+CALL SHOW_CHARA_INFO, A, -2
+A = CHARANUM - 1
+PRINTFORML 确定要召唤%SAVESTR:A%么？
+PRINTL
+PRINTL
+PRINT [0] 就是
+IF TALENT:A:122 != 0
+	PRINT 他
+ELSE 
+	PRINT 她
+ENDIF
+PRINT 了  [1] 再换一个（花费1500）
+
+INPUT
+IF RESULT == 1
+	
+	IF MONEY <= 1500
+		PRINTFORML 金钱不够！
+		WAIT
+	ELSE
+		CALL PARTY_CHAR_DEL, A
+		DELCHARA A
+		MONEY -= 1500
+		EX_FLAG:4444 -= 1500
+		CALL NAME_RESET
+		GOTO ADD_CHARA
+	ENDIF
+ENDIF
+
+RETURN 0
+
+
+
+;-----------------------------------------------------
+@SHOW_SHOP_MONSTER
+;
+;SHOP_MONSTERで選択形式の入力を行う場面で表示させるヘッダ的部分
+;-----------------------------------------------------
+
+CUSTOMDRAWLINE =
+PRINTL 召唤
+PRINTL 《需要献祭同类的怪物，并支付一定金钱来召唤精英魔物从者》
+DRAWLINE
+PRINTV DAY+1
+PRINT 日
+IF TIME == 0
+	PRINTL  午前
+ELSE
+	PRINTL  午后
+ENDIF
+
+PRINTFORML 所持金：{MONEY}点
+DRAWLINE
+
+
+;-----------------------------------------------------
+@SELECT_MONSTER, ARG:0
+;
+;RETURN 0なら偽であり、MONSTER_SHOPでの入力まで返回
+;-----------------------------------------------------
+#DIM LCOUNT, 2
+#DIM MONS, 200, 10
+VARSET LOCAL
+
+;まず入力から対応する怪物种族（この場合は凌辱タイプ）を見る
+SELECTCASE ARG:0
+	CASE 1 TO 4, 6, 7
+		TFLAG:100 = ARG:0
+		TFLAG:101 = ARG:0
+	CASE 5
+		TFLAG:100 = 5
+		TFLAG:101 = 11
+	CASE 8
+		TFLAG:100 = 8
+		TFLAG:101 = 9
+	CASE 9
+		TFLAG:100 = 10
+		TFLAG:101 = 12
+	CASEELSE
+		RETURN 0
+ENDSELECT
+
+$INPUT_LOOP
+
+CALL SHOW_SHOP_MONSTER
+PRINTFORML 需要献祭一定数量的怪物以符合其合计等级的要求，作为祭品的怪物还需满足最低等级才能作为祭品，
+PRINTFORML 还需要支付最低等级＊１３５的金钱来召唤精英魔物从者
+
+FOR LCOUNT, 201, 280
+	;価格があるか判定。ITEMPRICEの有無で判断する。
+	SIF ITEMPRICE:LCOUNT == 0
+		CONTINUE
+	;CSVABLで「种族2」を見て、選択された怪物タイプのキャラであれば表示。
+	IF CSVTALENT(LCOUNT,319,0) == TFLAG:100 || CSVTALENT(LCOUNT,319,0) == TFLAG:101
+		PRINTFORMLC %"["+TOSTR(LCOUNT,"000")+"]"% %ITEMNAME:LCOUNT,22,LEFT% 最低等级：%TOSTR(ITEMPRICE:LCOUNT),5,RIGHT%　　
+		;購入可能フラグを立てる
+		ITEMSALES:LCOUNT = 1
+		LOCAL += 1
+		SIF LOCAL%2 == 0
+			PRINTL 
+	ENDIF
+NEXT
+SIF LOCAL%2
+	PRINTL 
+
+DRAWLINE
+PRINTFORML [999] 返回
+IF LOCAL == 0
+	PRINTL 没有能召唤的魔物从者
+ELSE
+	PRINTL 请选择要召唤的魔物从者
+ENDIF
+
+INPUT
+IF RESULT == 999
+	RETURN 0
+;数値はキャラのアイテム番号の最小値と最大値。
+ELSEIF RESULT <= 200 || RESULT > 280
+	GOTO INPUT_LOOP
+;購入可能フラグが立っていないなら再入力
+ELSEIF ITEMSALES:RESULT == 0
+	GOTO INPUT_LOOP
+;売値が所持金より多いなら再入力
+ELSEIF MONEY < (ITEMPRICE:RESULT * 135)
+	PRINTL 虽然魔物从者都不是物质的女孩，但必要的金钱总是要准备的吧～贫穷的魔王大人哦！
+	WAIT
+	GOTO INPUT_LOOP
+ELSEIF MONEY < (ITEMPRICE:RESULT * 135) && TALENT:A:122
+	PRINTL 虽然魔物从者都不是势利的家伙，但必要的金钱总是要准备的吧～贫穷的魔王大人哦！
+	WAIT
+	GOTO INPUT_LOOP
+ENDIF
+
+;TFLAG:102 = キャラ番号保持
+TFLAG:102 = RESULT
+
+CALL BUY_MONSTER
+
+SIF RESULT == 0
+	GOTO INPUT_LOOP
+
+RETURN 1
+
+;-----------------------------------------------------
+@BUY_MONSTER, ARG:0
+;-----------------------------------------------------
+#DIM LCOUNT, 2
+#DIM DYNAMIC MONS , 200, 10
+VARSET LOCAL
+
+;各怪物の凌辱タイプと数を確認し、選択されたタイプの怪物のレベルと所持数を表示
+;条件を満たしている怪物の番号、レベル、所持数を三次元変数「MONS」に記録
+;MONS:A = 番号
+;MONS:A:0 = レベル
+;MONS:A:1 = 所持数
+;MONS:A:2 = 選択数
+
+FOR LCOUNT, 100, 200
+	CALL MONSTER_DATA, LCOUNT, 5
+	IF (E:507 == TFLAG:100 || E:507 == TFLAG:101) && ITEM:LCOUNT > 0
+		MONS:LCOUNT:0 = E:501
+		MONS:LCOUNT:1 = ITEM:LCOUNT
+		LOCAL:1 += ITEM:LCOUNT * E:501
+		LOCAL += 1
+	ENDIF
+NEXT
+
+;怪物が足りない場合の処理
+IF LOCAL == 0
+	PRINTW 没有能作为祭品的怪物
+	RETURN 0
+ELSEIF LOCAL:1 < ITEMPRICE:(TFLAG:102)
+	PRINTW ＊作为祭品的怪物等级不足＊
+	RETURN 0
+ENDIF
+
+
+;LOCAL:1に生贄に捧げた怪物のレベルの合計を保存
+LOCAL:1 = 0
+
+;条件を満たした怪物を実際に表示
+$SHOW_MONSTER
+CALL SHOW_SHOP_MONSTER
+
+IF ITEMPRICE:(TFLAG:102) - LOCAL:1 <= 0
+	PRINTFORML 现在被选择的怪物
+	LOCAL = 0
+	FOR LCOUNT, 100, 200
+		SIF MONS:LCOUNT:2 == 0
+			CONTINUE
+		PRINTFORMLC %ITEMNAME:LCOUNT,22,LEFT% LV:{MONS:LCOUNT:0} %TOSTR(MONS:LCOUNT:2),7,RIGHT%只　　
+		LOCAL += 1
+		SIF LOCAL%2 == 0
+			PRINTL 
+	NEXT
+	SIF !LINEISEMPTY()
+		PRINTL 
+	PRINTFORML 合计等级：{LOCAL:1}
+	DRAWLINE
+	PRINTFORML 要以这些怪物为代价，加上{ITEMPRICE:(TFLAG:102) * 135}点金钱，来召唤%ITEMNAME:(TFLAG:102)%吗？
+	PRINTL [0] 好的  [1] 不要
+	INPUT
+	IF RESULT == 1
+		RETURN 0
+	ELSEIF RESULT == 0
+		MONEY -= ITEMPRICE:(TFLAG:102) * 135
+		EX_FLAG:4444 -= ITEMPRICE:(TFLAG:102) * 135
+		FOR LCOUNT, 100, 200
+			SIF MONS:LCOUNT:2 == 0
+				CONTINUE
+			ITEM:LCOUNT -= MONS:LCOUNT:2
+		NEXT
+		RETURN 1
+	ENDIF
+ELSE
+	PRINTFORML 请选择满足最低等级要求的怪物作为祭品
+	;LOCAL:0は表示した怪物の数。表示のたびにリセット
+	LOCAL:0 = 0
+	PRINTFORML 剩余等级：{ITEMPRICE:(TFLAG:102) - LOCAL:1}
+	PRINTFORML 现在被选择的怪物
+	LOCAL = 0
+	FOR LCOUNT, 100, 200
+		SIF MONS:LCOUNT:2 == 0
+			CONTINUE
+		PRINTFORMLC %ITEMNAME:LCOUNT,22,LEFT% LV:{MONS:LCOUNT:0} %TOSTR(MONS:LCOUNT:2),7,RIGHT%只　　
+		LOCAL += 1
+		SIF LOCAL%2 == 0
+			PRINTL 
+	NEXT
+	SIF !LINEISEMPTY()
+		PRINTL 
+	PRINTFORML 合计等级：{LOCAL:1}
+	DRAWLINE
+	LOCAL = 0
+	FOR LCOUNT, 100, 200
+		SIF MONS:LCOUNT:0 == 0
+			CONTINUE
+		PRINTFORM %"["+TOSTR(LCOUNT,"000")+"]"% %ITEMNAME:LCOUNT,20,LEFT% LV:{MONS:LCOUNT:0} %TOSTR(MONS:LCOUNT:1),5,RIGHT% 
+		PRINTFORM - %TOSTR(MONS:LCOUNT:2)% 只	
+		LOCAL += 1
+		SIF LOCAL%2 == 0
+			PRINTL 
+	NEXT
+	SIF !LINEISEMPTY()
+		PRINTL 
+	DRAWLINE
+	PRINTFORML [999] 返回
+	PRINTFORML 
+ENDIF
+
+$INPUT_LOOP_1
+INPUT
+
+IF RESULT == 999
+	RETURN 0
+ELSEIF RESULT < 100 || RESULT >= 200
+	GOTO INPUT_LOOP_1
+ELSEIF MONS:RESULT:0 == 0
+	GOTO INPUT_LOOP_1
+ELSEIF MONS:RESULT:1 == MONS:RESULT:2
+	PRINTW 已经没有了
+	GOTO INPUT_LOOP_1
+ENDIF
+
+MONS:RESULT:2 += 1
+LOCAL:1 += MONS:RESULT:0
+GOTO SHOW_MONSTER
+
+
+
+;-------------------------------------------------
+;召喚怪物出現条件
+;-------------------------------------------------
+;@SALEITEM_CHECK_MONSTER
+

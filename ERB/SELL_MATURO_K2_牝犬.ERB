@@ -1,0 +1,297 @@
+﻿;-------------------------------------------------
+;牝犬売却末路口上
+;Sは売却値
+;値段（100万以上、50万以上、10万以上、10万未満）によって分岐
+;セックス狂分岐…子犬をとにかく孕みまくる
+;話術分岐…………牝犬トレーナーや舞台女優
+;その他……………ペットとして買われる
+;-------------------------------------------------
+@SELL_MATURO_K2
+#DIMS MATURO
+#DIM FAMILY,3
+
+
+FAMILY = CFLAG:TARGET:605
+FAMILY:1 = FAMILY % 10
+CALL SEARCH_FAMILY, TARGET
+FAMILY:2 = RESULT
+M = FAMILY:2
+		IF TALENT:136
+			S += 50000
+			PRINTFORMW 已经是牝犬的%SAVESTR:TARGET%可以多卖50000点。
+			;売値100万以上
+			IF S >= 1000000
+				;セックス狂
+				IF TALENT:TARGET:75 == 1 
+					LOCALS = 魔界牝犬饲养员
+					LOCAL = 3
+				;話術LV5以上
+				ELSEIF ABL:15 >= 5
+					LOCALS = 魔界牝犬训练员
+					LOCAL = 2
+				;その他
+				ELSE
+					LOCALS = 魔界土豪
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+				;セックス狂
+				IF TALENT:TARGET:75 == 1 
+					CALL SELL_MATURO_K2_101
+					MATURO = 最高级牝犬饲养员
+				;話術LV5以上
+				ELSEIF ABL:15 >= 5
+					CALL SELL_MATURO_K2_102
+					MATURO = 最高级牝犬训练员
+				ELSE
+					CALL SELL_MATURO_K2_103
+					MATURO = 最高级牝犬奴隷
+				ENDIF
+			;売値50万以上
+			ELSEIF S >= 500000
+				;セックス狂
+				IF TALENT:TARGET:75 == 1 
+					LOCALS = 魔界牝犬饲养员
+					LOCAL = 3
+				;話術LV5以上
+				ELSEIF ABL:15 >= 5
+					LOCALS = 魔界圆形剧场
+					LOCAL = 2
+				;その他
+				ELSE
+					LOCALS = 魔界女富豪
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+				;セックス狂
+				IF TALENT:TARGET:75 == 1 
+					CALL SELL_MATURO_K2_51
+					MATURO = 高级母种犬
+				;話術LV5以上
+				ELSEIF ABL:15 >= 5
+					CALL SELL_MATURO_K2_52
+					MATURO = 高级牝犬女优
+				ELSE
+					CALL SELL_MATURO_K2_53
+					MATURO = 高级牝犬奴隶
+				ENDIF
+			;売値10万以上
+			ELSEIF S >= 100000
+				;セックス狂
+				IF TALENT:TARGET:75 == 1 
+					LOCALS = 魔界个体饲养员
+					LOCAL = 3
+				;話術LV5以上
+				ELSEIF ABL:15 >= 5
+					LOCALS = 魔界个体经营训练员
+					LOCAL = 2
+				;その他
+				ELSE
+					LOCALS = 魔界女兽奸狂
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+				;セックス狂
+				IF TALENT:TARGET:75 == 1 
+					CALL SELL_MATURO_K2_11
+					MATURO = 牝犬饲养员
+				;話術LV5以上
+				ELSEIF ABL:15 >= 5
+					CALL SELL_MATURO_K2_12
+					MATURO = 牝犬训练员
+				ELSE
+					CALL SELL_MATURO_K2_13
+					MATURO = 牝犬奴隶
+				ENDIF
+			;売値10万未満
+			ELSE
+				;セックス狂
+				IF TALENT:TARGET:75 == 1 
+					LOCALS = 魔犬
+					LOCAL = 3
+				;話術LV5以上
+				ELSEIF ABL:15 >= 5
+					LOCALS = 魔界小剧场
+					LOCAL = 2
+				;その他
+				ELSE
+					LOCALS = 魔界变态
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+				;セックス狂
+				IF TALENT:TARGET:75 == 1 
+					CALL SELL_MATURO_K2_1
+					MATURO = 魔犬新娘
+				;話術LV5以上
+				ELSEIF ABL:15 >= 5
+					CALL SELL_MATURO_K2_2
+					MATURO = 牝犬女优
+				ELSE
+					CALL SELL_MATURO_K2_3
+					MATURO = 牝犬
+				ENDIF
+			ENDIF
+		ELSE
+			;淫乱
+			IF TALENT:76
+				;売値100万以上
+				IF S >= 1000000
+						LOCALS = 魔界土豪
+						LOCAL = 3
+					PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+					PRINTFORMW ………
+					PRINTFORMW ……
+					PRINTFORMW …
+						CALL SELL_MATURO_K2_104
+						MATURO = 高级牝犬
+				;売値50万以上
+				ELSEIF S >= 500000
+						LOCALS = 魔界牝犬饲养员
+						LOCAL = 2
+					PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+					PRINTFORMW ………
+					PRINTFORMW ……
+					PRINTFORMW …
+						CALL SELL_MATURO_K2_51
+						MATURO = 母种犬
+				ELSE
+					LOCALS = 魔犬
+					LOCAL = 0
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					CALL SELL_MATURO_K2_1
+					MATURO = 淫乱母犬
+				ENDIF
+			;それ以外
+			ELSE
+				;売値100万以上
+				IF S >= 1000000
+						LOCALS = 魔界土豪
+						LOCAL = 3
+					PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+					PRINTFORMW ………
+					PRINTFORMW ……
+					PRINTFORMW …
+						CALL SELL_MATURO_K2_104
+						MATURO = 高级牝犬
+				;売値50万以上
+				ELSEIF S >= 500000
+						LOCALS = 魔界牝犬训练员
+						LOCAL = 2
+					PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+					PRINTFORMW ………
+					PRINTFORMW ……
+					PRINTFORMW …
+						CALL SELL_MATURO_K2_55
+						MATURO = 滥交牝犬
+				ELSE
+					LOCALS = 魔界变态
+					LOCAL = 0
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					CALL SELL_MATURO_K2_3
+					MATURO = 牝犬
+				ENDIF
+			ENDIF
+		ENDIF
+			
+	SIF FAMILY:2 >= 0
+		CSTR:(FAMILY:2):5 = %MATURO%%SAVESTR:TARGET%
+	TSTR:30 = %MATURO%%SAVESTR:TARGET%
+	;結びの文、特殊な文を入れたくなったら後で分岐を入れよう
+	PRINTFORML
+	PRINTFORMW 就这样，%NAME:MASTER%和%SAVESTR:TARGET%再也没有见面……
+	PRINTFORML
+	CALL VIDEO_MATURO
+RETURN 0
+
+@SELL_MATURO_K2_101
+					PRINTFORMW %SAVESTR:TARGET%今天也作为最高级牝犬饲养员在为让牝犬奴隶怀上幼犬而努力。
+					PRINTFORMW 看来她把怀上幼犬当做了至高的喜悦了，甚至买来了女奴隶来孕育幼犬。
+					PRINTFORMW 在畜舍里看着泣不成声的兽奸奴隶们和兽类做爱的样子，%SAVESTR:TARGET%自慰着时不时自己也参与着兽奸，就这么过着悠然自得的生活。
+
+@SELL_MATURO_K2_102
+					PRINTFORMW 觉醒了兽爱性癖的%SAVESTR:TARGET%、成为了致力于让其他女人也觉醒兽爱性癖的牝犬训练员。
+					PRINTFORMW 买下来的女奴隶，只消一个来月就把她们变成了趴在地上腰抖不止的牝犬兽奸奴隶的样子。
+					PRINTFORMW 最终把世界变得谁在路边进行着牝犬交配都不是什么奇怪的事似乎是她的梦想……。
+
+@SELL_MATURO_K2_103
+					PRINTFORMW 被土豪买下作为宠物的%SAVESTR:TARGET%、优雅的作为牝犬生活着。
+					PRINTFORMW 当有变态的客人时、必定要看她的交尾秀、来为宴会助兴的样子。
+					PRINTFORMW 之后更是在牝犬品评会上、多次获奖成为了让其他牝犬奴隶羡慕的榜样。
+
+@SELL_MATURO_K2_104
+					PRINTFORMW 被土豪买下作为宠物的%SAVESTR:TARGET%、过上了淫乱的牝犬生活。
+					PRINTFORMW 当有变态的客人时、必定要她的自慰秀或是交尾秀来为宴会助兴。
+					PRINTFORMW 之后在牝犬品评会上、多次名列前茅成为了远近闻名的名犬。
+					
+@SELL_MATURO_K2_51
+					PRINTFORMW %SAVESTR:TARGET%今天也作为魔族最高级母种犬孕育着幼犬。
+					PRINTFORMW 异种族的遗传因子交合而成的幼犬有着比魔犬更优秀的智能。
+					PRINTFORMW 完全无法想象它的母亲是这么一副露着高潮脸不断受孕着的毫无知性品性可言的模样……。
+
+@SELL_MATURO_K2_52
+					PRINTFORMW %SAVESTR:TARGET%、成为了在圆形剧场表演兽奸秀的牝犬女优。
+					PRINTFORMW 在无数观众的目光中、她伏在地上和犬或是山羊交尾着让他们兴奋不已。
+					PRINTFORMW 她的门票销量已经可以说是一票难求的样子……。
+
+@SELL_MATURO_K2_53
+					PRINTFORMW 被女富豪买下作为宠物的%SAVESTR:TARGET%、过着淫行牝犬的生活。
+					PRINTFORMW 有施虐兴趣的女富豪对于%SAVESTR:TARGET%越来越堕落的模样感到很兴奋的样子。
+					PRINTFORMW 最近在路边时不时就让%SAVESTR:TARGET%开始交尾并被臭骂着她，看着这幅光景就十分开心的样子。
+
+@SELL_MATURO_K2_54
+					PRINTFORMW %SAVESTR:TARGET%被牝犬训练员作为模范牝犬买了下来。
+					PRINTFORMW 女调教师渐渐深入地将%SAVESTR:TARGET%调教成了牝犬奴隶。
+					PRINTFORMW 后来时不时会有以她们为主导乱交兽奸的样子。					
+@SELL_MATURO_K2_11
+					PRINTFORMW %SAVESTR:TARGET%作为牝犬饲养员和同伴一起致力于让牝犬奴隶孕育幼犬。
+					PRINTFORMW 对于交尾既喜欢看也喜欢做的%SAVESTR:TARGET%和同伴的女调教师一起买了奴隶。
+					PRINTFORMW 每个月都会愉快的和同伴或是奴隶一起进行着乱交兽奸的样子。
+
+@SELL_MATURO_K2_12
+					PRINTFORMW 觉醒了兽爱性癖的%SAVESTR:TARGET%、成为了致力于增加兽奸狂的牝犬训练员。
+					PRINTFORMW 买下女奴隶、深入地将兽爱传授给她们、并公开。
+					PRINTFORMW 最终创办起兽奸杂志似乎是她的梦想来着……。
+
+@SELL_MATURO_K2_13
+					PRINTFORMW 作为女兽奸狂的朋友被买下来的%SAVESTR:TARGET%、过上了愉快的牝犬生活的样子。
+					PRINTFORMW 有着共同兴趣的主人和%SAVESTR:TARGET%很快就情投意合、开始同居了。
+					PRINTFORMW 不时亲密的把屁股并排着和大型犬一起发情……。
+
+@SELL_MATURO_K2_1
+					PRINTFORMW %SAVESTR:TARGET%被拥有知性的魔犬买了下来。
+					PRINTFORMW 他为了繁衍自己优秀的遗传因子、渴求着最棒的母体的样子。
+					PRINTFORMW 可惜的是预算似乎不太够、索性双方的身体相性十分的好的样子……。
+
+@SELL_MATURO_K2_2
+					PRINTFORMW %SAVESTR:TARGET%、成为了在小劇場表演兽奸秀的牝犬女优。
+					PRINTFORMW 在无数观众的目光中、她伏在地上和犬或是山羊交尾着让他们兴奋不已。
+					PRINTFORMW 为了让票的销量更好一些、开始和丑陋的奇珍异兽交尾了的样子……。
+
+@SELL_MATURO_K2_3
+					PRINTFORMW 被変態作为宠物买下的%SAVESTR:TARGET%、过上了奇妙的性生活的样子。
+					PRINTFORMW 变态的奴隶主人似乎要看着%SAVESTR:TARGET%和大型犬交尾的姿态才会兴奋。
+					PRINTFORMW 看着自慰着的主人、心中五味杂陈的%SAVESTR:TARGET%高潮了。
+
+@SELL_MATURO_K2_4
+					PRINTFORMW %SAVESTR:TARGET%被拥有知性的魔犬买了下来。
+					PRINTFORMW 他为了繁衍自己优秀的遗传因子、渴求着最棒的母体的样子。
+					PRINTFORMW 可惜的是预算似乎不太够、但%SAVESTR:TARGET%淫乱的身体似乎能够满足他的样子……。

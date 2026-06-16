@@ -1,0 +1,85 @@
+﻿;eramaou追加コマンド
+
+;-------------------------------------------------
+;媚药史莱姆
+;うまく気力だけを減らす要員 レベル100以上
+;-------------------------------------------------
+@COM207
+
+PRINTL 媚药史莱姆
+
+CALL TRAIN_MESSAGE_B
+
+;-------------------------------------------------
+;戦闘値の計算
+;-------------------------------------------------
+LOSEBASE:1 += CFLAG:0:9 * 10
+
+CALL ARENA_SLAVE_POINT
+
+;戦闘点が低ければ追加ダメージ
+IF RESULT < (5 * CFLAG:0:9)
+	;気力が0なら追加ダメージ無し
+	IF BASE:1 <= 0
+		PRINTFORMW %SAVESTR:TARGET%被媚药史莱姆包裹着，完全无法抵抗了。
+	ELSE
+		PRINTFORMW %SAVESTR:TARGET%被媚药史莱姆包裹着，动弹不得。
+		LOSEBASE:1 += CFLAG:0:9 * 10
+			IF BASE:1 < LOSEBASE:1
+				PRINTFORMW 然后，%SAVESTR:TARGET%被淹没在媚药史莱姆的体内了。
+				PRINTW ＜奴隶陷落＞
+			ENDIF
+	ENDIF
+ELSE
+	PRINTFORMW %SAVESTR:TARGET%躲过媚药史莱姆的包围，拼命地逃跑着。
+ENDIF
+
+;死斗场収入
+;TFLAG:402 += LOSEBASE:0 * 10 + RAND:RESULT
+
+TFLAG:400 = 207
+;戦闘後の処理
+CALL COM_AFTER_ARENA
+SIF RESULT == 0
+	RETURN 1
+
+$INPUT_LOOP_0
+PRINTL 把粘液灌到哪里？？
+PRINTL [0] - 嘴巴
+SIF TALENT:122 == 0
+	PRINTL [1] - 私处
+PRINTL [2] - 肛门
+PRINTL [999] 暂时放过
+
+INPUT
+
+IF RESULT == 0
+	PRINTFORMW 在倒下的%SAVESTR:TARGET%嘴里，灌入了大量的粘液。
+	SELECTCOM = 51
+	JUMP COM51
+	;死斗场収入
+	TFLAG:402 += LOSEBASE:1 * 2 + RAND:RESULT
+ELSEIF RESULT == 1
+	;対象が男人なら戻る
+	SIF TALENT:122
+		RETURN 0
+	PRINTFORMW 在倒下的%SAVESTR:TARGET%私处里，灌入了大量的粘液，从阴唇到子宫都灌满了。
+	SELECTCOM = 51
+	JUMP COM51
+	;死斗场収入
+	TFLAG:402 += LOSEBASE:1 * 2 + RAND:RESULT
+ELSEIF RESULT == 2
+	PRINTFORMW 在倒下的%SAVESTR:TARGET%肛门里，灌入了大量的粘液。
+	SELECTCOM = 51
+	JUMP COM51
+	;死斗场収入
+	TFLAG:402 += LOSEBASE:1 * 2 + RAND:RESULT
+ELSEIF RESULT == 999
+ELSE
+	GOTO INPUT_LOOP_0
+ENDIF
+
+RETURN 1
+;
+;
+;

@@ -1,0 +1,231 @@
+﻿@CHAR_CUSTOM_LOOK_PAGE(ARG=0)
+
+IF ARG == 0
+
+	VARSET LOCALS
+
+	PRINTL ■=== 发色 ===■
+	CALL PRINT_ARR_GROUP(ARR_头发颜色2, TALENT:头发颜色, 11)
+
+	PRINTL ■=== 发型 ===■
+	CALL PRINT_ARR_GROUP(ARR_发型, TALENT:发型, 12)
+
+	PRINTL ■=== 头发长度 ===■
+	LOCALS '= "短", "半长", "长"
+	CALL PRINT_ARR_GROUP(LOCALS, (TALENT:头发长度-1)/100, 13)
+
+	PRINTL ■=== 状态 ===■
+	CALL PRINT_ARR_GROUP(ARR_头发状态, TALENT:头发状态, 14)
+
+	PRINTL ■=== 修剪 ===■
+	CALL PRINT_ARR_GROUP(ARR_头发修剪方式, TALENT:头发修剪方式, 15)
+
+
+		; ELSEIF ARG == 1
+
+
+	PRINTL ■=== 眼型 ===■
+	CALL PRINT_ARR_GROUP(ARR_目, TALENT:目, 21)
+
+	PRINTL ■=== 瞳色 ===■
+	CALL PRINT_ARR_GROUP(ARR_瞳色, TALENT:瞳色, 22)
+
+	PRINTL ■=== 唇型 ===■
+	CALL PRINT_ARR_GROUP(ARR_唇, TALENT:唇, 23)
+
+	PRINTL ■=== 体型 ===■
+	LOCALS '= "纤细", "标准", "丰满"
+	CALL PRINT_ARR_GROUP(LOCALS, (TALENT:体型-1)/100, 24)
+
+	PRINTL ■=== 阴毛状态 ===■
+	LOCALS '= "白虎", "胎毛", "新长的", "稀薄", "标准", "浓密", "硬毛"
+	SELECTCASE TALENT:阴毛状态
+	CASE 1
+		LOCAL = 0
+	CASE 2 TO 20
+		LOCAL = 1
+	CASE 20 TO 50
+		LOCAL = 2
+	CASE 50 TO 100
+		LOCAL = 3
+	CASE 100 TO 150
+		LOCAL = 4
+	CASE 150 TO 200
+		LOCAL = 5
+	CASE 201 TO 500
+		LOCAL = 6
+	CASEELSE
+		LOCAL = 7
+	ENDSELECT
+	CALL PRINT_ARR_GROUP(LOCALS, LOCAL, 25)
+
+	PRINTL ■=== 乳头 ===■
+	CALL PRINT_ARR_GROUP(ARR_乳头, TALENT:乳头, 26)
+
+
+		ELSEIF ARG == 1
+
+
+	PRINTL ■=== 魅力点 ===■
+	CALL PRINT_ARR_GROUP(ARR_魅力点, TALENT:魅力点, 31)
+
+	PRINTL ■=== 癖好 ===■
+	CALL PRINT_ARR_GROUP(ARR_癖, TALENT:癖, 32)
+
+	PRINTL ■=== 曾经喜欢的东西 ===■
+	CALL PRINT_ARR_GROUP(ARR_喜欢的东西, TALENT:喜欢的东西, 33)
+
+
+	IF TARGET == MASTER
+		PRINTL ■=== 成为魔王之前 ===■
+	ELSEIF TALENT:220
+		PRINTL ■=== 来到据点之前 ===■
+	ELSE
+		PRINTL ■=== 成为勇者之前 ===■
+	ENDIF
+	CALL PRINT_ARR_GROUP(ARR_成为勇者前的生活, TALENT:成为勇者前的生活, 41)
+
+
+	IF TARGET == MASTER
+		PRINTL ■=== 成为魔王的契机 ===■
+	ELSEIF TALENT:220
+		PRINTL ■=== 回应召唤的理由 ===■
+	ELSE
+		PRINTL ■=== 成为勇者的契机 ===■
+	ENDIF
+	CALL PRINT_ARR_GROUP(ARR_成为勇者的契机, TALENT:成为勇者的契机, 42)
+
+
+	IF TARGET == MASTER
+		
+	ELSEIF TALENT:220
+		PRINTL ■=== 精英种族 ===■
+		CALL PRINT_ARR_GROUP(ARR_种族2, TALENT:种族2, 2)
+	ELSE
+		PRINTL ■=== 种族 ===■
+		CALL PRINT_ARR_GROUP(ARR_种族, TALENT:种族, 1)
+	ENDIF
+	
+	IF TALENT:314 == 9
+	ENDIF
+ENDIF
+
+
+
+
+
+
+@CHAR_CUSTOM_LOOK_DEAL(ARG)
+#DIM L_IDX
+#DIM L_VAL
+
+L_IDX = ARG/100
+L_VAL = ARG - L_IDX * 100
+
+IF L_IDX == 1
+	TALENT:种族 = L_VAL
+ELSEIF L_IDX == 2 
+	TALENT:种族2 = L_VAL	
+ELSEIF L_IDX == 11 
+	TALENT:头发颜色 = L_VAL
+ELSEIF L_IDX == 12 
+	TALENT:发型 = L_VAL
+ELSEIF L_IDX == 13
+	TALENT:头发长度 = L_VAL *100 +2
+ELSEIF L_IDX == 14
+	TALENT:头发状态 = L_VAL
+ELSEIF L_IDX == 15 
+	TALENT:头发修剪方式 = L_VAL
+	
+ELSEIF L_IDX == 21 
+	TALENT:目 = L_VAL
+ELSEIF L_IDX == 22
+	TALENT:瞳色 = L_VAL
+ELSEIF L_IDX == 23
+	TALENT:唇 = L_VAL
+ELSEIF L_IDX == 24 
+	TALENT:体型 = L_VAL *100 +2
+ELSEIF L_IDX == 25
+	SELECTCASE L_VAL
+	CASE 0
+		TALENT:阴毛状态 = 1
+	CASE 1
+		TALENT:阴毛状态 = 2
+	CASE 2
+		TALENT:阴毛状态 = 21
+	CASE 3
+		TALENT:阴毛状态 = 51
+	CASE 4
+		TALENT:阴毛状态 = 101
+	CASE 5
+		TALENT:阴毛状态 = 151
+	CASE 6
+		TALENT:阴毛状态 = 202
+	ENDSELECT	
+ELSEIF L_IDX == 26
+	TALENT:乳头 = L_VAL
+	
+ELSEIF L_IDX == 31
+	TALENT:魅力点 = L_VAL
+ELSEIF L_IDX == 32
+	TALENT:癖 = L_VAL
+ELSEIF L_IDX == 33
+	TALENT:喜欢的东西 = L_VAL
+	
+ELSEIF L_IDX == 41
+	TALENT:成为勇者前的生活 = L_VAL
+ELSEIF L_IDX == 42
+	TALENT:成为勇者的契机 = L_VAL
+ELSE
+	RETURN -1
+ENDIF
+RETURN 0
+
+@PRINT_ARR_GROUP(L_ARR, L_VAL, L_IDX)
+#DIMS REF L_ARR
+#DIM L_I
+#DIM L_VAL
+#DIM L_IDX
+#DIM L_LEN
+#DIM L_SIZE
+#DIM L_EXCEED
+
+L_I = -1
+L_LEN = 0
+L_EXCEED = 0
+
+SETCOLORBYNAME GRAY
+PRINTV "  "
+
+FOR L_I, 0, VARSIZE("L_ARR")
+
+	LOCALS '= L_ARR:L_I
+	LOCAL = STRLENS(LOCALS)
+	
+	IF LOCAL < 1
+		L_EXCEED ++
+		SIF L_EXCEED > 10 
+			BREAK
+		CONTINUE
+	ENDIF
+	
+	L_LEN += LOCAL + 2
+	
+	IF L_LEN >= 80
+		PRINTL
+		PRINTV "  "
+		L_LEN = LOCAL + 2
+	ENDIF
+	
+	SIF L_I == L_VAL
+		RESETCOLOR
+	
+	PRINTBUTTON @"[%LOCALS%]", L_IDX * 100 + L_I
+	
+	SIF L_I == L_VAL
+		SETCOLORBYNAME GRAY
+	
+NEXT
+
+RESETCOLOR
+PRINTL

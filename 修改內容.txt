@@ -1,0 +1,8 @@
+﻿本版本依據下陷深淵"EraMaou0.92+EX2.1"版進行修正
+https://xxsy.su/forum.php?mod=viewthread&tid=48467&extra=page%3D1
+
+修正內容:
+
+修正遊戲內可能造成報錯之部分錯誤
+無效化DEBUG_CHECK(反作弊)
+啟用批量處刑補丁並解決bug

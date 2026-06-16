@@ -1,0 +1,3106 @@
+﻿;ダンジョン内でのイベント奴隷用
+;--------------------------------------
+@DUNGEON_BITCH(ARG)
+;--------------------------------------
+#LOCALSIZE 1
+#LOCALSSIZE 1
+#DIM SEIKOU
+#DIM SIPPAI
+SIF BASE:ARG:0 < 300 || BASE:ARG:1 < 100
+	RETURN 0
+
+SEIKOU = FI_CULC_BITCH(ARG, "SEIKOU", "DUNGEON")
+SIPPAI = FI_CULC_BITCH(ARG, "SIPPAI", "DUNGEON")
+
+;#;PRINTFORMW 売春判定　成功{SEIKOU}　失敗{SIPPAI}
+
+;勇者用
+IF CFLAG:ARG:1 == 2
+	SIF !EXP:ARG:74
+		RETURN 0
+	SIF SEIKOU <= 100
+		RETURN 0
+ENDIF
+
+;売春処理に入る
+IF RAND:(SEIKOU + SIPPAI) < SEIKOU
+	CALL LOG_TRY_BITCH(ARG, "DUNGEON")
+	CALL SELL_BITCH(ARG, "DUNGEON")
+ENDIF
+
+
+;獣
+IF RAND(1, 16) < ABL:ARG:39
+	SIF FI_CULC_BITCH(ARG, "ABLE", "ANIMAL")
+		CALL DUNGEON_ANIMAL(ARG)
+ENDIF
+
+;おな
+IF RAND:36 <= ABL:ARG:11 + ABL:ARG:31 + (TALENT:ARG:60 * 10)
+	SIF FI_CULC_BITCH(ARG, "ABLE", "SELF")
+		CALL SELF_BITCH(ARG, "DUNGEON")
+ENDIF
+
+;ついでに内職
+SIF CFLAG:ARG:500 == 0 && CFLAG:ARG:1 == 3
+	CALL DUNGEON_WORK(ARG)
+
+
+
+;ダンジョン外で勇者が売春する用
+;--------------------------------------
+@HEROINE_BITCH(ARG)
+;--------------------------------------
+#LOCALSIZE 1
+#LOCALSSIZE 1
+#DIM SEIKOU
+#DIM SIPPAI
+SIF BASE:ARG:0 < 300 || BASE:ARG:1 < 100
+	RETURN 0
+
+SEIKOU = FI_CULC_BITCH(ARG, "SEIKOU", "TOWN")
+SIPPAI = FI_CULC_BITCH(ARG, "SIPPAI", "TOWN")
+
+;#;PRINTFORMW 売春判定　成功{SEIKOU}　失敗{SIPPAI}
+
+;売春処理に入る
+IF SEIKOU > 100 && RAND:(SEIKOU + SIPPAI) < SEIKOU
+	CALL LOG_TRY_BITCH(ARG, "TOWN")
+	CALL SELL_BITCH(ARG, "TOWN")
+ENDIF
+
+;おな
+IF RAND:36 <= ABL:ARG:11 + ABL:ARG:31 + (TALENT:ARG:60 * 10)
+	SIF FI_CULC_BITCH(ARG, "ABLE", "SELF")
+		CALL SELF_BITCH(ARG, "TOWN")
+ENDIF
+
+
+
+;売春実行関数
+;DUNGEON_BITCHから受け継いでのやっつけネームでいいや的関数名
+;PLAYは各プレイ内容の実行回数
+;MANは男性客の、GIRLは女性客の種類と数
+;PREV系は売春前の各種変数の記録用
+
+;CHECKはBIT利用で売春の内容を記録（描写分岐用）
+;0 　　　=0でTOWN/1でDUNGEON
+;1～6　　プレイの有無（1:HAND, 2:ORAL, 3:LES, 4:ANAL, 5:SEX, 6:ANIMAL）
+;11～15　男性客の有無
+;21～25　女性客の有無
+@SELL_BITCH(ARG, PLACE)
+#LOCALSIZE 1
+#LOCALSSIZE 1
+#DIMS PLACE
+#DIM LCOUNT
+#DIM KYAKU
+#DIM SEIKOU
+#DIM SIPPAI
+#DIM PLAY, 7
+#DIM MAN, 6
+#DIM GIRL, 6
+#DIM PREV_EXP, 100
+#DIM PREV_JUEL, 20
+#DIM PREV_KARMA
+#DIM PREV_MONEY
+#DIM CHECK
+KYAKU = FI_CULC_BITCH(ARG, "KYAKU", PLACE)
+;客がいる（客というか判定回数）
+IF KYAKU
+	VARSET PLAY
+	VARSET MAN
+	VARSET GIRL
+	VARSET CHECK
+	
+	;現状の取得
+	;ARRAYCOPYはキャラクタ変数に使えないのか・・・
+	FOR LCOUNT, 0, 100
+		PREV_EXP:LCOUNT = EXP:ARG:LCOUNT
+	NEXT
+	FOR LCOUNT, 0, 20
+		PREV_JUEL:LCOUNT = JUEL:ARG:LCOUNT
+	NEXT
+	PREV_KARMA = CFLAG:ARG:151
+	
+	IF PLACE == "DUNGEON"
+		SETBIT CHECK, 0
+		;侵攻中の勇者
+		IF CFLAG:ARG:1 == 2
+			PREV_MONEY = CFLAG:ARG:580
+		ELSE
+			PREV_MONEY = MONEY
+		ENDIF
+	ELSE
+		PREV_MONEY = CFLAG:ARG:580
+	ENDIF
+	;このループ内でカルマを下げるとどんどん判定が緩くなっていってしまうので
+	;ひととおり終わってから下げるようにする
+	FOR LCOUNT, 0, KYAKU
+		;勇者側は資金状況の変化から基本成功率が変化する
+		SEIKOU = FI_CULC_BITCH(ARG, "SEIKOU", PLACE)
+		SIPPAI = FI_CULC_BITCH(ARG, "SIPPAI", PLACE)
+		SIF RAND:(SEIKOU + SIPPAI) >= SEIKOU
+			CONTINUE
+		
+		;プレイ内容決定
+		LOCAL = FI_TRY_BITCH(ARG, PLACE)
+		;システムメッセージかな、とコメントアウトしてみました
+		;PRINTFORMW 客{LCOUNT + 1}内容は{LOCAL}
+		;売春失敗
+		SIF !LOCAL
+			CONTINUE
+		;プレイ内容の文字列化
+		LOCALS = %FS_BITCH("PLAY", LOCAL)%
+		
+		;たぶん大丈夫だが一応確認
+		SIF !FI_CULC_BITCH(ARG, "ABLE", LOCALS)
+			CONTINUE
+		
+		
+		;今回のプレイ回数
+		PLAY = FI_CULC_BITCH(ARG, "PLAY", LOCALS)
+		PLAY:LOCAL += PLAY
+		SETBIT CHECK, LOCAL
+		
+		;顧客の記録が若干ややこしいがしゃーない
+		CALL PROFIT_BITCH(ARG, PLACE, LOCALS, PLAY)
+		SELECTCASE RESULT
+		;男性客
+		CASE 1
+			MAN = RESULT:1
+			MAN:MAN ++
+			SETBIT CHECK, (10 + MAN)
+		;女性客
+		CASE 2
+			GIRL = RESULT:1
+			GIRL:GIRL ++
+			SETBIT CHECK, (20 + GIRL)
+		ENDSELECT
+		
+		CALL EXP_BITCH(ARG, PLACE, LOCALS, PLAY)
+		
+	NEXT
+	
+	;合計プレイ回数
+	PLAY = 0
+	PLAY = SUMARRAY(PLAY)
+	
+	;ここから売春成功の表示
+	;使用変数が多くて関数化はむりぽ
+	IF PLAY > 0
+		;客とプレイ回数の表示
+		MAN = 0
+		MAN = SUMARRAY(MAN)
+		GIRL = 0
+		GIRL = SUMARRAY(GIRL)
+		
+		;ダンジョン
+		IF PLACE == "DUNGEON"
+			PRINTFORM %SAVESTR:ARG%
+			VARSET LOCALS
+			SIF MAN
+				LOCALS = %FS_LOG_BITCH("DUNGEON_MAN", MAN:1, MAN:2, MAN:3, MAN:4, MAN:5)%
+			
+			IF GIRL
+				IF MAN
+					PRINTFORML %LOCALS%、
+					PRINTFORM 于是
+				ENDIF
+				LOCALS = %FS_LOG_BITCH("DUNGEON_GIRL", GIRL:1, GIRL:2, GIRL:3, GIRL:4, GIRL:5)%
+			ENDIF
+			PRINTFORML 以%LOCALS%为对手
+			
+			LOCALS = %FS_LOG_BITCH("PLAYNAME", PLAY:1, PLAY:2, PLAY:3, PLAY:4, PLAY:5)%
+			PRINTFORMW %LOCALS%进行着
+		;街中
+		ELSE
+			PRINTFORM %SAVESTR:ARG%
+			VARSET LOCALS
+			IF PLAY == PLAY:6
+				PRINTFORMW 进行了{PLAY:6}次兽交秀。
+			ELSE
+				SIF MAN
+					LOCALS = %FS_LOG_BITCH("TOWN_MAN", MAN:1, MAN:2, MAN:3, MAN:4, MAN:5)%
+				IF GIRL
+					IF MAN
+						PRINTFORML %LOCALS%、
+						PRINTFORM 于是
+					ENDIF
+					LOCALS = %FS_LOG_BITCH("TOWN_GIRL", GIRL:1, GIRL:2, GIRL:3, GIRL:4, GIRL:5)%
+				ENDIF
+				PRINTFORML 以%LOCALS%为对手
+				
+				LOCALS = %FS_LOG_BITCH("PLAYNAME", PLAY:1, PLAY:2, PLAY:3, PLAY:4, PLAY:5)%
+				PRINTFORMW %LOCALS%进行着
+				IF PLAY:6
+					PRINTFORMW 并且进行了{PLAY:6}次兽奸表演
+				ENDIF
+			ENDIF
+		ENDIF
+		;カルマの減少
+		LOCAL = -1 * PLAY
+		CALL KARMA, ARG, LOCAL
+		
+		CALL LOG_AFTER_BITCH(ARG, CHECK)
+		
+		PRINTFORML 					～经验与点数变化～
+		FOR LCOUNT, 0, 100
+			SIF PREV_EXP:LCOUNT == EXP:ARG:LCOUNT
+				CONTINUE
+			PRINTFORML %EXPNAME:LCOUNT, 16, RIGHT%：{PREV_EXP:LCOUNT, 30, RIGHT}→{EXP:ARG:LCOUNT, 30, RIGHT}
+		NEXT
+		FOR LCOUNT, 0, 20
+			SIF PREV_JUEL:LCOUNT == JUEL:ARG:LCOUNT
+				CONTINUE
+			PRINTFORML %PALAMNAME:LCOUNT, 12, RIGHT%点数：{PREV_JUEL:LCOUNT, 30, RIGHT}→{JUEL:ARG:LCOUNT, 30, RIGHT}
+		NEXT
+		WAIT
+		
+		IF PLACE == "DUNGEON"
+			EXP:0:80 += PLAY
+			EXP:ARG:80 += PLAY
+			PRINTFORMW %SAVESTR:ARG%淫荡行为成为了魔王和奴隶们的力量（经验值＋{PLAY}）
+			;侵攻中の勇者
+			IF CFLAG:ARG:1 == 2
+				LOCAL = CFLAG:ARG:580 - PREV_MONEY
+				PRINTFORMW %SAVESTR:ARG%获得了{LOCAL}数量的金币
+			ELSE
+				;奴隶的钱增加了
+				LOCAL = MONEY - PREV_MONEY
+				IF LOCAL % 2
+					LOCAL /= 2 + 1
+				ELSE
+					LOCAL /= 2
+				ENDIF
+				MONEY -= LOCAL
+				EX_FLAG:4444 -= LOCAL
+				CFLAG:ARG:580 += LOCAL
+				PRINTFORMW %SAVESTR:ARG%将卖得收入的一半上交了。献上了{LOCAL}点资金。
+			ENDIF
+		ELSE
+			LOCAL = CFLAG:ARG:580 - PREV_MONEY
+			EXP:ARG:80 += LOCAL
+			PRINTFORMW 获得了%SAVESTR:ARG%{LOCAL}点的金钱以及经验值。
+		ENDIF
+		
+		LOCAL = PREV_KARMA - CFLAG:ARG:151
+		SIF LOCAL
+			PRINTFORMW 然后，善恶值减少了{ABS(LOCAL)}。
+		
+	;いちども成功しなかった
+	ELSE
+		IF !EXP:ARG:74 && CFLAG:ARG:151 > 100
+			PRINTFORMW %SAVESTR:ARG%醒来后，将不知羞耻的想法从脑袋里赶走了。
+		ELSEIF CFLAG:ARG:151 > 50
+			PRINTFORMW 在下不定决心而烦恼的时候，时间不断地流失掉了...
+		ELSEIF CFLAG:ARG:151 > 0
+			PRINTFORMW 然而，根本没有勇气发出声音，说自己在卖春的这种事情。
+		ELSE
+			PRINTFORM {KYAKU}人群的声音嘈杂着、
+			PRINTFORMW 交涉终了，一个人也没有买下%SAVESTR:ARG%，就这样子离开了
+		ENDIF
+	ENDIF
+;客はこなかった
+ELSE
+		IF !EXP:ARG:74 && CFLAG:ARG:151 > 100
+		PRINTFORMW %SAVESTR:ARG%醒来后，将不知羞耻的想法从脑袋里赶走了。
+	ELSEIF CFLAG:ARG:151 > 50
+		PRINTFORMW 在下不定决心而烦恼的时候，时间不断地流失掉了...
+	ELSEIF CFLAG:ARG:151 > 0
+		PRINTFORMW 然而，根本没有勇气发出声音，说自己在卖春的这种事情。
+	ELSE
+		PRINTFORMW 于是、一个对象也没有找到
+	ENDIF
+ENDIF
+
+
+;売春経験関数
+;売春によるEXPやJUELの変化
+;売上、经验值、カルマはまた別で行う
+@EXP_BITCH(ARG, PLACE, TYPE, PLAY)
+#LOCALSIZE 1
+#LOCALSSIZE 1
+#DIMS PLACE
+#DIMS TYPE
+#DIM PLAY
+SELECTCASE TYPE
+CASE "HAND"
+	EXP:ARG:20 += PLAY
+	EXP:ARG:74 += PLAY
+	IF PLACE == "DUNGEON"
+		JUEL:ARG:7 += PLAY * 5
+	ELSE
+		JUEL:ARG:7 += PLAY
+	ENDIF
+	SIF TALENT:ARG:62
+		JUEL:ARG:9 += PLAY
+	SIF TALENT:ARG:47
+		JUEL:ARG:5 += PLAY * 5
+CASE "ORAL"
+	EXP:ARG:22 += PLAY
+	EXP:ARG:20 += PLAY
+	EXP:ARG:74 += PLAY
+	IF PLACE == "DUNGEON"
+		JUEL:ARG:7 += PLAY * 10
+	ELSE
+		JUEL:ARG:7 += PLAY
+	ENDIF
+	SIF TALENT:ARG:62
+		JUEL:ARG:9 += PLAY
+	IF TALENT:ARG:47
+		EXP:8 += PLAY
+		JUEL:ARG:5 += PLAY * 10
+	ENDIF
+CASE "LES"
+	EXP:ARG:40 += PLAY
+	EXP:ARG:74 += PLAY
+	IF PLACE == "DUNGEON"
+		EXP:ARG:2 += PLAY * (1 + ABL:ARG:10) / 5
+		JUEL:ARG:0 += PLAY * 100 * (1 + ABL:ARG:10)
+		JUEL:ARG:5 += PLAY * 200
+	ELSE
+		EXP:ARG:2 += PLAY * (1 + ABL:ARG:10) / 10
+		JUEL:ARG:0 += PLAY * 10 * ABL:ARG:10
+		JUEL:ARG:5 += PLAY * 15
+	ENDIF
+CASE "ANAL"
+	EXP:ARG:1 += PLAY
+	EXP:ARG:5 += PLAY
+	EXP:ARG:74 += PLAY
+	IF PLACE == "DUNGEON"
+		JUEL:ARG:2 += PLAY * 200
+		JUEL:ARG:5 += PLAY * 250
+	ELSE
+		JUEL:ARG:2 += PLAY * 10
+		JUEL:ARG:5 += PLAY * 15
+	ENDIF
+CASE "SEX"
+	EXP:ARG:0 += PLAY
+	EXP:ARG:5 += PLAY
+	EXP:ARG:74 += PLAY
+	IF PLACE == "DUNGEON"
+		JUEL:ARG:1 += PLAY * 200
+		JUEL:ARG:5 += PLAY * 250
+	ELSE
+		JUEL:ARG:1 += PLAY * 10
+		JUEL:ARG:5 += PLAY * 15
+	ENDIF
+CASE "ANIMAL"
+	EXP:56 += PLAY
+	EXP:0 += PLAY
+	EXP:5 += PLAY
+	JUEL:1 += PLAY * 200
+	JUEL:6 += PLAY * 300
+	JUEL:8 += PLAY * 200
+	;自分の趣味から外れているしよくわからんけど現状では差異がなかったぞ
+	;IF PLACE == "DUNGEON"
+	;ELSE
+	;ENDIF
+ENDSELECT
+
+
+
+
+;売春利益関数
+;戻り値で顧客の種類を返す
+@PROFIT_BITCH(ARG, PLACE, TYPE, PLAY)
+#LOCALSIZE 1
+#LOCALSSIZE 1
+#DIMS PLACE
+#DIMS TYPE
+#DIM PLAY
+#DIM PAY
+#DIM GIRL
+#DIM MAN
+;今回の基本料金
+IF PLACE == "DUNGEON"
+	;勇者
+	IF CFLAG:ARG:1 == 2
+		PAY = (FI_CULC_BITCH(ARG, "RATE", TYPE) + CFLAG:ARG:501) * FI_CULC_BITCH(ARG, "RATE", "KARMA") / 5
+	;奴隷
+	ELSE
+		PAY = 5 * (1 + CFLAG:ARG:501 + FI_CULC_BITCH(ARG, "RATE", TYPE))
+	ENDIF
+ELSE
+	PAY = FI_CULC_BITCH(ARG, "RATE", "KARMA") * FI_CULC_BITCH(ARG, "RATE", TYPE) / 5
+ENDIF
+
+SELECTCASE TYPE
+;わんわん
+CASE "ANIMAL"
+;れず
+CASE "LES"
+	GIRL = RAND(1, 6)
+	SELECTCASE GIRL
+	CASE 3
+		PAY -= 10
+	CASE 4
+		PAY += 10
+	ENDSELECT
+CASEELSE
+	MAN = RAND(1, 6)
+	SELECTCASE MAN
+	CASE 3
+		PAY -= 10
+	CASE 4
+		PAY += 10
+	ENDSELECT
+ENDSELECT
+
+SIF !EXP:ARG:74
+	PAY += 10
+
+SIF TALENT:ARG:0
+	PAY += 5
+
+PAY = PAY * PLAY
+
+;お支払い
+IF PLACE == "DUNGEON"
+	;入侵中的勇者
+	IF CFLAG:ARG:1 == 2
+		CFLAG:ARG:580 += PAY
+	ELSE
+		MONEY += PAY
+		EX_FLAG:4444 += PAY
+	ENDIF
+ELSE
+	CFLAG:ARG:580 += PAY
+ENDIF
+
+SELECTCASE TYPE
+CASE "ANIMAL"
+	RETURN 0
+CASE "LES"
+	RETURN 2, GIRL
+CASEELSE
+	RETURN 1, MAN
+ENDSELECT
+
+
+
+;内職実行関数
+@DUNGEON_WORK(ARG)
+#LOCALSIZE 1
+#LOCALSSIZE 1
+LOCAL = (CFLAG:ARG:9 * 20) + 100
+SIF CFLAG:ARG:0 == 0
+	LOCAL /= 10
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:ARG%从事了
+	PRINTDATA
+		DATAFORM 研磨宝石的
+		DATAFORM 制作工艺品的
+		DATAFORM 抄写书籍的
+		DATAFORM 制作手工的
+	ENDDATA
+	PRINTFORMW 副业{LOCAL}点收入。
+ENDIF
+MONEY += LOCAL
+EX_FLAG:4444 += LOCAL
+
+
+;自主獣姦実行関数
+;処理はあまり変えてないがカルマの減りがでかくなった
+@DUNGEON_ANIMAL(ARG)
+#LOCALSIZE 1
+#LOCALSSIZE 1
+#DIM PLAY
+PLAY = FI_CULC_BITCH(ARG, "PLAY", "ANIMAL")
+PRINTFORM %SAVESTR:ARG%无法压抑兽交的欲望
+PRINTFORMW 悄悄寻找着兽穴...
+PRINTFORMW %SAVESTR:ARG%进入了野兽的巢穴，像母狗一样趴在地上，扭动着身躯引诱着发情的野兽。在野兽舌头的舔舐润滑后，令人兴奋的喘息和呜咽伴随着野兽的咆哮和肉体的撞击声缭绕在兽穴内，%SAVESTR:ARG%比真正的雌兽还要卖力的摇晃着屁股，逢迎着非人的巨大阳具的刺激。
+PRINTFORMW 随后%SAVESTR:ARG%翻身将野兽压倒在地，主动跨坐在野兽的阴茎上扭動著自己的身體，同时将自己的乳首送到野兽嘴边享受着口舌的舔舐。粗暴的动作使%SAVESTR:ARG%骑在野兽上陷入了恍惚，口水不由自主的流淌出来，无与伦比的快感让%SAVESTR:ARG%成为了一具供野兽发泄性欲的肉娃娃。
+PRINTFORMW 忘我地与野兽样的魔物交尾了{PLAY}次…
+
+CALL LOG_BITCH_ANIMAL(ARG, "DUNGEON")
+WAIT
+
+;獣姦経験
+PRINTFORML %EXPNAME:56%＋{PLAY}
+PRINTFORML %EXPNAME:0%＋{PLAY}
+PRINTFORML %EXPNAME:5%＋{PLAY}
+EXP:ARG:56 += PLAY
+EXP:ARG:0 += PLAY
+EXP:ARG:5 += PLAY
+
+;珠経験
+PRINTFORML %PALAMNAME:1%点数＋{PLAY*200}
+PRINTFORML %PALAMNAME:6%点数＋{PLAY*300}
+PRINTFORMW %PALAMNAME:8%点数＋{PLAY*200}
+JUEL:ARG:1 += PLAY * 200
+JUEL:ARG:6 += PLAY * 300
+JUEL:ARG:8 += PLAY * 200
+
+PRINTFORMW %SAVESTR:ARG%的淫荡行为成为了魔王和奴隶们的力量（经验值＋{PLAY}）
+EXP:0:80 += PLAY
+EXP:ARG:80 += PLAY
+
+LOCAL = -1 * PLAY
+PRINTFORMW （善恶值减少了：{LOCAL}）
+CALL KARMA, TARGET, LOCAL
+
+
+
+;自慰実行関数
+@SELF_BITCH(ARG, PLACE)
+#LOCALSIZE 1
+#LOCALSSIZE 1
+#DIMS PLACE
+#DIM PLAY
+PRINTFORMW %SAVESTR:ARG%无法压抑性欲，自慰了起来
+PLAY = FI_CULC_BITCH(ARG, "PLAY", "SELF")
+
+;調教後オナニーの妄想の相手
+;愛がなくかつレズっ気×20%でレズ
+IF !TALENT:ARG:85 && ABL:ARG:22 > RAND:5
+	PRINTFORM 想象着跟女人的交合
+	LOCAL = 1
+;上に該当せずかつ愛がなくアイテムに野良犬があれば、獣姦中毒×20%で野良犬
+ELSEIF ITEM:22 && !TALENT:ARG:85 && ABL:ARG:39 > RAND:5
+	PRINTFORM 陷入了跟野兽交尾的幻想
+	LOCAL = 2
+;ダンジョン限定で主人
+;調教回数依存（20回で50％、40回で必中）
+ELSEIF PLACE == "DUNGEON" && RAND(1, 40) < CFLAG:ARG:10
+	PRINTDATA
+		DATAFORM 想起%CALLNAME:MASTER%的事
+		DATAFORM 一次次呼唤着%CALLNAME:MASTER%的名字
+		DATAFORM 想起了上次的调教
+		DATAFORM 想象着下一次的调教
+	ENDDATA
+	LOCAL = 3
+;夢中で
+;自慰中毒依存、5以上で必ず夢中
+ELSEIF RAND(1, 5) < ABL:ARG:31
+	PRINTDATA
+		DATAFORM 如饥似渴，一副十分想要的样子
+		DATAFORM 无法满足的欲望，心情变得十分急躁
+		DATAFORM 不自觉地张开着嘴巴
+		DATAFORM 根本不在意口水滴落下来的样子
+		DATAFORM 根本不在意口水流下来的样子
+		DATAFORM 一脸恍惚的样子
+		DATAFORM 一脸沉浸在欲望中的快乐表情
+		DATAFORM 红晕慢慢爬上了脸颊
+		DATAFORM 欲望高涨，身体如同火烧一般
+		DATAFORM 呆滞的眼神
+		DATAFORM 充满情欲的眼睛，变得水汪汪的
+		DATAFORM 突然将双腿张开
+		DATAFORM 身体一颤一颤的
+		DATAFORM 将股间张得大大的
+		DATAFORM 不知不觉的扭动着腰肢
+		DATAFORM 欲求不满的摇动着腰肢
+		DATAFORM 腰部下流的扭动着
+		DATAFORM 仰起喉咙
+		DATAFORM 时不时从嘴边发出呻吟
+		DATAFORM 爱液浸湿了床具
+		DATAFORM 涂满了溢出来的爱液
+		DATAFORM 十分粗野的撕扯着衣服，双乳若隐若现
+		DATAFORM 挣扎在绝顶的边缘
+	ENDDATA
+	LOCAL = 4
+;控えめに
+ELSE
+	PRINTDATA
+		DATAFORM 努力地忍住声音
+		DATAFORM 拼命地将气息憋住
+		DATAFORM 注意着周围的动静
+		DATAFORM 想着要停下来也...
+		DATAFORM 用踌躇的动作
+		DATAFORM 迷惑地将手指重合了起来
+		DATAFORM 牢牢地将嘴唇重合起来
+		DATAFORM 懒洋洋地低下了头
+		DATAFORM 烦恼地皱了皱眉头
+	ENDDATA
+	LOCAL = 5
+ENDIF
+
+IF TALENT:ARG:121 == 1 || TALENT:ARG:122 == 1 || TALENT:ARG:326 == 1
+	;ふたなり・オトコ・肉芽
+	PRINT 握住肉棒捋了起来
+ENDIF
+
+PRINTFORMW 自慰了{PLAY}次。
+
+;調子に乗って↑でこんだけパターンつくったらもういいような気もする
+CALL LOG_BITCH_SELF(ARG, PLACE, LOCAL)
+WAIT
+
+;自慰経験
+PRINTFORML %EXPNAME:10%＋{PLAY}
+EXP:ARG:10 += PLAY
+
+;珠経験
+PRINTFORML %PALAMNAME:0%点数＋{PLAY * 500}
+PRINTFORML %PALAMNAME:4%点数＋{PLAY * 100}
+PRINTFORMW %PALAMNAME:5%点数＋{PLAY * 250}
+JUEL:ARG:0 += PLAY * 500
+JUEL:ARG:4 += PLAY * 100
+JUEL:ARG:5 += PLAY * 250
+
+IF PLACE == "DUNGEON"
+	EXP:ARG:80 += PLAY
+	EXP:0:80 += PLAY
+	PRINTFORMW %SAVESTR:ARG%的淫荡行为成为了魔王和奴隶们的力量（经验值＋{PLAY}）
+ELSE
+	EXP:ARG:80 += PLAY
+	PRINTFORMW %SAVESTR:ARG%获得了{PLAY}点经验值。
+ENDIF
+
+
+
+
+;売春プレイ内容抽選関数
+;戻り値0=失敗, 1=HAND, 2=ORAL, 3=LES, 4=ANAL, 5=SEX, 6=ANIMAL
+@FI_TRY_BITCH(ARG, PLACE)
+#FUNCTION
+#DIMS PLACE
+#DIM LCOUNT
+#DIM PLAY, 7
+VARSET PLAY
+IF PLACE == "TOWN"
+	;確率取得
+	FOR LCOUNT, 1, 7
+		LOCALS = %FS_BITCH("PLAY", LCOUNT)%
+		PLAY:LCOUNT = FI_CULC_BITCH(ARG, "KAKURITU", LOCALS)
+		;カルマによる各プレイへの抵抗感の影響、高カルマほど効果は大きい
+		PLAY:LCOUNT += FI_CULC_BITCH(ARG, "RATE", "KARMA") / FI_CULC_BITCH(ARG, "RATE", LOCALS)
+		;条件に合致しない時はとりあえず0
+		SIF !FI_CULC_BITCH(ARG, "ABLE", LOCALS)
+			PLAY:LCOUNT = 0
+	NEXT
+	;カルマで強制失敗
+	PLAY:0 = SUMARRAY(PLAY) + FI_CULC_BITCH(ARG, "SIPPAI", "TOWN")
+ELSEIF PLACE == "DUNGEON"
+	;確率取得
+	FOR LCOUNT, 1, 6
+		LOCALS = %FS_BITCH("PLAY", LCOUNT)%
+		PLAY:LCOUNT = FI_CULC_BITCH(ARG, "KAKURITU", LOCALS)
+		;条件に合致しない時はとりあえず0
+		SIF !FI_CULC_BITCH(ARG, "ABLE", LOCALS)
+			PLAY:LCOUNT = 0
+	NEXT
+	PLAY:0 = SUMARRAY(PLAY)
+	
+	;指示分岐
+	IF CFLAG:ARG:500 == 1
+		PLAY:0 += FI_CULC_BITCH(ARG, "SIPPAI", "DUNGEON") / MAX(1, ABL:ARG:10)
+	ELSE
+		PLAY:0 += FI_CULC_BITCH(ARG, "SIPPAI", "DUNGEON")
+	ENDIF
+ENDIF
+
+SIF PLAY <= 0
+	PLAY = 1
+	
+LOCAL = RAND:PLAY
+FOR LCOUNT, 1, 7
+	SIF LOCAL < PLAY:LCOUNT
+		RETURNF LCOUNT
+	LOCAL -= PLAY:LCOUNT
+NEXT
+RETURNF 0
+
+
+
+;売春関連判定関数
+;ムダに巨大になった
+;もっと切り刻んだほうがいいかもしれぬ
+@FI_CULC_BITCH(ARG, ARGS, ARGS:1)
+#FUNCTION
+#LOCALSIZE 1
+#LOCALSSIZE 1
+SELECTCASE ARGS
+;売春基本失敗率の計算
+CASE "SIPPAI"
+	;てすと用
+	;RETURNF 1
+	;この封印を解くとかなりのカオスっぷりがそれはそれでおもしろいぞ
+	
+	;失敗率＝250±カルマ＝50～450
+	;カルマ200の勇者も収支が-10000程度になるとちょくちょく売春する
+	IF ARGS:1 == "TOWN"
+		LOCAL = 250 + CFLAG:ARG:151
+	ELSEIF ARGS:1 == "DUNGEON"
+		LOCAL = 250 + CFLAG:ARG:151
+	ELSE
+		THROW 未知的文字%ARGS:1%
+	ENDIF
+	;売春中毒補正
+	LOCAL /= (1 + ABL:ARG:37)
+	;淫乱
+	SIF TALENT:ARG:76
+		TIMES LOCAL, 0.7
+	;娼婦と傾城
+	IF TALENT:ARG:181
+		TIMES LOCAL, 0.5
+	ELSEIF TALENT:ARG:180
+		TIMES LOCAL, 0.7
+	ENDIF
+	
+	;売春禁止
+	SIF CFLAG:ARG:120 == 0
+		LOCAL += 999
+	
+	;0にはならない
+	LOCAL = MAX(LOCAL, 1)
+	RETURNF LOCAL
+;売春基本成功率の計算
+CASE "SEIKOU"
+	LOCAL = ABL:ARG:37 * 5
+	SIF EXP:ARG:74
+		LOCAL ++
+	SIF CFLAG:ARG:151 < -100
+		LOCAL ++
+	;肉便器補正
+	SIF TALENT:ARG:204
+		LOCAL += 100
+	;淫乱・娼婦・傾城
+	LOCAL += (TALENT:ARG:76 + TALENT:ARG:180 + TALENT:ARG:181) * 30
+	IF ARGS:1 == "TOWN"
+		;基本成功率は所持金依存
+		SELECTCASE CFLAG:ARG:580 + CFLAG:ARG:581 + CFLAG:ARG:582
+		CASE IS < -40000
+			LOCAL += 2000
+		CASE IS < -20000
+			LOCAL += 1000
+		CASE IS < -10000
+			LOCAL += 500
+		CASE IS < -5000
+			LOCAL += 250
+		CASE IS < 0
+			LOCAL += 100
+		CASE IS < 5000
+			LOCAL += 50
+		CASE IS < 10000
+			LOCAL += 20
+		CASEELSE
+			LOCAL += 5
+		ENDSELECT
+	ELSEIF ARGS:1 == "DUNGEON"
+		;勇者
+		IF CFLAG:ARG:1 == 2
+			SELECTCASE CFLAG:ARG:580 + CFLAG:ARG:581 + CFLAG:ARG:582
+			CASE IS < -40000
+				LOCAL += 2000
+			CASE IS < -20000
+				LOCAL += 1000
+			CASE IS < -10000
+				LOCAL += 500
+			CASE IS < -5000
+				LOCAL += 250
+			CASE IS < 0
+				LOCAL += 100
+			CASE IS < 5000
+				LOCAL += 50
+			CASE IS < 10000
+				LOCAL += 20
+			CASEELSE
+				LOCAL += 5
+			ENDSELECT
+		;奴隷
+		ELSE
+			LOCAL += 1500 / (25 - ABL:ARG:11 - ABL:ARG:37)
+			;潜入中
+			IF CFLAG:ARG:1 == 3 && CFLAG:(ARG:0):533 > 1
+				TIMES LOCAL, 0.75
+			;売春指示を受けた奴隷
+			ELSEIF CFLAG:ARG:500 == 1
+				LOCAL *= 10 + ABL:ARG:10 * 2
+				LOCAL /= 10
+			;それ以外
+			ELSE
+				TIMES LOCAL, 0.75
+			ENDIF
+		ENDIF
+	ELSE
+		THROW 未知的文字%ARGS:1%
+	ENDIF
+	
+	;売春積極性
+	IF CFLAG:ARG:120 > 0
+		LOCAL += (CFLAG:ARG:120 * 5) - 5
+	ELSE
+		LOCAL = 1
+	ENDIF
+	
+	;0にはならない
+	LOCAL = MAX(LOCAL, 1)
+	RETURNF LOCAL
+;とった客の最大人数
+CASE "KYAKU"
+	LOCAL = RAND:6
+	;カルマ補正
+	SELECTCASE CFLAG:ARG:151
+	CASE IS > 180
+		LOCAL -= 3
+	CASE IS > 130
+		LOCAL -= 2
+	CASE IS > 80
+		LOCAL -= 1
+	CASE IS > 30
+	CASE IS > -20
+		LOCAL += 1
+	CASE IS > -70
+		LOCAL += 2
+	CASE IS > -120
+		LOCAL += 3
+	CASEELSE
+		LOCAL += 4
+	ENDSELECT
+	
+	;出自による補正
+	SELECTCASE TALENT:ARG:315
+	CASE 5
+	;元娼婦
+		LOCAL += 2
+	CASE 7
+	;元物乞い
+		LOCAL += 1
+	CASE 2, 8, 12
+	;元修道女、元貴族、元聖女
+		LOCAL -= 1
+	ENDSELECT
+	
+	LOCAL += (ABL:ARG:15 + ABL:ARG:17 + ABL:ARG:37) / 6
+	LOCAL += TALENT:ARG:23 + TALENT:ARG:28 + TALENT:ARG:31 + TALENT:ARG:33
+	LOCAL -= TALENT:ARG:21 + TALENT:ARG:22 + TALENT:ARG:24 + TALENT:ARG:27 + TALENT:ARG:30
+	LOCAL += TALENT:ARG:91 + TALENT:ARG:92 + TALENT:ARG:113
+	LOCAL += TALENT:ARG:83 + TALENT:ARG:87 + TALENT:ARG:88
+	SIF TALENT:ARG:110
+		LOCAL ++
+	SIF TALENT:ARG:114
+		LOCAL += 2
+	IF TALENT:ARG:100
+		SIF TALENT:ARG:10
+			LOCAL ++
+		SIF TALENT:ARG:109
+			LOCAL ++
+		SIF TALENT:ARG:116
+			LOCAL += 2
+	ENDIF
+	SIF TALENT:ARG:99 && TALENT:ARG:248
+			LOCAL ++
+	IF ARGS:1 == "TOWN"
+		;特殊な容姿、人間相手ではマイナス、魔族相手ではプラスの効果
+		LOCAL -= TALENT:ARG:244 + TALENT:ARG:245 + TALENT:ARG:246 + TALENT:ARG:247 + TALENT:ARG:259 + TALENT:ARG:260
+		;所持金補正
+		SELECTCASE CFLAG:ARG:580 + CFLAG:581 + CFLAG:582
+		CASE IS < -40000
+			LOCAL += 5
+		CASE IS < -20000
+			LOCAL += 4
+		CASE IS < -10000
+			LOCAL += 3
+		CASE IS < -5000
+			LOCAL += 2
+		CASE IS < 0
+			LOCAL += 1
+		CASE IS < 5000
+			LOCAL -= 1
+		CASE IS < 10000
+			LOCAL -= 2
+		CASEELSE
+			LOCAL -= 3
+		ENDSELECT
+	ELSEIF ARGS:1 == "DUNGEON"
+		LOCAL += TALENT:ARG:244 + TALENT:ARG:245 + TALENT:ARG:246 + TALENT:ARG:247 + TALENT:ARG:259 + TALENT:ARG:260
+		;指示の有無
+		IF CFLAG:ARG:500 == 1
+			LOCAL *= 10 + ABL:ARG:10
+			LOCAL /= 10
+		ELSE
+			SIF TALENT:ARG:85
+				TIMES LOCAL, 0.5
+		ENDIF
+	ELSE
+		THROW 未知的文字%ARGS:1%
+	ENDIF
+	
+	;肉便器補正
+	SIF TALENT:ARG:204
+		TIMES LOCAL, 1.5
+		
+	;0にはなる
+	LOCAL = MAX(LOCAL, 0)
+	RETURNF LOCAL
+;プレイ内容ごとの可不可
+CASE "ABLE"
+	;先に共通条件
+	;調教対象が空だとダメ
+	SIF ARG < 0
+		RETURNF 0
+	;瀕死だとダメ
+	SIF BASE:ARG:0 < 500
+		RETURNF 0
+		
+	SELECTCASE ARGS:1
+	;ひとりあそび
+	CASE "SELF"
+	;手コキコース
+	CASE "HAND"
+	;おフェラコース
+	CASE "ORAL",
+		;キス未経験なら嫌がる
+		SIF CFLAG:ARG:16 == -1
+			RETURNF 0
+	;レズプレイ
+	CASE "LES"
+		;レズっ気2以上、C感覚3以上、欲望2以上、技巧2以上が必要
+		SIF ABL:ARG:22 < 2 || ABL:ARG:0 < 3 || ABL:ARG:10 < 2 || ABL:ARG:11 < 2
+			RETURNF 0
+		;調教キャラにレズ中毒必要
+		SIF ABL:ARG:33 == 0
+			RETURNF 0
+	;おしりコース
+	CASE "ANAL"
+	;本番コース
+	CASE "SEX"
+		;処女やオトコだとダメ
+		SIF TALENT:ARG:0 || TALENT:ARG:122 == 1
+			RETURNF 0
+		;貞操帯だとダメ
+		SIF CFLAG:ARG:42 == 79 && (CFLAG:ARG:40 & 64)
+			RETURNF 0
+		;貞操封印だとダメ
+		SIF TALENT:ARG:273
+			RETURNF 0
+	;どうぶつコース
+	;貞操封印ぬけてたっぽいので追加
+	CASE "ANIMAL"
+		;ITEM:野良犬がないとダメ
+		;魔王様の犬とは違う犬だけど
+		;性癖フィルター用に
+		SIF ITEM:22 == 0
+			RETURNF 0
+		;処女やオトコだとダメ
+		SIF TALENT:ARG:0 || TALENT:ARG:122 == 1
+			RETURNF 0
+		;貞操帯だとダメ
+		SIF CFLAG:ARG:42 == 79 && (CFLAG:ARG:40 & 64)
+			RETURNF 0
+		;貞操封印だとダメ
+		SIF TALENT:ARG:273
+			RETURNF 0
+	ENDSELECT
+	RETURNF 1
+;ヤった回数
+CASE "PLAY"
+	;SELFに限っては売春行為ではないため先に別個に処理する
+	IF ARGS:1 == "SELF"
+		LOCAL = ABL:ARG:31 + RAND:(ABL:ARG:11 + 1)
+		LOCAL /= 3
+		LOCAL += TALENT:ARG:60 + TALENT:ARG:74 + TALENT:ARG:272
+		;自慰狂い
+		SIF TALENT:ARG:74
+			TIMES LOCAL, 1.5
+		;オトコ・ふたなり・肉芽
+		SIF TALENT:ARG:121 || TALENT:ARG:122 || TALENT:ARG:326
+			TIMES LOCAL, 1.2
+		;0にはならない
+		LOCAL = MAX(LOCAL, 1)
+		RETURNF LOCAL
+	ENDIF
+	LOCAL = 1 + RAND:3
+	LOCAL += TALENT:ARG:63 + TALENT:ARG:64
+	LOCAL += (TALENT:ARG:76 + TALENT:ARG:272) * 2
+	LOCAL += (ABL:ARG:16 + ABL:ARG:37) / 3
+	;場所：娼館街
+	SIF FLAG:(CFLAG:ARG:501 + 349) == 507
+		TIMES LOCAL, 1.2
+	SELECTCASE ARGS:1
+	;手コキコース
+	CASE "HAND"
+		LOCAL += ABL:ARG:32 / 3
+	;おフェラコース
+	CASE "ORAL"
+		LOCAL += ABL:ARG:32 / 2
+		SIF EXP:ARG:22
+			LOCAL ++
+		SIF TALENT:ARG:52
+			LOCAL ++
+		;精愛味覚
+		SIF TALENT:ARG:47
+			TIMES LOCAL, 1.5
+	;びあんコース
+	CASE "LES"
+		LOCAL += (ABL:ARG:0 + ABL:ARG:22) / 3
+		LOCAL += TALENT:ARG:81 + TALENT:ARG:82
+		LOCAL *= (10 + ABL:ARG:33)
+		LOCAL /= 10
+	;おしりコース
+	CASE "ANAL"
+		LOCAL += (ABL:ARG:3 + ABL:ARG:30) / 3
+		;尻穴狂い
+		SIF TALENT:ARG:77
+			TIMES LOCAL, 1.5
+	;本番コース
+	CASE "SEX"
+		LOCAL += (ABL:ARG:2 + ABL:ARG:30) / 3
+		;セックス狂
+		SIF TALENT:ARG:75
+			TIMES LOCAL, 1.5
+	;どうぶつコース
+	CASE "ANIMAL"
+		LOCAL += (ABL:ARG:30 + ABL:ARG:39) / 3
+		;動物耳とかわいい動物が好き
+		LOCAL += TALENT:ARG:124 + (TALENT:ARG:317 == 12)
+		;牝犬
+		SIF TALENT:ARG:136
+			TIMES LOCAL, 1.5
+	ENDSELECT
+	
+	SIF !EXP:ARG:74
+		LOCAL -= 5
+		
+	;0にはならない
+	LOCAL = MAX(LOCAL, 1)
+	RETURNF LOCAL
+;抽選確率の設定用
+CASE "KAKURITU"
+	LOCAL = 1 + RAND:3
+	SELECTCASE ARGS:1
+	;手コキコース
+	CASE "HAND"
+		LOCAL += ABL:ARG:32 + 4
+		;愛かつ娼婦でも傾城でもない
+		SIF TALENT:ARG:85 && !(TALENT:ARG:180 || TALENT:ARG:181)
+			TIMES LOCAL, 1.5
+	;おフェラコース
+	CASE "ORAL"
+		LOCAL += ABL:ARG:32 + 3
+		SIF TALENT:ARG:52
+			LOCAL += 3
+		;精愛味覚
+		SIF TALENT:ARG:47
+			TIMES LOCAL, 2.0
+	;びあんコース
+	CASE "LES"
+		LOCAL += ABL:ARG:0 + ABL:ARG:22
+		LOCAL *= (10 + ABL:ARG:33)
+		LOCAL /= 10
+	;おしりコース
+	CASE "ANAL"
+		LOCAL += ABL:ARG:3 + ABL:ARG:30
+		;尻穴狂い
+		SIF TALENT:ARG:77
+			TIMES LOCAL, 2.0
+	;本番コース
+	CASE "SEX"
+		LOCAL += ABL:ARG:2 + ABL:ARG:30
+		;セックス狂
+		SIF TALENT:ARG:75
+			TIMES LOCAL, 2.0
+	;どうぶつコース
+	CASE "ANIMAL"
+		LOCAL += ABL:ARG:30 + ABL:ARG:39
+		;牝犬
+		SIF TALENT:ARG:136
+			TIMES LOCAL, 2.0
+	ENDSELECT
+	;0にはならない
+	LOCAL = MAX(LOCAL, 1)
+	LOCAL *= 5
+	RETURNF LOCAL
+;レート
+;街中売春で使用、数字が大きいほど抵抗感が大きい（料金と抽選確率に影響）
+CASE "RATE"
+	SELECTCASE ARGS:1
+	;基本料金はカルマ依存
+	;すなわち尻軽ほど安い
+	CASE "KARMA"
+		RETURNF (250 + CFLAG:ARG:151)
+	;手コキコース
+	CASE "HAND"
+		RETURNF 1
+	;おフェラコース＆レズプレイ
+	CASE "ORAL", "LES"
+		RETURNF 2
+	;おしりコース
+	CASE "ANAL"
+		RETURNF 3
+	;本番コース
+	CASE "SEX"
+		RETURNF 4
+	;どうぶつコース
+	CASE "ANIMAL"
+		RETURNF 11
+	ENDSELECT
+ENDSELECT
+
+;-----------------------------------------------
+@SHOW_BUTTON_BICH_LEVEL(NUM, ARG)
+#DIM NUM
+;-----------------------------------------------
+;キャラの能力表示において[売春積極性]ボタンを表示する
+;引数NUMはボタンの数値、ARGは対象キャラの番号
+
+
+PRINTFORM [{NUM}] 卖春积极性 - 
+
+IF CFLAG:ARG:120 == 0
+	PRINT 没有
+ELSEIF CFLAG:ARG:120 == 1
+	PRINT 普通
+ELSE
+	PRINTFORM {CFLAG:ARG:120}等级
+ENDIF
+
+PRINT  
+
+RETURN 0
+
+;-----------------------------------------------
+@SET_BICH_LEVEL(ARG)
+;-----------------------------------------------
+
+PRINTL 请设定等级
+PRINTL [0] [1] [2] [3] [4] [5]
+INPUT
+
+IF RESULT < 0
+	RETURN 0
+ELSEIF RESULT > 5
+	RETURN 0
+ENDIF
+
+CFLAG:ARG:120 = RESULT
+
+IF RESULT == 0
+	PRINTW 卖春积极性变成没有了
+ELSEIF RESULT == 1
+	PRINTW 卖春积极性变成普通了
+ELSE
+	PRINTFORMW 卖春积极性变为等级{RESULT}了
+ENDIF
+
+RETURN 0
+
+
+;旧構文
+[SKIPSTART]
+;ダンジョン内でのイベント奴隷用
+;--------------------------------------
+@DUNGEON_BITCH
+;--------------------------------------
+TARGET = A
+SIF BASE:0 < 300
+	RETURN 0
+SIF BASE:1 < 100
+	RETURN 0
+
+IF CFLAG:500 != 1
+	;売春以外
+ELSEIF CFLAG:42 == 79 && (CFLAG:40 & 64) && FLAG:37
+	;貞操帯
+	CALL DUNGEON_ANAL
+ELSEIF TALENT:273
+	;貞操封印
+	CALL DUNGEON_ANAL
+ELSEIF ABL:TARGET:2 >= ABL:TARGET:3
+	;V感覚>=A感覚
+	CALL DUNGEON_SEX
+ELSEIF ABL:TARGET:3 > 3
+	;A感覚3超
+	CALL DUNGEON_ANAL
+ENDIF
+
+N = 0
+IF CFLAG:500 == 1 && ABL:TARGET:33 >= 1
+	CALL DUNGEON_LES
+	N = RESULT
+ENDIF
+
+SIF ABL:TARGET:31 >= 1
+	CALL DUNGEON_SELF
+
+
+SIF ABL:TARGET:39 >= 1
+	CALL DUNGEON_ANIMAL
+A = TARGET
+
+;ついでに内職
+SIF CFLAG:A:500 == 0 && CFLAG:A:1 == 3
+	CALL DUNGEON_WORK
+
+RETURN 0
+
+;ダンジョン外で勇者が売春する用
+;--------------------------------------
+@HEROINE_BITCH
+;--------------------------------------
+;TARGET = A
+;体力の判定
+SIF BASE:0 < 300
+	RETURN 0
+SIF BASE:1 < 100
+	RETURN 0
+
+;まさかの時の兽奸ショー
+CALL HEROINE_ANIMAL_SHOW
+SIF RESULT == 1
+	RETURN 0
+
+IF RAND:3 == 0
+	;やりやすいオーラル売春
+	CALL HEROINE_BICH_ORAL	
+ELSEIF TALENT:0 || TALENT:273
+	;处女・貞操封印
+	CALL HEROINE_BICH_ANAL
+ELSEIF CFLAG:42 == 79 && (CFLAG:40 & 64)
+	;貞操帯
+	CALL HEROINE_BICH_ANAL
+ELSEIF ABL:TARGET:2 >= ABL:TARGET:3
+	CALL HEROINE_BICH_SEX
+ELSEIF ABL:TARGET:3 > 3
+	CALL HEROINE_BICH_ANAL
+ELSEIF RAND:3 == 0
+	CALL HEROINE_BICH_SEX
+ELSEIF RAND:2 == 0
+	CALL HEROINE_BICH_ANAL
+ELSE
+	CALL HEROINE_BICH_ORAL
+ENDIF
+
+RETURN 0
+
+
+;-------------------------------
+@DUNGEON_SEX
+#DIM PLAY
+#DIM PAY
+#DIM MEN
+;-------------------------------
+;ダンジョン売春
+
+;調教対象が空だとダメ
+SIF TARGET < 0
+	RETURN 0
+;处女や男人だとダメ
+SIF TALENT:0 || TALENT:122 == 1
+	RETURN 0
+;貞操帯だとダメ
+SIF CFLAG:42 == 79 && (CFLAG:40 & 64)
+	RETURN 0
+;貞操封印だとダメ
+SIF TALENT:273
+	RETURN 0
+;瀕死だとダメ
+SIF BASE:0 < 500
+	RETURN 0
+
+;性交回数
+PLAY = 0
+;代金
+PAY = 0
+;客
+MEN = RAND:5
+
+;妓女のドレスボーナス
+SIF (CFLAG:40 & 28) && CFLAG:41 == 203
+	PLAY += 1
+
+;V感覚
+IF ABL:2 == 4
+	PLAY += 1
+ELSEIF ABL:2 == 5
+	PLAY += 2
+ELSEIF ABL:2 >= 6
+	PLAY += 3
+ENDIF
+
+;性交中毒によるボーナス
+SIF ABL:30
+	PLAY += ABL:30 / 2 + 1
+
+;回数が0以下なら終了
+;SIF PLAY <= 0
+;	RETURN 0
+
+;欲望ＬＶ５以上侍奉精神５以上で+1
+SIF ABL:11 >= 5 && ABL:16 >= 5
+	PLAY += 2
+;欲望ＬＶ４以上侍奉精神４以上で+1
+SIF ABL:11 == 4 && ABL:16 >= 4
+	PLAY += 1
+
+;欲望ＬＶ７以上私处感觉ＬＶ６以上で+1（下と合わせて+2）
+SIF ABL:11 >= 7 && ABL:5 >= 6
+	PLAY += 1
+;欲望ＬＶ４以上私处感觉ＬＶ３以上で+1
+SIF ABL:11 >= 4 && ABL:2 >= 3
+	PLAY += 1
+
+;爱、淫乱によるボーナス
+SIF TALENT:85
+	PLAY += 1
+SIF TALENT:76
+	PLAY += 1
+
+;性爱狂によるボーナス
+SIF TALENT:75
+	PLAY += 2
+
+;接受快感、否定快感
+IF TALENT:70
+	PLAY += 1
+ELSEIF TALENT:71
+	PLAY -= 2
+ENDIF
+
+;看轻贞操、看重贞操
+IF TALENT:31
+	PLAY += 1
+ELSEIF TALENT:30
+	PLAY -= 2
+ENDIF
+
+;卖淫中毒によるボーナス
+SIF ABL:37 > 0
+	PLAY += ABL:37
+
+;妓女によるボーナス
+SIF TALENT:180
+	PLAY += 1
+
+;倾城によるボーナス
+SIF TALENT:181
+	PLAY += 2
+
+;肉便器によるボーナス
+SIF TALENT:204
+	PLAY += 1
+
+IF TALENT:315 == 5
+	;元妓女の場合ボーナス
+	PLAY += 2
+ELSEIF TALENT:315 == 7
+	;元物乞いの場合ボーナス
+	PLAY += 1
+ELSEIF TALENT:315 == 2
+	;元修道女
+	PLAY -= 1
+ELSEIF TALENT:315 == 8
+	;元貴族
+	PLAY -= 1
+ELSEIF TALENT:315 == 12
+	;元聖女
+	PLAY -= 1
+ENDIF
+
+;善恶值による積極性
+IF CFLAG:151 > 150
+	PLAY -= 3
+ELSEIF CFLAG:151 > 100
+	PLAY -= 2
+ELSEIF CFLAG:151 > 50
+	PLAY -= 1
+ELSEIF CFLAG:151 > 0
+	;変動无
+ELSEIF CFLAG:151 > -50
+	PLAY += 1
+ELSEIF CFLAG:151 > -100
+	PLAY += 2
+ELSEIF CFLAG:151 > -150
+	PLAY += 3
+ELSE
+	PLAY += 4
+ENDIF
+
+;回数が0以下になっていたら終了
+SIF PLAY <= 0
+	RETURN 0
+
+DRAWLINE
+PRINTFORM %SAVESTR:TARGET%
+;卖淫中毒か淫乱
+IF ABL:TARGET:37 == 1 || TALENT:TARGET:76 == 1
+	PRINTFORM 无法压抑性欲，向
+ELSE
+	PRINTFORM 遵从命令，向
+ENDIF
+IF MEN == 0
+	PRINT 兽人
+ELSEIF MEN == 1
+	PRINT 魔族男人
+ELSEIF MEN == 2
+	PRINT 魔族少年
+	;収入減
+	PAY -= 10
+ELSEIF MEN == 3
+	PRINT 魔族暴发户
+	;収入ボーナス
+	PAY += 20
+ELSE
+	PRINT 妖精商人
+ENDIF
+PRINTFORML 卖身了，
+PRINTFORMW 在冰冷的床上，卖了{PLAY}次…
+
+CALL DUNGEON_SEX_LOG, MEN
+
+PRINTFORML %EXPNAME:0%＋{PLAY}
+PRINTFORML %EXPNAME:5%＋{PLAY}
+PRINTFORML %EXPNAME:74%＋{PLAY}
+PRINTFORML %PALAMNAME:1%点数＋{PLAY*200}
+PRINTFORMW %PALAMNAME:5%点数＋{PLAY*250}
+EXP:0 += PLAY
+EXP:5 += PLAY
+EXP:74 += PLAY
+JUEL:1 += PLAY*200
+JUEL:5 += PLAY*250
+PRINTFORML %SAVESTR:TARGET%的放荡行为成为了魔王和奴隶们的力量(经验值+{PLAY})
+EXP:0:80 += PLAY
+EXP:TARGET:80 += PLAY
+PAY += PLAY * 50
+SIF PAY <= 0
+	PAY = 1
+PRINTFORMW 获得了%SAVESTR:TARGET%卖身的{PAY}点。
+MONEY += PAY
+FALG:4444 += PAY
+PRINTW (善恶值减少:-1)
+CALL KARMA, TARGET, -1
+RETURN 1
+
+;--------------------------------
+@DUNGEON_ANAL
+#DIM PLAY
+#DIM PAY
+#DIM MEN
+;--------------------------------
+;ダンジョンアナル
+;調教対象が空だとダメ
+SIF TARGET < 0
+	RETURN 0
+;瀕死だとダメ
+SIF BASE:0 < 500
+	RETURN 0
+
+;性交回数
+PLAY = 0
+;代金
+PAY = 0
+;客
+MEN = RAND:5
+
+;妓女のドレスボーナス
+SIF (CFLAG:40 & 28) && CFLAG:41 == 203
+	PLAY += 1
+
+;肛门感觉
+IF ABL:3 == 4
+	PLAY += 1
+ELSEIF ABL:3 == 5
+	PLAY += 2
+ELSEIF ABL:3 >= 6
+	PLAY += 3
+ENDIF
+
+;性交中毒によるボーナス
+SIF ABL:30
+	PLAY += ABL:30 / 2 + 1
+
+;回数が0以下なら終了
+;SIF PLAY <= 0
+;	RETURN 0
+
+;欲望ＬＶ５以上侍奉精神５以上で+1
+SIF ABL:11 >= 5 && ABL:16 >= 5
+	PLAY += 2
+;欲望ＬＶ４以上侍奉精神４以上で+1
+SIF ABL:11 == 4 && ABL:16 >= 4
+	PLAY += 1
+
+;欲望ＬＶ７以上私处感觉ＬＶ６以上で+1（下と合わせて+2）
+SIF ABL:11 >= 7 && ABL:5 >= 6
+	PLAY += 1
+;欲望ＬＶ４以上私处感觉ＬＶ３以上で+1
+SIF ABL:11 >= 4 && ABL:2 >= 3
+	PLAY += 1
+
+;爱、淫乱によるボーナス
+SIF TALENT:85
+	PLAY += 1
+SIF TALENT:76
+	PLAY += 1
+
+;尻穴狂によるボーナス
+SIF TALENT:75
+	PLAY += 2
+
+;接受快感、否定快感
+IF TALENT:70
+	PLAY += 1
+ELSEIF TALENT:71
+	PLAY -= 2
+ENDIF
+
+;看轻贞操、看重贞操
+IF TALENT:31
+	PLAY += 1
+ELSEIF TALENT:30
+	PLAY -= 2
+ENDIF
+
+;卖淫中毒によるボーナス
+SIF ABL:37 > 0
+	PLAY += ABL:37
+
+;妓女によるボーナス
+SIF TALENT:180
+	PLAY += 1
+
+;倾城によるボーナス
+SIF TALENT:181
+	PLAY += 2
+
+;肉便器によるボーナス
+SIF TALENT:204
+	PLAY += 1
+
+IF TALENT:315 == 5
+	;元妓女の場合ボーナス
+	PLAY += 2
+ELSEIF TALENT:315 == 7
+	;元物乞いの場合ボーナス
+	PLAY += 1
+ENDIF
+
+;善恶值による積極性
+IF CFLAG:151 > 150
+	PLAY -= 3
+ELSEIF CFLAG:151 > 100
+	PLAY -= 2
+ELSEIF CFLAG:151 > 50
+	PLAY -= 1
+ELSEIF CFLAG:151 > 0
+	;変動无
+ELSEIF CFLAG:151 > -50
+	PLAY += 1
+ELSEIF CFLAG:151 > -100
+	PLAY += 2
+ELSEIF CFLAG:151 > -150
+	PLAY += 3
+ELSE
+	PLAY += 4
+ENDIF
+
+;回数が0以下になっていたら終了
+SIF PLAY <= 0
+	RETURN 0
+
+DRAWLINE
+PRINTFORM %SAVESTR:TARGET%
+;卖淫中毒か淫乱
+IF ABL:TARGET:37 == 1 || TALENT:TARGET:76 == 1
+	PRINTFORM 无法压抑性欲，向
+ELSE
+	PRINTFORM 遵从命令，向
+ENDIF
+IF MEN == 0
+	PRINT 兽人
+ELSEIF MEN == 1
+	PRINT 魔族男人
+ELSEIF MEN == 2
+	PRINT 魔族少年
+	;収入減
+	PAY -= 10
+ELSEIF MEN == 3
+	PRINT 魔族暴发户
+	;収入ボーナス
+	PAY += 20
+ELSE
+	PRINT 妖精商人
+ENDIF
+PRINTFORML 卖菊了，
+PRINTFORMW 在冰冷的床上，卖了{PLAY}次…
+
+CALL DUNGEON_ANAL_LOG, MEN
+
+PRINTFORML %EXPNAME:1%＋{PLAY}
+PRINTFORML %EXPNAME:5%＋{PLAY}
+PRINTFORML %EXPNAME:74%＋{PLAY}
+PRINTFORML %PALAMNAME:2%点数＋{PLAY*200}
+PRINTFORMW %PALAMNAME:5%点数＋{PLAY*250}
+EXP:1 += PLAY
+EXP:5 += PLAY
+EXP:74 += PLAY
+JUEL:2 += PLAY*200
+JUEL:5 += PLAY*250
+
+PRINTFORML %SAVESTR:TARGET%的放荡行为成为了魔王和奴隶们的力量(经验值+{PLAY})
+EXP:0:80 += PLAY
+EXP:TARGET:80 += PLAY
+
+PAY += PLAY * 50
+SIF PAY <= 0
+	PAY = 1
+PRINTFORMW 获得了%SAVESTR:TARGET%卖身的{PAY}点。
+MONEY += PAY
+EX_FLAG:4444 += PAY
+PRINTW (善恶值减少:-2)
+CALL KARMA, TARGET, -2
+
+RETURN 1
+
+
+
+
+;--------------------------------
+@DUNGEON_LES
+#DIM PLAY
+#DIM PAY
+#DIM GIRL
+;--------------------------------
+;ダンジョンレズ
+;調教対象が空だとダメ
+SIF TARGET < 0
+	RETURN 0
+;百合气质2以上、C感覚3以上、欲望2以上、技巧2以上が必要
+SIF ABL:22 < 2 || ABL:0 < 3 || ABL:10 < 2 || ABL:11 < 2
+	RETURN 0
+;調教キャラに百合中毒必要
+SIF ABL:33 == 0
+	RETURN 0
+;瀕死だとダメ
+SIF BASE:0 < 500
+	RETURN 0
+
+;レズプレイ回数
+PLAY = 0
+;代金
+PAY = 0
+;客
+GIRL = RAND:5
+
+;妓女のドレスボーナス
+SIF (CFLAG:40 & 28) && CFLAG:41 == 203
+	PLAY += 1
+
+
+;百合中毒
+IF ABL:33 == 1
+	PLAY += 1
+ELSEIF ABL:33 == 2
+	PLAY += 2
+ELSEIF ABL:33 == 3
+	PLAY += 3
+ELSEIF ABL:33 == 4
+	PLAY += 5
+ELSEIF ABL:33 == 5
+	PLAY += 7
+ELSEIF ABL:33 >= 6
+	PLAY += 9
+ENDIF
+
+
+;回数が0以下なら終了
+SIF PLAY <= 0
+	RETURN 0
+
+;百合气质によるボーナス
+SIF ABL:22 >= 5
+	PLAY += 1
+
+;欲望ＬＶ７以上で+1（下と合わせて+2）
+SIF ABL:11 >= 7 && ABL:5 >= 6
+	PLAY += 1
+;欲望ＬＶ４以上で+1
+SIF ABL:11 >= 4 && ABL:2 >= 3
+	PLAY += 1
+
+
+;保守的、戒备森严によるペナルティ
+SIF TALENT:24
+	PLAY -= 1
+SIF TALENT:27
+	PLAY -= 1
+
+
+;双性恋、淫乱によるボーナス
+SIF TALENT:81
+	PLAY += 2
+SIF TALENT:76
+	PLAY += 1
+
+;接受快感、否定快感
+IF TALENT:70
+	PLAY += 1
+ELSEIF TALENT:71
+	PLAY -= 2
+ENDIF
+
+;卖淫中毒によるボーナス
+SIF ABL:37 > 0
+	PLAY += ABL:37
+
+;妓女によるボーナス
+SIF TALENT:180
+	PLAY += 1
+
+;倾城によるボーナス
+SIF TALENT:181
+	PLAY += 2
+
+;肉便器によるボーナス
+SIF TALENT:204
+	PLAY += 1
+
+IF TALENT:315 == 5
+	;元妓女の場合ボーナス
+	PLAY += 2
+ELSEIF TALENT:315 == 7
+	;元物乞いの場合ボーナス
+	PLAY += 1
+ENDIF
+
+;善恶值による積極性
+IF CFLAG:151 > 150
+	PLAY -= 3
+ELSEIF CFLAG:151 > 100
+	PLAY -= 2
+ELSEIF CFLAG:151 > 50
+	PLAY -= 1
+ELSEIF CFLAG:151 > 0
+	;変動无
+ELSEIF CFLAG:151 > -50
+	PLAY += 1
+ELSEIF CFLAG:151 > -100
+	PLAY += 2
+ELSEIF CFLAG:151 > -150
+	PLAY += 3
+ELSE
+	PLAY += 4
+ENDIF
+
+;回数が0以下になっていたら終了
+SIF PLAY <= 0
+	RETURN 0
+
+PRINTFORMW %SAVESTR:TARGET%
+;卖淫中毒か淫乱
+IF ABL:TARGET:37 == 1 || TALENT:TARGET:76 == 1
+	PRINTFORM 渴望女人，向
+ELSE
+	PRINTFORM 遵从命令，向
+ENDIF
+
+IF GIRL == 0
+	PRINT 淫魔
+ELSEIF GIRL == 1
+	PRINT 魔族女人
+ELSEIF GIRL == 2
+	PRINT 妖精的女乞丐
+	;収入減
+	PAY -= 10
+ELSEIF GIRL == 3
+	PRINT 魔族的贵妇人
+	;収入ボーナス
+	PAY += 20
+ELSE
+	PRINT 魔族的女祭司
+ENDIF
+
+PRINTFORML 卖身了，
+PRINTFORMW 貌似百合了{PLAY}次。
+
+CALL DUNGEON_LES_LOG, GIRL
+
+PRINTFORML %EXPNAME:40%＋{PLAY}
+SIF N*100*ABL:10/500 > 0
+	PRINTFORML %EXPNAME:2%＋{PLAY*100*ABL:10/500}
+PRINTFORML %EXPNAME:74%＋{PLAY}
+PRINTFORML %PALAMNAME:0%点数＋{PLAY*100*ABL:10}
+PRINTFORML %PALAMNAME:5%点数＋{PLAY*200}
+
+EXP:40 += PLAY
+EXP:2 += PLAY*100*ABL:10/500
+EXP:74 += PLAY
+JUEL:0 += PLAY*100*ABL:10
+JUEL:5 += PLAY*200
+
+PRINTFORML %SAVESTR:TARGET%的放荡行为成为了魔王和奴隶们的力量(经验值+{PLAY})
+EXP:0:80 += PLAY
+EXP:TARGET:80 += PLAY
+
+PAY += PLAY * 50
+SIF PAY <= 0
+	PAY = 1
+PRINTFORMW 获得了%SAVESTR:TARGET%卖身的{PAY}点。
+MONEY += PAY
+FALG:4444 += PAY
+RETURN 1
+
+;-------------------------------------
+@DUNGEON_SELF
+#DIM PLAY
+;-------------------------------------
+;ダンジョンでの自慰
+;調教対象が空だとダメ
+SIF TARGET < 0
+	RETURN 0
+;阴蒂感觉が3以上、欲望が2以上ないとダメ
+SIF ABL:0 < 3 || ABL:11 < 2
+	RETURN 0
+;从不自慰があるとダメ
+SIF TALENT:150
+	RETURN 0
+;瀕死だとダメ
+SIF BASE:0 < 500
+	RETURN 0
+
+PLAY = 0
+
+;自慰中毒
+IF ABL:31 == 1
+	PLAY += 1
+ELSEIF ABL:31 == 2
+	PLAY += 2
+ELSEIF ABL:31 == 3
+	PLAY += 4
+ELSEIF ABL:31 == 4
+	PLAY += 6
+ELSEIF ABL:31 == 5
+	PLAY += 9
+ELSEIF ABL:31 >= 6
+	PLAY += 14
+ENDIF
+
+;容易自慰で欲望ＬＶ３以上
+SIF TALENT:60 && ABL:11 >= 3
+	PLAY += 1
+
+;欲望ＬＶ５以上露出癖４以上で+1（下と合わせて+2）
+SIF ABL:11 >= 5 && ABL:17 >= 4
+	PLAY += 1
+;欲望ＬＶ４以上露出癖３以上で+1（下と合わせて+2）
+SIF ABL:11 >= 4 && ABL:17 >= 3
+	PLAY += 1
+
+;回数が0以下なら終了
+SIF PLAY <= 0
+	RETURN 0
+
+;自慰狂によるボーナス
+SIF TALENT:74
+	TIMES PLAY , 1.50
+
+;低姿态、开放によるボーナス
+SIF TALENT:17
+	PLAY += 1
+SIF TALENT:33
+	PLAY += 1
+
+;高姿态、克制、压抑によるペナルティ
+SIF TALENT:15
+	PLAY -= 1
+SIF TALENT:20
+	PLAY -= 1
+SIF TALENT:32
+	PLAY -= 1
+
+;接受快感、否定快感
+IF TALENT:70
+	PLAY += 1
+ELSEIF TALENT:71
+	PLAY -= 2
+ENDIF
+
+;淫乱によるボーナス
+SIF TALENT:76
+	PLAY += 1
+
+;回数が0以下になっていたら終了
+SIF PLAY <= 0
+	RETURN 0
+
+DRAWLINE
+
+
+;調教後オナニーの妄想の相手
+;愛がなくかつレズっ気×20%でレズ
+IF TALENT:85 == 0 && ABL:22 > RAND:5
+	PRINTFORML 妄想着百合，自慰了{PLAY}次。
+;上に該当せずかつ愛がなくアイテムに野良犬があれば、兽奸中毒×20%で野良犬
+ELSEIF TALENT:85 == 0 && ABL:39 > RAND:5 && ITEM:22
+	PRINTFORML 妄想着与野兽交配，自慰了{PLAY}次。
+;それ以外なら主人
+ELSE
+	PRINTFORML 想着%CALLNAME:MASTER%的事，自慰了{PLAY}次。
+ENDIF
+
+
+;自慰経験
+PRINTFORML %EXPNAME:10%＋{PLAY}
+EXP:10 += PLAY
+
+;珠経験
+PRINTFORML %PALAMNAME:0%点数＋{PLAY*500}
+PRINTFORML %PALAMNAME:4%点数＋{PLAY*100}
+PRINTFORMW %PALAMNAME:5%点数＋{PLAY*250}
+JUEL:0 += PLAY*500
+JUEL:4 += PLAY*100
+JUEL:5 += PLAY*250
+
+	
+PRINTFORMW %SAVESTR:TARGET%的放荡行为成为了魔王和奴隶们的力量(经验值+{PLAY})
+EXP:0:80 += PLAY
+EXP:TARGET:80 += PLAY
+
+RETURN 1
+
+
+;--------------------------------
+@DUNGEON_ANIMAL
+#DIM PLAY
+;--------------------------------
+;ダンジョン兽奸
+
+;調教対象が空だとダメ
+SIF TARGET < 0
+	RETURN 0
+
+;兽奸经验が50以上ないとダメ
+SIF EXP:56 < 50
+	RETURN 0
+
+;处女や男人だとダメ
+SIF TALENT:0 || TALENT:122 == 1
+	RETURN 0
+
+;貞操帯だとダメ
+SIF CFLAG:42 == 79 && (CFLAG:40 & 64)
+	RETURN 0
+
+;ITEM:野狗がないとダメ
+SIF ITEM:22 == 0
+	RETURN 0
+;瀕死だとダメ
+SIF BASE:0 < 500
+	RETURN 0
+
+PLAY = 0
+
+;兽奸中毒
+IF ABL:39 == 0
+	PLAY -= 2
+ELSEIF ABL:39 == 1
+	PLAY -= 1
+ELSEIF ABL:39 == 2
+	PLAY += 0
+ELSEIF ABL:39 == 3
+	PLAY += 1
+ELSEIF ABL:39 == 4
+	PLAY += 2
+ELSEIF ABL:39 == 5
+	PLAY += 3
+ELSEIF ABL:39 >= 6
+	PLAY += 4
+ENDIF
+
+;动物耳朵で欲望ＬＶ３以上
+SIF TALENT:124 && ABL:11 >= 3
+	PLAY += 1
+
+;かわいい動物が好きで欲望ＬＶ４以上
+SIF  TALENT:317 == 12 && ABL:11 >= 4
+	PLAY += 1
+
+;欲望ＬＶ５以上露出癖４以上で+1（下と合わせて+2）
+SIF ABL:11 >= 5 && ABL:17 >= 4
+	PLAY += 1
+;欲望ＬＶ４以上露出癖３以上で+1
+SIF ABL:11 >= 4 && ABL:17 >= 3
+	PLAY += 1
+
+;牝犬によるボーナス
+SIF TALENT:136
+	PLAY += 2
+
+;回数が0以下なら終了
+SIF PLAY <= 0
+	RETURN 0
+
+;低姿态、开放、动物耳朵によるボーナス
+SIF TALENT:17
+	PLAY += 1
+SIF TALENT:33
+	PLAY += 1
+SIF TALENT:124
+	PLAY += 1
+
+;高姿态、克制、压抑、反感污臭によるペナルティ
+SIF TALENT:15
+	PLAY -= 1
+SIF TALENT:20
+	PLAY -= 1
+SIF TALENT:32
+	PLAY -= 1
+SIF TALENT:62 && TALENT:64 == 0
+	PLAY -= 2
+
+;接受快感、否定快感
+IF TALENT:70
+	PLAY += 1
+ELSEIF TALENT:71
+	PLAY -= 2
+ENDIF
+
+;淫乱によるボーナス
+SIF TALENT:76
+	PLAY += 1
+
+;牝犬によるボーナスその２
+SIF TALENT:136
+	TIMES PLAY , 1.50
+
+;回数が0以下になっていたら終了
+SIF PLAY <= 0
+	RETURN 0
+
+DRAWLINE
+PRINTFORM %SAVESTR:TARGET%无法抑制兽奸的欲望，
+PRINTFORML 和野兽交配了{PLAY}次。
+
+;兽奸经验
+PRINTFORML %EXPNAME:56%＋{PLAY}
+PRINTFORML %EXPNAME:0%＋{PLAY}
+PRINTFORML %EXPNAME:5%＋{PLAY}
+EXP:56 += PLAY
+EXP:0 += PLAY
+EXP:5 += PLAY
+
+;珠経験
+PRINTFORML %PALAMNAME:1%点数＋{PLAY*200}
+PRINTFORML %PALAMNAME:6%点数＋{PLAY*300}
+PRINTFORMW %PALAMNAME:8%点数＋{PLAY*200}
+JUEL:1 += A*200
+JUEL:6 += A*300
+JUEL:8 += A*200
+
+PRINTFORMW %SAVESTR:TARGET%的放荡行为成为了魔王和奴隶们的力量(经验值+{PLAY})
+EXP:0:80 += PLAY
+EXP:TARGET:80 += PLAY
+
+PRINTW (善恶值减少:-2)
+CALL KARMA, TARGET, -2
+
+RETURN 1
+
+;--------------------------------------
+@DUNGEON_WORK
+;--------------------------------------
+;内職
+
+M = (CFLAG:A:9 * 20) + 100
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%从事了
+	IF RAND:4 == 0
+		PRINT 研磨宝石的
+	ELSEIF RAND:3 == 0
+		PRINT 制作工艺品的
+	ELSEIF RAND:2 == 0
+		PRINT 抄写书籍的
+	ELSE
+		PRINT 制作手工的
+	ENDIF
+	PRINTFORMW 副业，获得了{M}点收入。
+ENDIF
+
+MONEY += M
+FALG:4444 += M
+RETURN 0
+
+;-------------------------------
+@HEROINE_BICH_SEX
+#DIM PLAY
+#DIM PAY
+#DIM MEN
+;-------------------------------
+;ダンジョン外の勇者売春
+
+;調教対象が空だとダメ
+SIF TARGET < 0
+	RETURN 0
+;处女や男人だとダメ
+SIF TALENT:0 || TALENT:122 == 1
+	RETURN 0
+;貞操帯だとダメ
+SIF CFLAG:42 == 79 && (CFLAG:40 & 64)
+	RETURN 0
+;貞操封印だとダメ
+SIF TALENT:273
+	RETURN 0
+;瀕死だとダメ
+SIF BASE:0 < 500
+	RETURN 0
+;未経験の場合善恶值がある程度まで低くないとダメ
+;回数補正に変更
+; SIF CFLAG:151 > 50 && EXP:74 == 0
+	; RETURN 0
+
+;性交回数
+;初期値は低い
+PLAY = -2
+;代金
+PAY = 0
+;客
+MEN = RAND:5
+
+;未経験の場合ペナルティ
+SIF EXP:74 == 0
+	PLAY -= 3
+
+;妓女のドレスボーナス
+SIF (CFLAG:40 & 28) && CFLAG:41 == 203
+	PLAY += 1
+
+;V感覚
+IF ABL:2 == 4
+	PLAY += 1
+ELSEIF ABL:2 == 5
+	PLAY += 2
+ELSEIF ABL:2 >= 6
+	PLAY += 3
+ENDIF
+
+;性交中毒によるボーナス
+SIF ABL:30
+	PLAY += ABL:30 / 2 + 1
+
+;回数が0以下なら終了
+;SIF PLAY <= 0
+;	RETURN 0
+
+;欲望ＬＶ５以上侍奉精神５以上で+1
+SIF ABL:11 >= 5 && ABL:16 >= 5
+	PLAY += 2
+;欲望ＬＶ４以上侍奉精神４以上で+1
+SIF ABL:11 == 4 && ABL:16 >= 4
+	PLAY += 1
+
+;欲望ＬＶ７以上私处感觉ＬＶ６以上で+1（下と合わせて+2）
+SIF ABL:11 >= 7 && ABL:5 >= 6
+	PLAY += 1
+;欲望ＬＶ４以上私处感觉ＬＶ３以上で+1
+SIF ABL:11 >= 4 && ABL:2 >= 3
+	PLAY += 1
+
+;爱、淫乱によるボーナス
+SIF TALENT:85
+	PLAY += 1
+SIF TALENT:76
+	PLAY += 1
+
+;性爱狂によるボーナス
+SIF TALENT:75
+	PLAY += 2
+
+;接受快感、否定快感
+IF TALENT:70
+	PLAY += 1
+ELSEIF TALENT:71
+	PLAY -= 2
+ENDIF
+
+;看轻贞操、看重贞操
+IF TALENT:31
+	PLAY += 1
+ELSEIF TALENT:30
+	PLAY -= 2
+ENDIF
+
+;卖淫中毒によるボーナス
+SIF ABL:37 > 0
+	PLAY += ABL:37
+
+;妓女によるボーナス
+SIF TALENT:180
+	PLAY += 1
+
+;倾城によるボーナス
+SIF TALENT:181
+	PLAY += 2
+
+;肉便器によるボーナス
+SIF TALENT:204
+	PLAY += 1
+
+;正太控の場合、客が少年になる
+IF TALENT:正太控
+	MEN = 2
+	PLAY += 1
+ENDIF
+
+IF TALENT:315 == 5
+	;元妓女の場合ボーナス
+	PLAY += 3
+ELSEIF TALENT:315 == 7
+	;元物乞いの場合ボーナス
+	PLAY += 2
+ELSEIF TALENT:315 == 2
+	;元修道女
+	PLAY -= 1
+ELSEIF TALENT:315 == 8
+	;元貴族
+	PLAY -= 1
+ELSEIF TALENT:315 == 12
+	;元聖女
+	PLAY -= 1
+ENDIF
+
+;善恶值による積極性
+IF CFLAG:151 > 150
+	PLAY -= 3
+ELSEIF CFLAG:151 > 100
+	PLAY -= 2
+ELSEIF CFLAG:151 > 50
+	PLAY -= 1
+ELSEIF CFLAG:151 > 0
+	;変動无
+ELSEIF CFLAG:151 > -50
+	PLAY += 1
+ELSEIF CFLAG:151 > -100
+	PLAY += 2
+ELSEIF CFLAG:151 > -150
+	PLAY += 3
+ELSE
+	PLAY += 4
+ENDIF
+
+;借金による強制
+IF CFLAG:582 >= 0
+	PLAY -= 3
+ELSEIF CFLAG:582 > -1000
+	PLAY -= 2
+ELSEIF CFLAG:582 > -2000
+	PLAY -= 1
+ELSEIF CFLAG:582 > -3000
+	;変動无
+ELSEIF CFLAG:582 > -4000
+	PLAY += 1
+ELSEIF CFLAG:582 > -6000
+	PLAY += 2
+ELSEIF CFLAG:582 > -8000
+	PLAY += 3
+ELSEIF CFLAG:582 > -11000
+	PLAY += 4
+ELSEIF CFLAG:582 > -15000
+	PLAY += 5
+ELSEIF CFLAG:582 > -20000
+	PLAY += 6
+ELSE
+	PLAY += 7
+ENDIF
+
+;回数が0以下になっていたら終了
+SIF PLAY <= 0
+	RETURN 0
+
+DRAWLINE
+
+IF TALENT:成为勇者前的生活 == 8
+	;貴族
+	PRINT 身为贵族的
+ELSEIF TALENT:成为勇者前的生活 == 12
+	;聖女
+	PRINT 身为圣女的
+ELSEIF TALENT:魅力点 == 23
+	;大きな尻
+	PRINT 拥有丰满臀部的
+ELSE
+	;特に何もない場合髪色
+	PRINTFORM %GET_LOOK_INFO(TARGET, "头发颜色")%的
+ENDIF
+
+PRINTFORM %SAVESTR:TARGET%
+;卖淫中毒か淫乱
+IF ABL:TARGET:37 == 1 || TALENT:TARGET:76 == 1
+	PRINTFORM 无法压抑性欲，向
+ELSEIF CFLAG:582 < -4000
+	PRINTFORM 债台高筑，向
+ELSE
+	PRINTFORM 冒险资金见底，向
+ENDIF
+IF MEN == 0
+	PRINT 村民
+ELSEIF MEN == 1
+	PRINT 冒险者
+ELSEIF MEN == 2
+	PRINT 村里少年
+	;収入減
+	PAY -= 10
+ELSEIF MEN == 3
+	PRINT 街边暴发户
+	;収入ボーナス
+	PAY += 20
+ELSE
+	PRINT 奸商
+ENDIF
+IF PLAY <= 1
+PRINTFORML 卖身了，
+PRINTFORMW 似乎和客人去了后巷的小旅馆…
+ELSE
+PRINTFORML 卖身了，
+PRINTFORMW 被客人们搂着去了后巷的小旅馆…
+PRINTFORMW %SAVESTR:TARGET%仰臥著用雙腿用力的夾住趴在自己身上的客人的腰，發出著甜蜜的大聲的呻吟聲…
+PRINTFORMW 随即被翻过身来，被人從背後抓着乳房像狗一樣侵犯着肛门…
+PRINTFORMW 同时在客人们笑骂其胸部只是裝飾，是無用之物後，%SAVESTR:TARGET%因被命令著而不得不用胸部進行著奉仕，口中也被陽具插入，頭被前後搖晃著套弄起來…
+PRINTFORMW 被騎乗位的体勢侵犯著的%SAVESTR:TARGET%拚命地抑制住自己的呻吟聲，套弄着兩側站著的男人們的阳具，同时被抽插着乳沟，喉咙被巨大的阳具突入…%SAVESTR:TARGET%感到一陣窒息…
+PRINTFORMW 随后%SAVESTR:TARGET%被客人们抱了起来，双腿被客人像洋娃娃一样架在肩上，前后被同时插入，乳房则像面团一样被肆意揉捏着变成各种淫靡的形状…
+PRINTFORMW %SAVESTR:TARGET%的後面與前面被同時突刺，身體連續不斷地前後搖動著。搖晃著的身體隨著每次陽具在阴道和尻穴中的突刺，迎來异样的高潮，同时尻穴和阴道内也被射入了精液…
+PRINTFORMW 在客人走后，%SAVESTR:TARGET%躺在满是淫液的床上，全身塗滿了白濁的液體。被射入尻穴与阴道深处的精液伴隨著卑猥的聲音緩緩地流了出来…
+ENDIF
+
+PRINTFORML %EXPNAME:0%＋{PLAY}
+PRINTFORML %EXPNAME:1%＋{PLAY}
+PRINTFORML %EXPNAME:22%＋{PLAY}
+PRINTFORML %EXPNAME:20%＋{PLAY}
+PRINTFORML %EXPNAME:5%＋{PLAY}
+PRINTFORML %EXPNAME:74%＋{PLAY}
+PRINTFORML %PALAMNAME:1%点数＋{PLAY*10}
+PRINTFORML %PALAMNAME:2%点数＋{PLAY*10}
+PRINTFORML %PALAMNAME:22%点数＋{PLAY*15}
+PRINTFORMW %PALAMNAME:5%点数＋{PLAY*15}
+PRINTFORMW %PALAMNAME:7%点数＋{PLAY*15}
+EXP:0 += PLAY
+EXP:1 += PLAY
+EXP:22 += PLAY
+EXP:20 += PLAY*3
+EXP:5 += PLAY
+EXP:74 += PLAY
+JUEL:1 += PLAY*10
+JUEL:2 += PLAY*10
+JUEL:22 += PLAY*15
+JUEL:5 += PLAY*15
+JUEL:7 += PLAY*15
+
+PAY += PLAY * 500
+SIF PAY <= 0
+	PAY = 1
+PRINTFORMW %SAVESTR:TARGET%获得了{PAY}点的金钱以及经验值。
+EXP:TARGET:80 += PAY / 50
+CFLAG:580 += PAY
+PRINTW (善恶值减少:-1)
+CALL KARMA, TARGET, -1
+RETURN 1
+
+;--------------------------------
+@HEROINE_BICH_ANAL
+#DIM PLAY
+#DIM PAY
+#DIM MEN
+;--------------------------------
+;ダンジョン外アナル売春
+;調教対象が空だとダメ
+SIF TARGET < 0
+	RETURN 0
+;瀕死だとダメ
+SIF BASE:0 < 500
+	RETURN 0
+;未経験の場合善恶值がある程度まで低くないとダメ
+; SIF CFLAG:151 > 50 && EXP:74 == 0
+	; RETURN 0
+
+;性交回数
+;初期値は低い
+PLAY = -2
+;代金
+PAY = 0
+;客
+MEN = RAND:5
+
+;未経験の場合ペナルティ
+;アナルは一般性癖じゃないので若干抵抗が大きい
+SIF EXP:74 == 0
+	PLAY -= 4
+
+;妓女のドレスボーナス
+SIF (CFLAG:40 & 28) && CFLAG:41 == 203
+	PLAY += 1
+
+;肛门感觉
+IF ABL:3 == 4
+	PLAY += 1
+ELSEIF ABL:3 == 5
+	PLAY += 2
+ELSEIF ABL:3 >= 6
+	PLAY += 3
+ENDIF
+
+;性交中毒によるボーナス
+SIF ABL:30
+	PLAY += ABL:30 / 2 + 1
+
+;回数が0以下なら終了
+;SIF PLAY <= 0
+;	RETURN 0
+
+;欲望ＬＶ５以上侍奉精神５以上で+1
+SIF ABL:11 >= 5 && ABL:16 >= 5
+	PLAY += 2
+;欲望ＬＶ４以上侍奉精神４以上で+1
+SIF ABL:11 == 4 && ABL:16 >= 4
+	PLAY += 1
+
+;欲望ＬＶ７以上私处感觉ＬＶ６以上で+1（下と合わせて+2）
+SIF ABL:11 >= 7 && ABL:5 >= 6
+	PLAY += 1
+;欲望ＬＶ４以上私处感觉ＬＶ３以上で+1
+SIF ABL:11 >= 4 && ABL:2 >= 3
+	PLAY += 1
+
+;爱、淫乱によるボーナス
+SIF TALENT:85
+	PLAY += 1
+SIF TALENT:76
+	PLAY += 1
+
+;尻穴狂によるボーナス
+SIF TALENT:75
+	PLAY += 2
+
+;接受快感、否定快感
+IF TALENT:70
+	PLAY += 1
+ELSEIF TALENT:71
+	PLAY -= 2
+ENDIF
+
+;看轻贞操、看重贞操
+IF TALENT:31
+	PLAY += 1
+ELSEIF TALENT:30
+	PLAY -= 2
+ENDIF
+
+;卖淫中毒によるボーナス
+SIF ABL:37 > 0
+	PLAY += ABL:37
+
+;妓女によるボーナス
+SIF TALENT:180
+	PLAY += 1
+
+;倾城によるボーナス
+SIF TALENT:181
+	PLAY += 2
+
+;肉便器によるボーナス
+SIF TALENT:204
+	PLAY += 1
+
+;正太控の場合、客が少年になる
+IF TALENT:正太控
+	MEN = 2
+	PLAY += 1
+ENDIF
+
+
+IF TALENT:315 == 5
+	;元妓女の場合ボーナス
+	PLAY += 3
+ELSEIF TALENT:315 == 7
+	;元物乞いの場合ボーナス
+	PLAY += 2
+ENDIF
+
+;善恶值による積極性
+IF CFLAG:151 > 150
+	PLAY -= 3
+ELSEIF CFLAG:151 > 100
+	PLAY -= 2
+ELSEIF CFLAG:151 > 50
+	PLAY -= 1
+ELSEIF CFLAG:151 > 0
+	;変動无
+ELSEIF CFLAG:151 > -50
+	PLAY += 1
+ELSEIF CFLAG:151 > -100
+	PLAY += 2
+ELSEIF CFLAG:151 > -150
+	PLAY += 3
+ELSE
+	PLAY += 4
+ENDIF
+
+;借金による強制
+IF CFLAG:582 >= 0
+	PLAY -= 3
+ELSEIF CFLAG:582 > -1000
+	PLAY -= 2
+ELSEIF CFLAG:582 > -2000
+	PLAY -= 1
+ELSEIF CFLAG:582 > -3000
+	;変動无
+ELSEIF CFLAG:582 > -4000
+	PLAY += 1
+ELSEIF CFLAG:582 > -6000
+	PLAY += 2
+ELSEIF CFLAG:582 > -8000
+	PLAY += 3
+ELSEIF CFLAG:582 > -11000
+	PLAY += 4
+ELSEIF CFLAG:582 > -15000
+	PLAY += 5
+ELSEIF CFLAG:582 > -20000
+	PLAY += 6
+ELSE
+	PLAY += 7
+ENDIF
+
+;回数が0以下になっていたら終了
+SIF PLAY <= 0
+	RETURN 0
+
+DRAWLINE
+
+IF TALENT:成为勇者前的生活 == 8
+	;貴族
+	PRINT 身为贵族的
+ELSEIF TALENT:成为勇者前的生活 == 12
+	;聖女
+	PRINT 身为圣女的
+ELSEIF TALENT:魅力点 == 23
+	;大きな尻
+	PRINT 拥有丰满臀部的
+ELSE
+	;特に何もない場合髪色
+	PRINTFORM %GET_LOOK_INFO(TARGET, "头发颜色")%的
+ENDIF
+
+PRINTFORM %SAVESTR:TARGET%
+;卖淫中毒か淫乱
+IF ABL:TARGET:37 == 1 || TALENT:TARGET:76 == 1
+	PRINTFORM 无法压抑性欲，向
+ELSEIF CFLAG:582 < -4000
+	PRINTFORM 债台高筑，向
+ELSE
+	PRINTFORM 冒险资金见底，向
+ENDIF
+IF MEN == 0
+	PRINT 村民
+ELSEIF MEN == 1
+	PRINT 冒险者
+ELSEIF MEN == 2
+	PRINT 村里少年
+	;収入減
+	PAY -= 10
+ELSEIF MEN == 3
+	PRINT 街边暴发户
+	;収入ボーナス
+	PAY += 20
+ELSE
+	PRINT 奸商
+ENDIF
+;PRINTFORML 卖菊了，
+;PRINTFORMW 似乎到后巷的小旅馆卖了{PLAY}次…
+IF PLAY <= 1
+PRINTFORML 卖菊了，
+PRINTFORMW 似乎到后巷的小旅馆卖了{PLAY}次…
+ELSE
+PRINTFORML 卖菊了，
+PRINTFORMW 被客人们搂着去了后巷的小旅馆…
+PRINTFORMW %SAVESTR:TARGET%忍受着屈辱，跪在床上，像母狗一样摇动着屁股…
+PRINTFORMW %SAVESTR:TARGET%被客人們從背後抱住，肛門被淩辱，就像狗一樣被侵犯著…
+PRINTFORMW 每次臀瓣與客人的腰肢發生撞擊，四肢著地趴著的%SAVESTR:TARGET%都會提高口中漏出的愉悅的呻吟聲…
+PRINTFORMW %SAVESTR:TARGET%的臀部被客人像揉面一般地揉撫著，瘋狂忘我地聳動著腰部，呼吸逐漸變得粗重而凌亂…
+PRINTFORMW 随后客人躺在地上，让%SAVESTR:TARGET%坐上来自己动。%SAVESTR:TARGET%跨坐在男人的腰上扭動著自己的身體，乳首也被旁边的男人揉搓吸吮着…
+PRINTFORMW 在客人走后，%SAVESTR:TARGET%的全身塗滿了白濁的液體，像被丟棄的人偶一般癱倒在床上，尻穴深处被射入的精液伴隨著卑猥的聲音在緩緩地流了出来…
+ENDIF
+
+PRINTFORML %EXPNAME:1%＋{PLAY}
+PRINTFORML %EXPNAME:5%＋{PLAY}
+PRINTFORML %EXPNAME:74%＋{PLAY}
+PRINTFORML %PALAMNAME:2%点数＋{PLAY*10}
+PRINTFORMW %PALAMNAME:5%点数＋{PLAY*15}
+PRINTFORMW %PALAMNAME:7%点数＋{PLAY*15}
+EXP:1 += PLAY
+EXP:5 += PLAY
+EXP:74 += PLAY
+JUEL:2 += PLAY*10
+JUEL:5 += PLAY*15
+JUEL:7 += PLAY*15
+
+PAY += PLAY * 350
+SIF PAY <= 0
+	PAY = 1
+
+PRINTFORMW %SAVESTR:TARGET%获得了{PAY}点的金钱以及经验值。
+EXP:TARGET:80 += PAY / 50
+CFLAG:580 += PAY
+
+PRINTW (善恶值减少:-2)
+CALL KARMA, TARGET, -2
+
+RETURN 1
+
+;--------------------------------
+@HEROINE_BICH_ORAL
+#DIM PLAY
+#DIM PAY
+#DIM MEN
+;--------------------------------
+;ダンジョン外フェラ売春
+;ハードルがだいぶ低い
+
+;調教対象が空だとダメ
+SIF TARGET < 0
+	RETURN 0
+;瀕死だとダメ
+SIF BASE:0 < 500
+	RETURN 0
+
+;性交回数
+;初期値は低い
+PLAY = -2
+;代金
+PAY = 0
+;客
+MEN = RAND:5
+
+;未経験の場合ペナルティ
+;若干抵抗が少ない
+SIF EXP:74 == 0
+	PLAY -= 2
+
+;妓女のドレスボーナス
+SIF (CFLAG:40 & 28) && CFLAG:41 == 203
+	PLAY += 1
+
+;侍奉技术
+PLAY += ABL:侍奉技术
+
+;侍奉精神によるボーナス
+PLAY += ABL:侍奉精神
+
+;精液中毒によるボーナス
+PLAY += ABL:精液中毒
+
+;欲望ＬＶ４以上で+1
+SIF ABL:11 == 4
+	PLAY += 1
+
+;欲望ＬＶ５以上で+1
+SIF ABL:11 >= 5
+	PLAY += 1
+
+;欲望ＬＶ７以上で+1
+SIF ABL:11 >= 7
+	PLAY += 1
+
+;愛、淫乱によるボーナス
+SIF TALENT:85
+	PLAY += 1
+SIF TALENT:76
+	PLAY += 1
+
+;喜欢精液によるボーナス
+SIF TALENT:喜欢精液
+	PLAY += 2
+
+;快感に坦率、否定快感
+IF TALENT:70
+	PLAY += 1
+ELSEIF TALENT:71
+	PLAY -= 2
+ENDIF
+
+;看轻贞操、看重贞操
+IF TALENT:31
+	PLAY += 1
+ELSEIF TALENT:30
+	PLAY -= 2
+ENDIF
+
+;卖淫中毒によるボーナス
+SIF ABL:37 > 0
+	PLAY += ABL:37
+
+;擅用舌头によるボーナス
+SIF TALENT:擅用舌头
+	PLAY += 1
+
+;不怕污臭、反感污臭
+IF TALENT:不怕污臭
+	PLAY += 1
+ELSEIF TALENT:反感污臭
+	PLAY -= 2
+ENDIF
+
+;妓女によるボーナス
+SIF TALENT:180
+	PLAY += 1
+
+;倾城によるボーナス
+SIF TALENT:181
+	PLAY += 2
+
+;肉便器によるボーナス
+SIF TALENT:204
+	PLAY += 1
+
+;正太控の場合、客が少年になる
+IF TALENT:正太控
+	MEN = 2
+	PLAY += 1
+ENDIF
+
+
+IF TALENT:315 == 5
+	;元妓女の場合ボーナス
+	PLAY += 3
+ELSEIF TALENT:315 == 7
+	;元物乞いの場合ボーナス
+	PLAY += 2
+ENDIF
+
+;善恶值による積極性
+IF CFLAG:151 > 150
+	PLAY -= 3
+ELSEIF CFLAG:151 > 100
+	PLAY -= 2
+ELSEIF CFLAG:151 > 50
+	PLAY -= 1
+ELSEIF CFLAG:151 > 0
+	;変動无
+ELSEIF CFLAG:151 > -50
+	PLAY += 1
+ELSEIF CFLAG:151 > -100
+	PLAY += 2
+ELSEIF CFLAG:151 > -150
+	PLAY += 3
+ELSE
+	PLAY += 4
+ENDIF
+
+;借金による強制
+IF CFLAG:582 >= 0
+	PLAY -= 3
+ELSEIF CFLAG:582 > -500
+	PLAY -= 2
+ELSEIF CFLAG:582 > -1500
+	PLAY -= 1
+ELSEIF CFLAG:582 > -2500
+	;変動无
+ELSEIF CFLAG:582 > -3500
+	PLAY += 1
+ELSEIF CFLAG:582 > -4500
+	PLAY += 2
+ELSEIF CFLAG:582 > -6000
+	PLAY += 3
+ELSEIF CFLAG:582 > -9000
+	PLAY += 4
+ELSEIF CFLAG:582 > -12000
+	PLAY += 5
+ELSEIF CFLAG:582 > -16000
+	PLAY += 6
+ELSE
+	PLAY += 7
+ENDIF
+
+;回数が0以下になっていたら終了
+SIF PLAY <= 0
+	RETURN 0
+
+DRAWLINE
+
+IF TALENT:成为勇者前的生活 == 8
+	;貴族
+	PRINT 身为贵族的
+	PAY += 20
+ELSEIF TALENT:成为勇者前的生活 == 12
+	;聖女
+	PRINT 身为圣女的
+	PAY += 20
+ELSEIF TALENT:魅力点 == 23
+	;大きな尻
+	PRINT 拥有丰满臀部的
+	PAY += 10
+ELSE
+	;特に何もない場合髪色
+	PRINTFORM %GET_LOOK_INFO(TARGET, "头发颜色")%的
+ENDIF
+
+PRINTFORM %SAVESTR:TARGET%
+;卖淫中毒か淫乱
+IF ABL:TARGET:37 == 1 || TALENT:TARGET:76 == 1
+	PRINTFORM 无法压抑性欲，向
+ELSEIF CFLAG:582 < -4000
+	PRINTFORM 债台高筑，向
+ELSE
+	PRINTFORM 冒险资金见底，向
+ENDIF
+IF MEN == 0
+	PRINT 村民
+ELSEIF MEN == 1
+	PRINT 冒险者
+ELSEIF MEN == 2
+	PRINT 村里少年
+	;収入減
+	PAY -= 10
+ELSEIF MEN == 3
+	PRINT 街边暴发户
+	;収入ボーナス
+	PAY += 20
+ELSE
+	PRINT 奸商
+ENDIF
+IF PLAY <= 1
+PRINTFORML 卖嘴巴了……
+PRINTFORMW 在后巷里，吹了{PLAY}次箫……
+ELSE
+PRINTFORML 卖嘴巴了，
+PRINTFORMW %SAVESTR:TARGET%跪在地上將客人的陽具吞入口中，用舌頭仔細地舔舐著。頭突然被用手緊緊的按住，随后腥臭的精液在口中爆发了…
+PRINTFORMW 还没等其缓过神来，另一位客人就将陽具继续插入，按着%SAVESTR:TARGET%的頭前後搖晃著套弄起來，胸部被肆意揉捏，空著的雙手則握著其他客人的陽具，為他們進行手淫奉仕…
+PRINTFORMW 在粗重的喘息声中，客人们陆续射精，%SAVESTR:TARGET%的双手和乳房都沾满了白浊腥臭的精液，更多的精液沿著%SAVESTR:TARGET%的嘴角垂流而下…
+PRINTFORMW %SAVESTR:TARGET%的全身都沾滿了髒亂腥臭的精液。行為結束後的客人們把肉棒貼近%SAVESTR:TARGET%，命令她自己用嘴把肉棒上殘留的污垢舔舐乾淨…
+PRINTFORMW 客人們終於滿足了之後，留下嫖资將%SAVESTR:TARGET%放置在原地陸續離開了…
+ENDIF
+PRINTFORML %EXPNAME:22%＋{PLAY}
+PRINTFORML %EXPNAME:20%＋{PLAY}
+PRINTFORML %EXPNAME:74%＋{PLAY}
+PRINTFORMW %PALAMNAME:7%点数＋{PLAY}
+IF TALENT:反感污臭
+	;苦痛
+	PRINTFORMW %PALAMNAME:9%点数＋{PLAY}
+	JUEL:9 += PLAY
+ENDIF
+EXP:口交经验 += PLAY
+EXP:精液经验 += PLAY
+EXP:74 += PLAY
+JUEL:7 += PLAY
+
+PAY += PLAY * 250
+SIF PAY <= 0
+	PAY = 1
+PRINTFORMW %SAVESTR:TARGET%获得了{PAY}点的金钱以及经验值。
+EXP:80 += PAY
+CFLAG:580 += PAY
+
+PRINTW (善恶值减少:-1)
+CALL KARMA, TARGET, -1
+
+RETURN 1
+
+;--------------------------------
+@HEROINE_ANIMAL_SHOW
+#DIM PLAY
+#DIM PAY
+;--------------------------------
+;兽奸ショー出演
+
+;調教対象が空だとダメ
+SIF TARGET < 0
+	RETURN 0
+
+;ITEM:野良犬がないとダメ
+;魔王様の犬とは違う犬だけど
+;性癖フィルター用に
+SIF ITEM:22 == 0
+	RETURN 0
+
+;処女やオトコだとダメ
+SIF TALENT:0 || TALENT:122 == 1
+	RETURN 0
+
+;貞操帯だとダメ
+SIF CFLAG:42 == 79 && (CFLAG:40 & 64)
+	RETURN 0
+
+;瀕死だとダメ
+SIF BASE:0 < 500
+	RETURN 0
+
+PLAY = -3
+
+;兽奸中毒
+IF ABL:39 == 0
+	PLAY -= 2
+ELSEIF ABL:39 == 1
+	PLAY -= 1
+ELSEIF ABL:39 == 2
+	PLAY += 0
+ELSEIF ABL:39 == 3
+	PLAY += 1
+ELSEIF ABL:39 == 4
+	PLAY += 2
+ELSEIF ABL:39 == 5
+	PLAY += 3
+ELSEIF ABL:39 >= 6
+	PLAY += 4
+ENDIF
+
+;動物耳で欲望ＬＶ３以上
+SIF TALENT:124 && ABL:11 >= 3
+	PLAY += 1
+
+;かわいい動物が好きで欲望ＬＶ４以上
+SIF  TALENT:317 == 12 && ABL:11 >= 4
+	PLAY += 1
+
+;兽奸経験が50以上
+SIF EXP:56 >= 50
+	PLAY += 2
+
+;欲望ＬＶ５以上露出癖４以上で+1（下と合わせて+2）
+SIF ABL:11 >= 5 && ABL:17 >= 4
+	PLAY += 1
+;欲望ＬＶ４以上露出癖３以上で+1
+SIF ABL:11 >= 4 && ABL:17 >= 3
+	PLAY += 1
+
+;牝犬によるボーナス
+SIF TALENT:136
+	PLAY += 2
+
+;カルマによる積極性
+IF CFLAG:151 > 150
+	PLAY -= 3
+ELSEIF CFLAG:151 > 100
+	PLAY -= 2
+ELSEIF CFLAG:151 > 50
+	PLAY -= 1
+ELSEIF CFLAG:151 > 0
+	;変動なし
+ELSEIF CFLAG:151 > -50
+	PLAY += 1
+ELSEIF CFLAG:151 > -100
+	PLAY += 2
+ELSEIF CFLAG:151 > -150
+	PLAY += 3
+ELSE
+	PLAY += 4
+ENDIF
+
+;借金による強制
+IF CFLAG:582 >= 0
+	PLAY -= 3
+ELSEIF CFLAG:582 > -1000
+	PLAY -= 2
+ELSEIF CFLAG:582 > -2000
+	PLAY -= 1
+ELSEIF CFLAG:582 > -3000
+	;変動なし
+ELSEIF CFLAG:582 > -4000
+	PLAY += 1
+ELSEIF CFLAG:582 > -6000
+	PLAY += 2
+ELSEIF CFLAG:582 > -8000
+	PLAY += 3
+ELSEIF CFLAG:582 > -11000
+	PLAY += 4
+ELSEIF CFLAG:582 > -15000
+	PLAY += 6
+ELSEIF CFLAG:582 > -20000
+	PLAY += 8
+ELSEIF CFLAG:582 > -25000
+	PLAY += 10
+ELSE
+	PLAY += 12
+ENDIF
+
+
+;回数が0以下なら終了
+SIF PLAY <= 0
+	RETURN 0
+
+;プライド低い、解放、動物耳によるボーナス
+SIF TALENT:17
+	PLAY += 1
+SIF TALENT:33
+	PLAY += 1
+SIF TALENT:124
+	PLAY += 1
+
+;プライド高い、自制心、抑圧、汚臭敏感によるペナルティ
+SIF TALENT:15
+	PLAY -= 1
+SIF TALENT:20
+	PLAY -= 1
+SIF TALENT:32
+	PLAY -= 1
+SIF TALENT:62 && TALENT:64 == 0
+	PLAY -= 2
+
+;快感に素直、快感の否定
+IF TALENT:70
+	PLAY += 1
+ELSEIF TALENT:71
+	PLAY -= 2
+ENDIF
+
+;淫乱によるボーナス
+SIF TALENT:76
+	PLAY += 1
+
+;牝犬によるボーナスその２
+SIF TALENT:136
+	TIMES PLAY , 1.50
+
+;回数が0以下になっていたら終了
+SIF PLAY <= 0
+	RETURN 0
+
+DRAWLINE
+IF TALENT:成为勇者前的生活 == 8
+	;貴族
+	PRINT 身为贵族的
+ELSEIF TALENT:成为勇者前的生活 == 12
+	;聖女
+	PRINT 身为圣女的
+ELSEIF TALENT:魅力点 == 23
+	;大きな尻
+	PRINT 拥有丰满臀部的
+ELSE
+	;特に何もない場合髪色
+	PRINTFORM %GET_LOOK_INFO(TARGET, "头发颜色")%的
+ENDIF
+
+PRINTFORM %SAVESTR:TARGET%
+
+IF TALENT:136
+	;牝犬
+	PRINTFORM 无法抑制兽奸的欲望，
+ELSEIF ABL:TARGET:37 == 1 || TALENT:TARGET:76 == 1
+	;売春中毒か淫乱
+	PRINTFORM 无法压抑性欲，
+ELSEIF CFLAG:582 < -4000
+	PRINTFORM 债台高筑，
+ELSE
+	PRINTFORM 冒险资金见底，
+ENDIF
+PRINTFORML 出演了兽奸秀…………
+PRINTFORMW 在观众的面前和狗交配了{PLAY}次。
+;兽奸経験
+PRINTFORML %EXPNAME:56%＋{PLAY}
+PRINTFORML %EXPNAME:0%＋{PLAY}
+PRINTFORML %EXPNAME:5%＋{PLAY}
+EXP:56 += PLAY
+EXP:0 += PLAY
+EXP:5 += PLAY
+
+;珠経験
+PRINTFORML %PALAMNAME:1%点数＋{PLAY*200}
+PRINTFORML %PALAMNAME:6%点数＋{PLAY*300}
+PRINTFORMW %PALAMNAME:8%点数＋{PLAY*200}
+JUEL:1 += PLAY*200
+JUEL:6 += PLAY*300
+JUEL:8 += PLAY*200
+
+PAY += PLAY * 5000
+SIF PAY <= 0
+	PAY = 1
+PRINTFORMW %SAVESTR:TARGET%获得了{PAY}点金钱及{PLAY * 100}点经验值。
+EXP:80 += PLAY * 100
+CFLAG:580 += PAY
+
+PRINTW (善恶值减少:-2)
+CALL KARMA, TARGET, -2
+
+RETURN 1
+
+[SKIPEND]
+
+

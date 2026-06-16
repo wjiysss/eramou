@@ -1,0 +1,541 @@
+﻿;怪物たちとイチャイチャ
+;とりあえずやっつけ。改変パッチも歓迎
+
+;-----------------------------------
+@MONSTER_PLAY
+;-----------------------------------
+DRAWLINE
+PRINTL 请选择怪物
+DRAWLINE
+CALL MONSTERPLAY_LIST
+
+SIF ITEM:22 >= 1
+	PRINT [900] 野狗
+PRINTL [999] 返回
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 999
+	RETURN 0
+ELSEIF ITEM:RESULT <= 0 && RESULT != 900
+	CLEARLINE 1
+	GOTO INPUT_LOOP
+ELSEIF RESULT == 900 && ITEM:22 <= 0
+	CLEARLINE 1
+	GOTO INPUT_LOOP
+ENDIF
+
+LOCAL:0 = RESULT
+IF LOCAL:0 != 900
+	CALL MONSTER_DATA, LOCAL:0, 5
+	LOCAL:1 = E:507
+ENDIF
+
+A = 0
+Y = RAND:5 + 3
+
+IF LOCAL:0 == 900
+	CALL MONSTER_PLAY_DOG
+ELSEIF LOCAL:1 == 1
+	CALL ORC_MONSTER_PLAY
+ELSEIF LOCAL:1 == 2
+	CALL SLIME_MONSTER_PLAY
+ELSEIF LOCAL:1 == 3
+	CALL INSECT_MONSTER_PLAY
+ELSEIF LOCAL:1 == 4
+	CALL IVY_MONSTER_PLAY
+ELSEIF LOCAL:1 == 5
+	CALL SYOKUSYU_MONSTER_PLAY
+ELSEIF LOCAL:1 == 6
+	CALL FAILY_MONSTER_PLAY
+ELSEIF LOCAL:1 == 7
+	CALL GIANT_MONSTER_PLAY
+ELSEIF LOCAL:1 == 8
+	CALL MAN_MONSTER_PLAY
+ELSEIF LOCAL:1 == 9
+	CALL GIRL_MONSTER_PLAY
+ELSEIF LOCAL:1 == 10
+	CALL BEAST_MONSTER_PLAY
+ELSEIF LOCAL:1 == 11
+	CALL BRAIN_MONSTER_PLAY
+ELSEIF LOCAL:1 == 12
+	CALL HORSE_MONSTER_PLAY
+ENDIF
+
+IF TALENT:A:0 == 1 && EXP:A:0 > 0
+	PRINTW 【处女丧失】
+	TALENT:A:0 = 0
+ENDIF
+
+
+
+BEGIN TURNEND
+RETURN 1
+
+;-------------------------------------
+@MONSTERPLAY_LIST
+;-------------------------------------
+
+LOCAL:1 = 0
+FOR LOCAL:0, 100, 200
+	IF ITEM:(LOCAL:0) >= 1
+		PRINTFORM [{LOCAL:0}] %ITEMNAME:(LOCAL:0), 12, LEFT%
+		LOCAL:1 += 1
+	ENDIF
+	
+	IF LOCAL:1 >= 3
+		PRINTL  
+		LOCAL:1 = 0
+	ENDIF
+NEXT
+
+SIF LOCAL:1 != 0
+	PRINTL  
+
+RETURN 0
+
+;-----------------------------------------
+@MONSTER_PLAY_DOG
+;-----------------------------------------
+
+IF TALENT:MASTER:122 == 1
+	PRINTW 你为狗做了点心。
+	RETURN 0
+ENDIF
+
+
+PRINTW 『汪汪，汪汪汪～～』
+
+PRINTFORMW %SAVESTR:A%用甜美的声音把狗引到怀里，探出小舌与狗的舌头相互缠绕在一起。
+PRINTFORMW 热切的亲吻过后，%SAVESTR:A%打开双腿，把狗狗膨胀的阴茎引入了私处。
+PRINTFORMW 啪嗒啪嗒的抽插声响起，%SAVESTR:A%紧紧搂住狗狗承受撞击，娇声呻吟起来……
+PRINTFORML 私处经验+{Y}
+EXP:A:0 += Y
+PRINTFORMW 兽奸经验+{Y}
+EXP:A:56 += Y
+CFLAG:A:106 += Y
+
+RETURN 0
+
+
+;--------------------------------------------
+@ORC_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:MASTER:122 == 1
+	PRINTW 『魔王大人，请饶了我吧…』
+	RETURN 0
+ENDIF
+
+X = RAND:5
+IF X == 0
+	PRINTW 『魔…魔王大人的爱爱……啊…！』
+ELSEIF X == 1
+	PRINTW 『有这宠幸，太感谢了…』
+ELSEIF X == 2
+	PRINTW 『魔王大人真的合适吗，和我这样的？』
+ELSEIF X == 3
+	PRINTW 『呃…呃……啊……魔王大人…啊……』
+ELSE
+	PRINTW 『哼啊啊～～噢～魔王……大……人…』
+ENDIF
+
+
+X = RAND:2
+IF X == 0
+	PRINTW 『魔王大人…我的鸡鸡快要…！』
+	PRINTFORMW %SAVESTR:A%全裸着玩弄兽人的阴茎。浓厚的精液流入%SAVESTR:A%的嘴里了…
+	PRINTFORML 口交经验+{Y}
+	PRINTFORML 精液经验+{Y}
+	EXP:A:22 += Y
+	EXP:A:20 += Y
+ELSEIF X == 1
+	PRINTW 『大家，一起向魔王大人齐射…！』
+	PRINTFORMW %SAVESTR:A%的膣内，嘴里，肛门，所有洞里都插着兽人们的阴茎，被精液注射的满满的！
+	PRINTW 空洞的眼睛望着地下城那微暗的天花板，失去了焦点。
+	PRINTFORMW {Y}人份的存货，沾满了脸和性器，看到这个样子，兽人们更加兴奋了。
+	PRINTFORML 私处经验+{Y}
+	PRINTFORML 肛门经验+{Y}
+	PRINTFORML 口交经验+{Y}
+	PRINTFORML 精液经验+{Y}
+	EXP:A:0 += Y
+	EXP:A:1 += Y
+	EXP:A:22 += Y
+	EXP:A:20 += Y
+	CFLAG:A:107 += Y
+ENDIF
+WAIT
+RETURN 0
+
+;--------------------------------------------
+@SLIME_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:MASTER:122 == 1
+	PRINTW 你把双脚放入黏液里，充分地感受那冷冷的触感。
+	RETURN 0
+ENDIF
+
+PRINTW 黏液怪蠢动着………
+
+X = RAND:2
+IF X == 0
+	PRINTFORMW %SAVESTR:A%享受着黏液浴。
+	PRINTFORMW …黏黏糊糊的！
+	PRINTFORML 耻情点数+{Y * 10}
+	PRINTFORML 欲情点数+{Y * 10}
+	JUEL:A:5 += Y * 10
+	JUEL:A:8 += Y * 10
+ELSEIF X == 1
+	PRINTFORMW %SAVESTR:A%享受着黏液浴。
+	PRINTFORMW %SAVESTR:A%的肛门被大量的黏液逆流进去，正品味着那美妙的感觉。
+	PRINTFORML 肛门经验+{Y}
+	PRINTFORML 耻情点数+{Y * 10}
+	PRINTFORML 欲情点数+{Y * 10}
+	JUEL:A:5 += Y * 10
+	JUEL:A:8 += Y * 10
+	EXP:A:1 += Y
+ELSEIF X == 2
+	
+ELSE
+	
+ENDIF
+WAIT
+RETURN 0
+
+;--------------------------------------------
+@INSECT_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:MASTER:122 == 1
+	PRINTW 你充满兴趣地观察了昆虫。
+	RETURN 0
+ENDIF
+
+PRINTW 在节肢动物的甲壳上摩擦着…
+
+
+X = RAND:2
+IF X == 0
+	PRINTW 『嗯…嗯…嗯嗯……』
+	PRINTFORMW %SAVESTR:A%用嘴吸啜了输卵管。
+;	PRINTFORML 习得点数+{Y * 10}
+	PRINTFORML 欲情点数+{Y * 10}
+;	JUEL:A:7 += Y * 10
+	JUEL:A:5 += Y * 10
+ELSEIF X == 1
+	PRINTW 『咦～～呀～～』
+	PRINTFORMW %SAVESTR:A%的肛门被输卵管贯通，在里面产卵了。
+	PRINTFORMW %SAVESTR:A%四肢大张，准备着产卵。
+	PRINTFORMW {Y}只轮流从体内滚落到身下，从臀部到背部全被卵覆盖了。
+	PRINTFORML 肛门经验+{Y}
+	EXP:A:1 += Y
+ENDIF
+WAIT
+RETURN 0
+
+;--------------------------------------------
+@IVY_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:MASTER:122 == 1
+	PRINTW 你充满兴趣地观察了植物。
+	RETURN 0
+ENDIF
+
+PRINTW 『嘿哟～…』
+
+
+X = RAND:2
+IF X == 0
+	PRINTW 藤蔓紧紧地缠绕着！
+	PRINTFORMW 不知轻重的藤蔓勒得%SAVESTR:A%非常痛苦，在被开放的瞬间，大口大口地喘着粗气。
+	PRINTFORML 苦痛点数+{Y * 10}
+	PRINTFORML 恐怖点数+{Y * 10}
+	JUEL:A:9 += Y * 10
+	JUEL:A:10 += Y * 10
+ELSEIF X == 1
+	PRINTW 藤蔓在肛门里扎根了。
+	PRINTFORMW %SAVESTR:A%的肛门被蹂躏着，发出了声嘶力竭的尖叫。
+	PRINTW 藤蔓吸收到了养分，一口气从直肠中拔出来了。
+	PRINTFORML 肛门经验+{Y}
+	PRINTFORML 苦痛点数+{Y * 10}
+	PRINTFORML 恐怖点数+{Y * 10}
+	JUEL:A:9 += Y * 10
+	JUEL:A:10 += Y * 10
+	EXP:A:1 += Y
+ENDIF
+WAIT
+RETURN 0
+
+;--------------------------------------------
+@SYOKUSYU_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:MASTER:122 == 1
+	PRINTW 触手蜿蜒地动着…
+	RETURN 0
+ENDIF
+
+PRINTW 触手蠢蠢欲动………
+
+
+X = RAND:4
+IF X == 0
+	PRINTFORMW %SAVESTR:A%用嘴吸啜着触手前端流出的粘液，
+	PRINTFORMW 大量的体液迸发，被呛到了，不久之后意识渐渐地迷糊………
+	PRINTFORML 欲情点数+{Y * 10}
+	JUEL:A:5 += Y * 10
+ELSEIF X == 1
+	PRINTFORMW 触手在%SAVESTR:A%的肛门里不断深入着，
+	PRINTFORMW 肛门不断吸收着触手洒在直肠内的体液，
+	PRINTW 最后，菊门放松，淫秽的肛门里开始流出大量的浑浊体液。
+	PRINTFORML 肛门经验+{Y}
+	PRINTFORML 欲情点数+{Y * 10}
+	JUEL:A:5 += Y * 10
+	EXP:A:1 += Y
+ELSEIF X == 2
+	PRINTFORMW %SAVESTR:A%的性器接受了触手的侵犯，
+	PRINTFORMW 粗大的触手，分泌着媚药的成分，在私处里不断抽插着。
+	PRINTFORML 私处经验+{Y}
+	PRINTFORML 欲情点数+{Y * 10}
+	JUEL:A:5 += Y * 10
+	EXP:A:0 += Y
+	CFLAG:A:107 += Y
+ELSEIF X == 3
+	PRINTFORMW %SAVESTR:A%嘴也好，肛门也好，私处也好，所有被触手入侵的地方，都流出了大量的体液，
+	PRINTFORMW 里面还带有媚药的成分，%SAVESTR:A%完全沉醉其中了…
+	PRINTFORML 肛门经验+{Y}
+	PRINTFORML 私处经验+{Y}
+	PRINTFORML 欲情点数+{Y * 10}
+	JUEL:A:5 += Y * 10
+	EXP:A:0 += Y
+	EXP:A:1 += Y
+	CFLAG:A:107 += Y
+ENDIF
+PRINTFORMW 触手经验+{Y}
+EXP:A:55 += Y
+RETURN 0
+
+;--------------------------------------------
+@FAILY_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:A:122 == 1
+	PRINTW 『要奴家这么小的？真的没关系么？』
+ELSE
+	PRINTW 『魔王大人！大变态！』
+ENDIF
+
+IF TALENT:A:122 == 1 || TALENT:A:121 == 1
+	PRINTW 『这就是，魔王大人的鸡鸡……』
+	PRINTFORMW %SAVESTR:A%的阴茎，妖精用全身仔细地侍奉着
+	PRINTFORML 阴核点数+{Y * 10}
+	PRINTFORML 欲情点数+{Y * 10}
+	JUEL:A:0 += Y * 10
+	JUEL:A:5 += Y * 10
+ELSE
+	PRINTW 『舔了哦！』
+	PRINTFORMW %SAVESTR:A%的阴蒂和两个乳头，被妖精们不停舔舐着，
+	PRINTW 由于妖精们的舌头运用身体感到越来越苦闷了。
+	PRINTFORML 阴核点数+{Y * 10}
+	PRINTFORML 欲情点数+{Y * 10}
+	JUEL:A:0 += Y * 10
+	JUEL:A:5 += Y * 10
+ENDIF
+WAIT
+RETURN 0
+
+;--------------------------------------------
+@GIANT_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:MASTER:122 == 1
+	PRINTW 『魔王大人，请饶了我吧…』
+	RETURN 0
+ENDIF
+
+PRINTW 『魔王大人，被弄坏了也可以么？』
+
+X = 0
+IF X == 0
+	PRINTFORMW 『洒家这辈子值了！！！』
+	PRINTFORMW %SAVESTR:A%的腰被巨人抓着，雄壮的阴茎在体内抽插着，
+	PRINTFORMW 『嗯！魔王大人！真舒服！！』
+	PRINTFORMW 一瞬间，腹部夸张地膨胀起来，大量的精液喷涌而出了…
+	PRINTFORML 私处经验+{Y}
+	PRINTFORML 精液经验+{Y}
+	PRINTFORML 阴道扩张经验+{Y}
+	EXP:A:0 += Y
+	EXP:A:20 += Y
+	EXP:A:53 += Y
+	CFLAG:A:107 += Y
+ELSEIF X == 1
+ELSEIF X == 2
+ELSEIF X == 3
+ENDIF
+WAIT
+RETURN 0
+
+;--------------------------------------------
+@MAN_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:MASTER:122 == 1
+	PRINTW 『魔王大人真会开玩笑……』
+	RETURN 0
+ENDIF
+
+PRINTW 『真，真的可以吗！？魔王大人！…真不敢相信…』
+
+X = RAND:2
+IF X == 0
+	PRINTW 『啊噢…魔王大人…好舒服…』
+	PRINTFORMW %SAVESTR:A%全裸着侍奉魔族的阴茎。%SAVESTR:A%的舌头，让魔族男身体越发苦闷了。
+	PRINTFORML 口交经验+{Y}
+	PRINTFORML 精液经验+{Y}
+	EXP:A:22 += Y
+	EXP:A:20 += Y
+ELSEIF X == 1
+	PRINTW 『魔王大人…这么漂亮的屁股…！』
+	PRINTFORMW %SAVESTR:A%手扶墙壁，向男魔族们抬起屁股诱惑着，
+	PRINTFORMW 魔族们争先恐后地勃起了，抢着侵犯%SAVESTR:A%，
+	PRINTFORMW %SAVESTR:A%的呻吟越来越大声，正享受着这份快感。
+	PRINTFORML 私处经验+{Y}
+	PRINTFORML 肛门经验+{Y}
+	PRINTFORML 精液经验+{Y}
+	EXP:A:0 += Y
+	EXP:A:1 += Y
+	EXP:A:20 += Y
+	CFLAG:A:107 += Y
+ELSEIF X == 2
+	
+ELSEIF X == 3
+	
+ELSE
+	
+ENDIF
+WAIT
+RETURN 0
+
+;--------------------------------------------
+@GIRL_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:A:122 == 1
+	PRINTW 『啊啦啦？魔王大人想和我们玩吗？♡♡♡嘻嘻～让我们来侍奉魔王大人吧，绝对比那些臭勇者好多了我们！！』
+ELSE
+	PRINTW 『魔王大人…还有这样的爱好啊～』
+ENDIF
+
+IF TALENT:A:122 == 1
+	PRINTW 『噢～啊～魔王大人～好棒♡♡♡可以的话，每晚都让我们来侍奉你吧？我们会为魔王大人做任何事情～怎么玩都可以哦！』
+	PRINTFORMW %SAVESTR:A%的阴茎旁，围着一群恳求着的魔族女孩。
+	PRINTFORML 阴核点数+{Y * 10}
+	PRINTFORML 欲情点数+{Y * 10}
+	JUEL:A:0 += Y * 10
+	JUEL:A:5 += Y * 10
+ELSE
+	PRINTW 『啊～魔王大人！我是你的奴隶♪』
+	PRINTFORM %SAVESTR:A%的
+	IF TALENT:A:121 == 1
+		PRINT 阴茎
+	ELSE
+		PRINT 假阳具
+	ENDIF
+	PRINTFORMW 侵犯着魔族女孩，
+	PRINTW 同为女人，感受到了与众不同的快感。
+	PRINTFORML 阴核点数+{Y * 10}
+	PRINTFORML 欲情点数+{Y * 10}
+	PRINTFORML 百合经验+{Y}
+	JUEL:A:0 += Y * 10
+	JUEL:A:5 += Y * 10
+	EXP:A:40 += Y
+ENDIF
+
+WAIT
+RETURN 0
+
+;--------------------------------------------
+@BEAST_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:MASTER:122 == 1
+	PRINTW 你把魔兽拉进怀里，尽情地抚摸着它的毛发。
+	RETURN 0
+ENDIF
+
+PRINTW 『呼～呼～～』
+
+PRINTFORMW %SAVESTR:A%用甜美的声音把魔兽引到怀里，亲吻着魔兽光滑亮丽的皮毛。
+PRINTFORMW 热切的亲吻过后，%SAVESTR:A%打开双腿，把魔兽膨胀的阴茎引入了私处。
+PRINTFORMW 紧紧搂住魔兽承受着抽插，%SAVESTR:A%娇声呻吟起来……
+PRINTFORML 私处经验+{Y}
+EXP:A:0 += Y
+PRINTFORMW 兽奸经验+{Y}
+EXP:A:56 += Y
+CFLAG:A:107 += Y
+RETURN 0
+
+;--------------------------------------------
+@BRAIN_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:MASTER:122 == 1
+	PRINTW 『魔王大人，请饶了我吧…』
+	RETURN 0
+ENDIF
+
+PRINTW 『魔王大人，请饶了我吧…』
+RETURN 0
+
+
+X = RAND:40
+IF X == 0
+	PRINTL 「啊…啊…啊！啊，啊～！」
+	PRINTFORML 食脑魔的触手，直接贯通%SAVESTR:A%的头盖骨，刺激着脑部，
+	PRINTL 四肢狂乱地挥动，失禁，死掉了……
+	BASE:A:0 = 0
+	PRINTFORML 异常经验+1
+	EXP:A:50 += 1
+ELSE
+	PRINTW 食脑魔的触手抓住了勇者。勇者死命地挣扎也无法逃掉。
+	PRINTFORMW 食脑魔的触手，直接突入到%SAVESTR:A%的脑子里，往脑髓注入媚药成分。
+	PRINTFORMW %SAVESTR:A%被过度的快感弄失禁了，成了废人。
+	PRINTFORMW 幸好，躯干还是完好的。
+	PRINTFORML 异常经验+1
+	EXP:A:50 += 1
+ENDIF
+WAIT
+RETURN 0
+
+;--------------------------------------------
+@HORSE_MONSTER_PLAY
+;--------------------------------------------
+
+IF TALENT:MASTER:122 == 1
+	PRINTW 你充分享受了骑马的乐趣。
+	RETURN 0
+ENDIF
+
+PRINTW 『吁～吁！』
+
+PRINTFORMW %SAVESTR:A%哄着马的同时，屏息弯腰潜入到马的下腹处，温柔舔吮着马的阴茎。
+PRINTFORMW 马的巨大阴茎，即使对于%SAVESTR:A%来说也相当大了，插入后在小腹处清晰印出了柱状体。
+PRINTFORMW 主动摇摆腰肢，缓过来的%SAVESTR:A%迎合着马的抽插娇声呻吟起来。
+PRINTFORML 苦痛点数+{Y * 10}
+PRINTFORML 恐怖点数+{Y * 10}
+PRINTFORML 私处经验+{Y}
+EXP:A:0 += Y
+JUEL:A:9 += Y * 10
+JUEL:A:10 += Y * 10
+CFLAG:A:107 += Y
+PRINTFORMW 兽奸经验+{Y}
+EXP:A:56 += Y
+RETURN 0
+
+
+
+
+

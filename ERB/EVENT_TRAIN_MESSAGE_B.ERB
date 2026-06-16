@@ -1,0 +1,2696 @@
+﻿;========================================================
+;調教時メッセージ
+;========================================================
+;eratohoRR v1.31.6より一部改変して流用
+;eraIM@Sから導入しました(eramaou)
+;========================================================
+;調教コマンド実行中に呼び出されるテキスト
+;個々のCOMFxx.ERBより呼び出し
+;主に「どの調教がどのようになされたか」という情景の描写に用いる
+;表示される順番はTRAIN_MESSAGE_B→TRAIN_MESSAGE_Aである事に注意
+;========================================================
+@TRAIN_MESSAGE_B
+;ローカル変数の使用状況
+;LOCALS:0 : 地の文分岐に使用
+LOCALS:0 = 
+;LOCALS:1 : 同上
+LOCALS:1 = 
+
+;調教テキスト省略設定の場合は戻る
+SIF (FLAG:6 & 1)
+	RETURN 0
+
+CUSTOMDRAWLINE ‥ 
+
+;--------------------------------------------------------
+;爱抚
+;--------------------------------------------------------
+IF SELECTCOM == 0
+	IF (CFLAG:40 & 64) && CFLAG:42 <= 50
+		PRINT 隔着
+		CALL PRINT_CLOTHTYPE_SPECIAL
+		PRINT 、
+	ELSEIF CFLAG:40 & 28
+		PRINT 隔着
+		CALL PRINT_CLOTHTYPE_MAIN2
+		PRINT 、
+	ELSEIF CFLAG:40
+		PRINT 隔着内衣、
+	ENDIF
+	IF TEQUIP:90
+		PRINT 触手玩弄着
+	ELSEIF TEQUIP:89
+		PRINT 狗的舌头舔舐着
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%
+		SIF (STAIN:0 < 2 || STAIN:0 == 16 || STAIN:0 == 17 || TALENT:MASTER:64 || ASSIPLAY) && TEQUIP:45 == 0 && CFLAG:16 != -1
+			PRINTFORM 轻舔着%SAVESTR:TARGET%的唇、
+		PRINT 仔细爱抚着
+	ENDIF
+	PRINTFORM %SAVESTR:TARGET%
+	IF TALENT:135
+		PRINT 未成熟
+	ELSEIF TALENT:100
+		PRINT 娇小
+	ELSEIF TALENT:115
+		PRINT 胖乎乎
+	ENDIF
+	IF TALENT:恶魔肌肤
+		PRINT 的蓝色肌肤
+	ELSEIF TALENT:褐色肌肤
+		PRINT 的褐色肌肤
+	ELSEIF TALENT:白皙
+		PRINT 的白皙
+	ENDIF
+	PRINTL 的身体……
+	SIF TALENT:153 && CFLAG:110 <= DAY+10 && (CFLAG:42 != 11 || (CFLAG:40 & 64) == 0)
+		PRINTFORML %SAVESTR:TARGET%圆滚滚的腹部里、微微感觉到胎儿在踢脚……
+;--------------------------------------------------------
+;舔阴
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 1
+	IF TEQUIP:89
+		PRINTFORM 狗的舌头
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%
+	ENDIF
+	;岩清水
+	IF TEQUIP:57
+		PRINTFORM 把脸伸到%SAVESTR:TARGET%的胯间、在淫秽的声音中舔舐着阴唇
+	ELSE
+		PRINTFORM 温柔仔细地舔舐着%SAVESTR:TARGET%的阴唇
+	ENDIF
+	IF TALENT:121 && PALAM:5 >= PALAMLV:3
+		PRINT 、阴茎在舌头的舔舐中逐渐勃起
+	ELSEIF TALENT:121
+		PRINT 、一边又提起阴茎、在根部来回舔舐着
+	ELSEIF PALAM:5 >= PALAMLV:3
+		PRINT 、用舌头分开包裹着阴蒂的皮肤、不断吸啜着
+	ENDIF
+	PRINTL ……
+;--------------------------------------------------------
+;肛门爱抚
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 2
+	SIF TEQUIP:90 == 0
+		PRINTFORM %SAVESTR:PLAYER%
+	IF TEQUIP:90
+		PRINTFORML 用沾满粘液的触手、刺激着%SAVESTR:TARGET%的肛门…
+	ELSEIF TEQUIP:13
+		PRINTFORML 用手把肛门虫前后推动了几下、%SAVESTR:TARGET%身体随之轻轻地颤动着……
+	ELSEIF TEQUIP:19
+		PRINTFORML 稍微拉着肛珠的绳子、前后拉动了几下…
+	ELSEIF TEQUIP:46
+		PRINTFORML 在排泄感满满的菊花上、玩弄了几下肛塞…
+	ELSEIF TEQUIP:49
+		PRINTFORML 把吱吱作响的电极、在肛门内摆弄了几下…
+	ELSE
+		PRINTFORM 玩弄着%SAVESTR:TARGET%的肛门
+		SIF PALAM:5 >= PALAMLV:3 && ABL:3 >= 3
+			PRINT 、将手指伸入到尽头、用指尖搅动着直肠
+		PRINTL ……
+	ENDIF
+;--------------------------------------------------------
+;自慰
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 3
+	
+	IF TALENT:122 || (TALENT:121 && RAND:2 == 0)
+		LOCALS:0 = 套弄阴茎
+		LOCALS:1 = 牡奴
+	ELSE
+		LOCALS:0 = 玩弄阴部
+		LOCALS:1 = 牝奴
+	ENDIF
+	
+	IF A < V
+		PRINTFORML %SAVESTR:TARGET%拒绝了自慰的命令。看来还需要更多的调教。
+	ELSEIF A > V && A < 50
+		PRINTFORM 在%SAVESTR:PLAYER%要求自慰的命令下、%SAVESTR:TARGET%
+		;着衣設定
+		IF CFLAG:40 & 8
+			CALL PRINT_CLOTHTYPE_MAIN2
+			PRINT 的前摆提了起来、露出了性器官、
+		ENDIF
+		SIF TALENT:15
+			PRINT 高傲地
+		IF TALENT:22
+			PRINT 毫无表情、默默地
+		ELSEIF TALENT:10 || TALENT:14
+			PRINT 指尖颤抖地
+		ELSEIF TALENT:11
+			PRINT 带着反抗眼神地
+		ELSEIF TALENT:12
+			PRINT 屈辱到咬牙切齿地
+		ELSEIF TALENT:35
+			PRINT 羞耻到脸红耳赤地
+		ENDIF
+		SIF TEQUIP:53
+			PRINT 在摄像机前、
+		PRINTL 开始了自慰。
+	ELSEIF A >=50 && A < 80
+		PRINTFORML 调教似乎取得了成果的%SAVESTR:TARGET%遵从%SAVESTR:PLAYER%的命令、恭顺地开始了自慰。
+	ELSEIF A >= 80
+		PRINTFORML %SAVESTR:TARGET%一点都不反感自慰的命令、带着完全驯服的%LOCALS:1%的表情、开始了自慰。
+	ENDIF
+	IF TEQUIP:11 && TEQUIP:13 && ABL:2 >= 5 && ABL:3 >= 5 && ABL:0 >= 5 && ABL:1 >= 5 && PALAM:5 >= PALAMLV:4 && PREVCOM == 3
+		PRINTFORML %SAVESTR:TARGET%顾不得擦拭流出来的口水、身体痉挛着、淫媚地呻吟着。
+		PRINTFORML 看样子高潮来了、为了维持这份快感、对其它任何事都无动于衷了…
+	ELSEIF TEQUIP:11 && ABL:2 >= 5 && ABL:0 >= 5 && ABL:1 >= 5 && PALAM:5 >= PALAMLV:4 && PREVCOM == 3
+		PRINTFORML %SAVESTR:TARGET%无暇顾及四溅的爱液、蠕虫在她的体内激烈地抽插着。
+		PRINTFORML 看来已经没办法想其它的事了…
+	ELSEIF TEQUIP:13 && ABL:3 >= 5 && ABL:0 >= 5 && ABL:1 >= 5 && PALAM:5 >= PALAMLV:4 && PREVCOM == 3
+		PRINTFORML %SAVESTR:TARGET%的身体不住颤抖、体内的肛门虫不停深入着。
+		PRINTFORML 虫子摩擦着直肠内的皱褶、好像高潮了好几次…
+	ELSEIF ABL:10 >= 3 && ABL:0 >= 5 && ABL:1 >= 5 && PALAM:5 >= PALAMLV:4 && PREVCOM == 3
+		PRINTFORML %SAVESTR:TARGET%不断发出娇媚的呻吟、专心致志地自己继续在%LOCALS:0%。
+		PRINTFORML 好像想停止、但手却不听指挥地自己动起来了…
+	ENDIF
+
+;--------------------------------------------------------
+;口交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 4
+	IF TEQUIP:89
+		PRINTFORM 狗
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%
+	ENDIF
+	IF TALENT:122 || (TALENT:121 && RAND:3 == 0)
+		PRINTFORM 将%SAVESTR:TARGET%
+		SIF PALAM:5 >= PALAMLV:3
+			PRINT 坚硬勃起
+		PRINTL 的阴茎、放到嘴里舔舐着…
+	ELSE
+		PRINTFORM 吮吸着%SAVESTR:TARGET%
+		SIF PALAM:5 >= PALAMLV:3
+			PRINT 坚硬勃起
+		IF TALENT:121
+			PRINT 的阴茎、
+		ELSE
+			PRINT 的阴蒂、
+		ENDIF
+		PRINTFORML 将舌头伸进了%SAVESTR:TARGET%的阴道里…
+	ENDIF
+;--------------------------------------------------------
+;胸爱抚
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 5
+	;死斗场
+	IF TEQUIP:55
+		IF TFLAG:400 == 201
+			PRINTFORMW 倒下了的%SAVESTR:TARGET%被%SAVESTR:ASSI%吊了起来、胸部被又揉又抓……
+		ELSEIF TFLAG:400 == 202
+			PRINTFORMW 最下层居民那不知多少天没洗的手、抓起了%SAVESTR:TARGET%的胸部、像榨乳一样使劲地揉着……
+		ELSEIF TFLAG:400 == 203
+			PRINTFORMW 倒下了的%SAVESTR:TARGET%的身上坐着一只发霉的狗、正在玩弄着她的胸部……
+		ELSEIF TFLAG:400 == 204
+			PRINTFORMW 兽人那粗壮的手指抓起了%SAVESTR:TARGET%的胸部、像榨乳一样使劲揉……
+		ELSEIF TFLAG:400 == 205
+			PRINTFORMW 倒下了的%SAVESTR:TARGET%的身上坐着一只腐烂的猪、正在玩弄着她的胸部……
+		ELSEIF TFLAG:400 == 206
+			PRINTFORMW 巨魔那粗壮的手指抓起了%SAVESTR:TARGET%的胸部、像榨乳一样使劲揉……
+		ENDIF
+	ENDIF
+	IF TEQUIP:89
+		PRINTFORM 狗发出汪汪的声音。
+	ELSEIF TEQUIP:55 && (ASSI != PLAYER)
+		PRINTFORM 怪物喷出了恶臭的气息。
+	ELSEIF TEQUIP:90 == 0
+		PRINTFORM %SAVESTR:PLAYER%
+		IF TALENT:恶魔肌肤
+			PRINTFORM 抚摸着%SAVESTR:TARGET%的蓝色肌肤、
+		ELSEIF TALENT:褐色肌肤
+			PRINTFORM 抚摸着%SAVESTR:TARGET%的褐色肌肤、
+		ELSEIF TALENT:白皙
+			PRINTFORM 抚摸着%SAVESTR:TARGET%的白皙肌肤、
+		ELSE
+			PRINTFORM 抚摸着%SAVESTR:TARGET%的肌肤、
+		ENDIF
+		SIF CFLAG:7 & 1
+			PRINTL 轻轻拉动贯穿乳头的乳环、
+	ENDIF
+	PRINTFORM %SAVESTR:TARGET%
+	IF TALENT:116
+		PRINT 平坦的
+	ELSEIF TALENT:100 && TALENT:109
+		PRINT 微微隆起的
+	ELSEIF TALENT:109
+		PRINT 稍小一些的
+	ELSEIF TALENT:110 && TEQUIP:89 == 0
+		PRINT 那从指缝中溢出的
+	ELSEIF TALENT:114
+		PRINT 无法一手握住的
+	ELSE
+		PRINT 的
+	ENDIF
+	IF TEQUIP:90
+		PRINTL 胸部被好几只触手缠住绞弄…
+	ELSEIF TEQUIP:89
+		PRINTL 胸部被摸弄着…
+	ELSEIF TEQUIP:55
+		PRINTL 胸部被揉弄着…
+	ELSEIF TALENT:130 && PALAM:5 > PALAMLV:3 && TEQUIP:16 == 0 && TEQUIP:15 == 0
+		PRINTL 胸部尖端
+		PRINTL 淫秽的硬了的乳头被嘴吸啜时、
+		PRINTL 大量的母乳溢了出来、流进了嘴里…
+		SIF TALENT:85 && TEQUIP:44 == 0 && ASSIPLAY == 0 && PALAM:4 > PALAMLV:4 && TFLAG:899 == 0 && TEQUIP:55 == 0
+			PRINTFORML 被这样把玩的%SAVESTR:TARGET%充满爱意地紧紧抱着%SAVESTR:PLAYER%的头。
+	ELSEIF TALENT:130 && TEQUIP:16 == 0 
+		PRINTL 双峰被紧紧地抓住、
+		PRINTFORML 被含在嘴里的乳头喷出了淫靡甘甜的母乳…
+	ELSEIF PALAM:5 > PALAMLV:3 && TEQUIP:16 == 0 && TEQUIP:15 == 0
+		PRINTFORML 胸部的尖端突起淫秽的硬了、乳头被%SAVESTR:PLAYER%吸啜着…
+	ELSEIF TALENT:116
+		PRINTL 胸部被来回抚摸着…
+	ELSE
+		PRINTL 胸部揉动着…
+	ENDIF
+;--------------------------------------------------------
+;接吻
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 6
+	IF TEQUIP:89 && CFLAG:42 == 11 && (CFLAG:40 & 64)
+		PRINTFORM 流浪狗把
+		CALL PRINT_CLOTHTYPE_SPECIAL
+		PRINTFORML 舔舐变色了……
+	ELSEIF CFLAG:42 == 11 && (CFLAG:40 & 64)
+		PRINTFORM  %SAVESTR:PLAYER%与穿着
+		CALL PRINT_CLOTHTYPE_SPECIAL
+		PRINTFORML 的她接吻了……
+	ELSEIF TEQUIP:89
+		IF TALENT:136 && TFLAG:899 == 0
+			PRINTFORML %SAVESTR:TARGET%把流浪狗当成热恋中的爱人一样、
+			PRINTFORML 滋滋地吸取着彼此的口水、舌头相互纠缠着……
+			SIF TALENT:85 && TFLAG:899 == 0
+				PRINTFORML 展露出羡煞旁人的深情模样……
+		ELSEIF ABL:39 >= 3 && TFLAG:899 == 0
+			PRINTFORML 狗吐出带有野兽般臭味的气息、舔舐了%SAVESTR:TARGET%口腔的每个角落……
+			PRINTFORML %SAVESTR:TARGET%也伸出舌头、在狗嘴里来回舔舐着……
+		ELSE
+			PRINTFORML 狗吐出带有野兽般臭味的气息、在%SAVESTR:TARGET%口腔的每个角落来回舔舐……
+		ENDIF
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%在%SAVESTR:TARGET%口腔的每个角落来回舔舐着
+		IF ABL:10 >= 2 && EXP:40 >= 1000 && TALENT:PLAYER:122 == 0 && TFLAG:899 == 0
+			PRINTFORML 、交缠着舌头、交换着彼此的唾液……
+		ELSEIF ABL:10 >= 2 && TFLAG:899 == 0
+			PRINTFORML 、%SAVESTR:TARGET%积极地回应着、灵活地舌头彼此交缠着……
+		ELSE
+			PRINTL ……
+		ENDIF
+		SIF (CFLAG:7 & 16) || (CFLAG:7 & 32)
+			PRINTFORM 在%SAVESTR:TARGET%的
+			SIF CFLAG:7 & 16
+				PRINTFORM 舌尖
+			SIF (CFLAG:7 & 16) && (CFLAG:7 & 32)
+				PRINTFORM 和
+			SIF CFLAG:7 & 32
+				PRINTFORM 嘴角
+			SIF (CFLAG:7 & 16) || (CFLAG:7 & 32)
+				PRINTFORML 能感受到被穿了环的触感……
+	ENDIF
+;--------------------------------------------------------
+;自己扒开
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 7
+	IF TALENT:310 <= 20 || TALENT:125
+		LOCALS:0 = 没毛的
+	ELSEIF TALENT:310 >= 21 && TALENT:310 <= 100
+		LOCALS:0 = 被半长的阴毛覆盖的
+	ELSEIF TALENT:310 >= 101 && TALENT:310 <= 200
+		LOCALS:0 = 被隐约的阴毛覆盖的
+	ELSEIF TALENT:310 >= 201 && TALENT:310 <= 300
+		LOCALS:0 = 被长齐的阴毛覆盖的
+	ELSEIF TALENT:310 >= 301 && TALENT:310 <= 400
+		LOCALS:0 = 随意生长着茂盛阴毛的
+	ELSEIF TALENT:310 >= 401
+		LOCALS:0 = 从阴部到肛门都被茂盛阴毛覆盖的
+	ENDIF
+
+	PRINTFORM 在%SAVESTR:PLAYER%的命令下、%SAVESTR:TARGET%
+	SIF TEQUIP:53
+		PRINT 在摄像机前
+	;着衣設定
+	IF CFLAG:40 & 8 && ABL:17 != 0
+		CALL PRINT_CLOTHTYPE_MAIN2
+		PRINT 的前摆翻了上去、
+	ENDIF
+	;露出癖
+	IF ABL:17 == 0
+		IF TALENT:22
+			PRINT 毫无表情地、
+		ELSEIF TALENT:10 || TALENT:14
+			PRINT 颤抖着地、
+		ELSEIF TALENT:11
+			PRINT 带着反抗眼神、要再次命令才勉勉强强地、
+		ELSEIF TALENT:12
+			PRINT 屈辱到咬牙切齿地、
+		ELSEIF TALENT:35
+			PRINT 羞耻到脸红耳赤地、
+		ENDIF
+		;着衣設定
+		IF CFLAG:40 & 8
+			CALL PRINT_CLOTHTYPE_MAIN2
+			PRINT 的下摆翻上去了、
+		ENDIF
+		PRINTFORML 向自己%LOCALS:0%私处里插入了手指、左右扩张将其撑开了。
+	ELSEIF ABL:17 == 1
+		PRINTFORML 一边脸红耳赤、一边怯弱地把%LOCALS:0%性器撑开到能被看清楚的程度。
+	ELSEIF ABL:17 == 2
+		PRINTFORML 把手伸到下腹、面向着%SAVESTR:PLAYER%、用食指和中指轻轻地撑开了自己%LOCALS:0%阴部。
+	ELSEIF ABL:17 == 3
+		PRINTFORM 带着嬉笑的表情、一只手撑开了%LOCALS:0%阴部、另一只手玩弄着自己的
+		IF TALENT:121
+			PRINT 阴茎
+		ELSE
+			PRINT 阴蒂
+		ENDIF
+		PRINTL 。
+	ELSEIF ABL:17 == 4
+		PRINTFORML 两只手同时把%LOCALS:0%阴部拉了开来、私处口也随之被拉开。
+	ELSEIF ABL:17 >= 5
+		PRINTFORML 用两手的手指把%LOCALS:0%阴部张了开来、炫耀似得把私处口也展露在%SAVESTR:PLAYER%的眼前。
+	ENDIF
+	IF TFLAG:38 >= 2
+		PRINTFORML 从完全打开的私处口中、灌满的精液不断地流了出来……
+	ELSEIF TFLAG:38
+		PRINTFORML 从张开的阴部里、精液缓缓地流了出来……
+	ENDIF
+
+	;貞操帯
+	SIF CFLAG:42 == 79 && (CFLAG:40 & 64) 
+		PRINTFORML 然后、%SAVESTR:TARGET%的阴部、被结实的贞操带紧紧保护着。
+
+	;穿环状態
+	SIF CFLAG:7 & 8 || CFLAG:7 & 4
+		PRINTFORM %SAVESTR:TARGET%
+	IF CFLAG:7 & 8
+		SIF PALAM:5 >= PALAMLV:4
+			PRINT 勃起的
+		IF TALENT:121
+			PRINT 阴茎
+		ELSE
+			PRINT 阴蒂
+		ENDIF
+		SIF CFLAG:7 & 4
+			PRINT 和
+	ENDIF
+	SIF CFLAG:7 & 4
+		PRINT 左右阴唇
+	SIF CFLAG:7 & 8 || CFLAG:7 & 4
+		PRINTL 有贯穿软肉的环、散发着金属的柔和光芒……
+
+;--------------------------------------------------------
+;插入手指
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 8
+	IF TEQUIP:11
+		;着衣設定
+		IF CFLAG:40 & 8 && ABL:17 != 0
+			PRINTFORM %SAVESTR:PLAYER%把%SAVESTR:TARGET%的
+			CALL PRINT_CLOTHTYPE_MAIN2
+			PRINT 的裙摆翻起、
+		ELSE
+			PRINTFORM %SAVESTR:TARGET%的
+		ENDIF
+		IF EXP:0 == 0
+			PRINT 未经人事的
+		ELSEIF PALAM:3 >= PALAMLV:4
+			PRINT 湿漉漉的
+		ENDIF
+		IF TALENT:132
+			PRINT 幼女的阴部
+		ELSE
+			PRINT 阴部
+		ENDIF
+		PRINTFORML 里有着前后抽插着的蠕虫。
+		
+		PRINTFORM %SAVESTR:PLAYER%将自己的手指
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%把%SAVESTR:TARGET%的
+		;着衣設定
+		IF CFLAG:40 & 8 && ABL:17 != 0
+			PRINT 正穿着
+			CALL PRINT_CLOTHTYPE_MAIN2
+			PRINT 的裙摆翻起、
+		ENDIF
+		IF EXP:0 == 0
+			PRINT 未经人事的
+		ELSEIF PALAM:3 >= PALAMLV:4
+			PRINT 湿漉漉的
+		ENDIF
+		IF TALENT:132
+			PRINT 幼女的阴部
+		ELSE
+			PRINT 阴部
+		ENDIF
+		
+		PRINTFORM 用自己的手指
+	ENDIF
+	
+	IF PREVCOM == 8 && ABL:PLAYER:12 >= 3
+		PRINTFORML 温柔地插了进去、轻轻地搅动着…
+	ELSE
+		PRINTFORML 慢慢地插了进去…
+	ENDIF
+	
+	;Gスポット刺激
+	IF TEQUIP:11 && PREVCOM == 8 && ABL:PLAYER:12 >= 3
+		PRINTFORML %SAVESTR:PLAYER%灵活地操纵着蠕虫、玩弄着敏感的顶点…
+	ELSEIF PREVCOM == 8 && ABL:PLAYER:12 >= 3
+		PRINTFORML %SAVESTR:PLAYER%在%SAVESTR:TARGET%的私处内弯曲手指、刺激着敏感的顶点…
+	ELSEIF TEQUIP:11 && PALAM:5 >= PALAMLV:3 && ABL:2 >= 2
+		PRINTFORML %SAVESTR:TARGET%的私处内、爱液把蠕虫沾满了…
+	ELSEIF TEQUIP:11 && PALAM:5 <= PALAMLV:3 && ABL:2 >= 2
+		PRINTFORML %SAVESTR:TARGET%受到蠕虫的刺激、变得更加苦闷了…
+	ELSEIF TEQUIP:11 && PALAM:5 >= PALAMLV:3 && ABL:2 <= 3
+		PRINTFORML %SAVESTR:TARGET%脸色红润、时不时的娇喘两声…
+	ELSEIF TEQUIP:11 && PALAM:5 <= PALAMLV:3 && ABL:2 <= 3
+		PRINTFORML %SAVESTR:TARGET%露出了有点苦痛的表情…
+	ELSEIF EXP:0 <= 1
+		PRINTFORML %SAVESTR:TARGET%对私处里的异物感到害怕…
+	ELSEIF EXP:0 >= 1 && EXP:0 <= 30
+		PRINTFORML %SAVESTR:TARGET%感受到了手指的感触、努力地忍耐着不让自己叫出声来…
+	ELSEIF EXP:0 >= 31 && EXP:0 <= 50
+		PRINTFORML %SAVESTR:TARGET%很享受手指动作的样子…
+	ELSEIF EXP:0 >= 51 && EXP:0 <= 80
+		PRINTFORML %SAVESTR:TARGET%因为手指的动作而出了神…
+	ELSEIF EXP:0 >= 81 && EXP:0 <= 120
+		PRINTFORML %SAVESTR:TARGET%呼出炽热的气息、身体内部被玩弄着、变得更加苦闷了…
+	ELSEIF EXP:0 >= 121
+		PRINTFORML %SAVESTR:TARGET%流出了口水、主动扭动着腰肢、追求着更高的快感…
+	ENDIF
+;--------------------------------------------------------
+;舔肛
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 9
+	IF TEQUIP:89
+		PRINTFORM 狗吐出了炽热的气息、把
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%把
+	ENDIF
+	PRINTFORM %SAVESTR:TARGET%
+	SIF EXP:1 <= 10
+		PRINT 故意用力闭起来
+	PRINT 的肛门、认真细致地舔舐着
+	SIF EXP:1 >= 50 && PALAM:5 >= PALAMLV:3
+		PRINT 、舌头伸入到洞里去、有节奏地搅动
+	PRINTL 了…
+;--------------------------------------------------------
+;振动宝石
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 10
+	PRINTFORM %SAVESTR:PLAYER%把%SAVESTR:TARGET%
+	IF TALENT:122 && PALAM:5 >= PALAMLV:3
+		PRINTL 勃起的阴茎、用振动宝石按压着…
+	ELSEIF TALENT:122
+		PRINTL 颤抖的阴茎、用振动宝石按压着…
+	ELSEIF TALENT:121 && PALAM:5 >= PALAMLV:3
+		PRINTL 湿润的阴唇、用振动宝石按压着…
+	ELSEIF TALENT:121
+		PRINTL 颤抖的阴唇、用振动宝石按压着…
+	ELSEIF PALAM:5 >= PALAMLV:3
+		PRINTL 发硬、勃起的阴蒂、用振动宝石按压着…
+	ELSE
+		PRINTL 颤抖的阴蒂、用振动宝石按压着…
+	ENDIF
+;--------------------------------------------------------
+;ワーム
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 11
+	IF TEQUIP:11
+		PRINTFORML 把%SAVESTR:TARGET%体内蠢蠢欲动的蠕虫拔出来了。
+		IF TFLAG:899 == 0
+			IF EXP:0 >= 201
+				PRINTFORM %SAVESTR:TARGET%的私处、瞬间感到难以忍受的空虚。
+				SIF TALENT:45 == 0 && TALENT:310 == 0
+					PRINTFORM 泪水滴下来了、
+				PRINTFORM 不自觉地流出了口水
+			ELSEIF EXP:0 >= 151 && EXP:0 <= 200
+				PRINTFORM %SAVESTR:TARGET%的私处内、积存的爱液随之流出、形成了一个小水塘
+			ELSEIF EXP:0 >= 121 && EXP:0 <= 150
+				PRINTFORM 拔出蠕虫之后、%SAVESTR:TARGET%私处的肉壁皱褶上、渗出了爱液、形成一滴滴的小水珠
+			ELSEIF EXP:0 >= 71 && EXP:0 <= 120
+				PRINTFORM %SAVESTR:TARGET%忍不住双腿开始摩擦、扭扭捏捏地看着%SAVESTR:PLAYER%
+			ELSEIF EXP:0 >= 41 && EXP:0 <= 70
+				PRINTFORM %SAVESTR:TARGET%呼出一口炽热无比的吐息
+			ELSEIF EXP:0 >= 21
+				PRINTFORM %SAVESTR:TARGET%的私处口变得放松
+			ELSEIF EXP:0 >= 1 && EXP:0 <= 20
+				PRINTFORM %SAVESTR:TARGET%露出了安心的表情
+			ENDIF
+			PRINTL 了…
+		ENDIF
+	ELSE
+		PRINTFORM %SAVESTR:TARGET%
+		SIF PALAM:3 >= PALAMLV:5
+			PRINT 充分开发的
+		SIF PALAM:3 >= PALAMLV:3
+			PRINT 装满粘液的
+		IF TALENT:132
+			PRINT 幼女的阴部、
+		ELSE
+			PRINT 阴部、
+		ENDIF
+		PRINTL 适应蠕虫了…
+		IF TFLAG:899 == 0
+			PRINTFORM %SAVESTR:TARGET%
+			IF TALENT:0 && (TALENT:85 || TALENT:76) && ABL:11 >= 5
+				PRINT 露出了甜美的笑容、好像把自己是处女的事忘记
+			ELSEIF TALENT:0 && TALENT:85
+				PRINTFORM 用有点可怜的眼神看着%SAVESTR:PLAYER%
+			ELSEIF TALENT:0 && TALENT:76
+				PRINT 也不在乎了自己是处女、主动扭动着腰、积极的索要着
+			ELSEIF TALENT:0 && TALENT:27
+				PRINT 露出了彻底放弃的表情。
+				SIF TALENT:45 == 0 && TALENT:310 == 0
+					PRINT 眼睛泛起了泪光
+			ELSEIF TALENT:0
+				PRINT 因破处的恐惧惴惴不安、哆嗦地颤抖着
+			ELSEIF EXP:0 >= 201
+				PRINT 对插入非常期待、主动扭动腰肢、全身都颤抖起来
+			ELSEIF EXP:0 >= 151 && EXP:0 <= 200
+				PRINTFORM 用可以融化任何人的眼神、温柔地看着%SAVESTR:PLAYER%、自己开始摩擦阴唇
+			ELSEIF EXP:0 >= 121 && EXP:0 <= 150
+				PRINT 带着恍惚的表情、迫不及待地挺起腰
+			ELSEIF EXP:0 >= 71 && EXP:0 <= 120
+				PRINTFORM 用充满欲情的湿润眼神、看着%SAVESTR:PLAYER%
+			ELSEIF EXP:0 >= 41 && EXP:0 <= 70
+				PRINT 沉醉在蠕虫刚刚的摩擦的感觉中、发出了陶醉的呻吟
+			ELSEIF EXP:0 >= 1 && EXP:0 <= 40
+				PRINT 沉醉在蠕虫刚刚的摩擦的感觉中、身体渗出爱液
+			ELSE
+				PRINT 沉醉在蠕虫刚刚的摩擦的感觉中、私处里的肉壁也开始蠕动
+			ENDIF
+			PRINTL 了…
+		ENDIF
+		PRINTFORM %SAVESTR:TARGET%
+		SIF PALAM:3 >= PALAMLV:4
+			PRINT 湿漉漉的
+		PRINTFORML 阴部、插入了蠕虫。
+	ENDIF
+;--------------------------------------------------------
+;振动杖
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 12
+	PRINTFORML %SAVESTR:PLAYER%用振动杖按压着%SAVESTR:TARGET%的阴部…
+	IF TFLAG:899 == 0
+		PRINTFORM %SAVESTR:TARGET%
+		IF ABL:0 <= 2 && PALAM:5 >= PALAMLV:0 && PALAM:5 <= PALAMLV:3
+			PRINT 非常痒的样子、
+		ELSEIF ABL:0 <= 2 && PALAM:5 >= PALAMLV:3
+			PRINT 什么话都说不出了、
+		ELSEIF TALENT:85 && ABL:0 >= 4 && PALAM:5 >= PALAMLV:0 && PALAM:5 <= PALAMLV:3
+			PRINT 急不可耐地分开双腿、享受着、
+		ELSEIF TALENT:85 && ABL:0 >= 4 && PALAM:5 >= PALAMLV:3 && PALAM:5 <= PALAMLV:5
+			PRINTFORM 兴奋到口水都流出来了、还不停愉悦地叫着%SAVESTR:PLAYER%的名字
+		ELSEIF TALENT:85 && ABL:0 >= 4 && PALAM:5 >= PALAMLV:5
+			PRINTFORM %SAVESTR:PLAYER%抱着因为沉浸在绝顶快感而神情恍惚的她
+		ELSEIF ABL:0 >= 3 && PALAM:5 >= PALAMLV:0 && PALAM:5 <= PALAMLV:3
+			PRINT 强烈的快感下她整个脸都红了
+		ELSEIF ABL:0 >= 3 && PALAM:5 >= PALAMLV:3 && PALAM:5 <= PALAMLV:5
+			PRINT 恍惚的眼神中、流露出贪欲的神色
+		ELSEIF ABL:0 >= 3 && PALAM:5 >= PALAMLV:5
+			PRINT 现在也正在绝顶高潮中的样子
+		ENDIF
+		PRINTL ……
+	ENDIF
+;--------------------------------------------------------
+;肛门虫
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 13
+	IF TEQUIP:13
+		PRINTFORML %SAVESTR:TARGET%体内的肛门虫被拔出来了。
+		IF TFLAG:899 == 0
+			PRINTFORM %SAVESTR:TARGET%
+			IF EXP:1 >= 180
+				PRINT 阴部流出了源源不断的爱液、继续把肛门张开着
+			ELSEIF EXP:1 >= 141 && EXP:1 <= 179
+				PRINT 眼神湿润、扭着屁股请求着
+			ELSEIF EXP:1 >= 101 && EXP:1 <= 140
+				PRINT 好像缺少了什么、抬起屁股请求着
+			ELSEIF EXP:1 <= 20
+				PRINT 用艰难的表情忍受着刺激
+			ELSEIF EXP:1 >= 21 && EXP:1 <= 40
+				PRINT 被强烈的排泄感弄得脸红耳赤
+			ELSEIF EXP:1 >= 41 && EXP:1 <= 75
+				PRINT 屁股扭动的同时露出了安心的表情
+			ELSEIF EXP:1 >= 76 && EXP:1 <= 100
+				PRINT 稍微依依不舍地摆动着屁股
+			ENDIF
+			PRINTFORML 了…
+		ENDIF
+	ELSE
+		PRINTFORML 肛门虫在%SAVESTR:TARGET%的菊花入口处游荡…
+		IF TFLAG:899 == 0
+			PRINTFORM %SAVESTR:TARGET%
+			IF EXP:1 >= 180
+				PRINT 露出可以融化任何的人表情、自己把屁眼扒开
+			ELSEIF EXP:1 >= 141 && EXP:1 <= 179
+				PRINT 焦急地等待着插入、不安分地扭动着腰肢
+			ELSEIF EXP:1 >= 101 && EXP:1 <= 140
+				PRINT 脸红过耳、摇动屁股期待着
+			ELSEIF EXP:1 <= 20
+				PRINT 不洁的穴要被不洁的东西侵犯了、露出了充满屈辱与耻辱的表情
+			ELSEIF EXP:1 >= 21 && EXP:1 <= 40
+				PRINT 因为害羞、脸都红
+			ELSEIF EXP:1 >= 41 && EXP:1 <= 75
+				PRINT 露出了又期待又抗拒的复杂表情
+			ELSEIF EXP:1 >= 76 && EXP:1 <= 100
+				PRINT 身体因虫子的刺激而颤抖着
+			ENDIF
+			PRINTFORML 了…
+		ENDIF
+
+		PRINTFORM %SAVESTR:TARGET%的
+		SIF PALAM:3 >= PALAMLV:4
+			PRINT 充满粘液的
+		PRINTFORML 肛门、插入了肛门虫……
+	ENDIF
+;--------------------------------------------------------
+;電動阴蒂夹
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 14
+	IF TEQUIP:14
+		PRINTFORML %SAVESTR:TARGET%的电动阴蒂夹被拿了下来……
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%的阴蒂被夹上了电动阴蒂夹……
+	ENDIF
+;--------------------------------------------------------
+;ニプル阴蒂夹
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 15
+	IF TEQUIP:15
+		PRINTFORML %SAVESTR:TARGET%的乳头夹被拿了下来……
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%的乳头被夹上了乳头夹……
+	ENDIF
+;--------------------------------------------------------
+;搾乳器
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 16
+	IF TEQUIP:16
+		PRINTFORML %SAVESTR:TARGET%身上的榨乳器被卸了下来……
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%被装上了榨乳器……
+	ENDIF
+;--------------------------------------------------------
+;飞机杯
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 17
+	IF TEQUIP:17
+		PRINTFORML %SAVESTR:TARGET%的飞机杯被拿了下来……
+	ELSE
+		PRINTFORML %SAVESTR:PLAYER%用飞机杯套住了%SAVESTR:TARGET%的阴茎……
+	ENDIF
+;--------------------------------------------------------
+;淋浴
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 18
+	IF TEQUIP:18
+		PRINTFORML %SAVESTR:TARGET%的淋浴中止了……
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%的淋浴开始了、
+		PRINT 水花流过
+		IF TALENT:恶魔肌肤
+			PRINT 蓝色的
+		ELSEIF TALENT:褐色肌肤
+			PRINT 褐色的
+		ELSEIF TALENT:白皙
+			PRINT 白皙的
+		ENDIF
+		PRINTL 吹弹可破的肌肤………
+	ENDIF
+;--------------------------------------------------------
+;肛珠
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 19
+	IF TEQUIP:19
+		PRINTFORML %SAVESTR:TARGET%肛门里的肛珠被拔出来了…
+	ELSE
+		PRINTFORML 往%SAVESTR:TARGET%的肛门、插入了肛珠…
+	ENDIF
+;--------------------------------------------------------
+;正常位
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 20
+	;前回と今回の調教者が同じで、前回の調教が正常位、正常位・接吻、正常位・胸爱抚であり、抜かないフラグがある場合
+	;また、前々回のコマンドが正常位、正常位・胸爱抚、正常位・接吻、正常位SPで、前回の調教がGスポ・子宮口攻めの場合
+	IF TFLAG:60 && ((PREVCOM == 20 || PREVCOM == 128 || PREVCOM == 129) || ((TFLAG:59 == 20 || TFLAG:59 == 128 || TFLAG:59 == 129 || TFLAG:59 == 130) && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		;調教者が男人か扶她である
+		IF TALENT:PLAYER:121 || TALENT:PLAYER:122
+			PRINTFORML %SAVESTR:TARGET%十分享受私处里的感觉、再次开始扭动腰肢…
+		ELSE
+		;假阳具を使用している場合
+			PRINTFORML %SAVESTR:TARGET%十分享受私处里的感觉、保持着插入、再次开始扭动腰肢…
+		ENDIF
+		SIF TFLAG:31
+			TFLAG:31 = 2
+	;同様に前回の調教が正常位以外のセックスか骑乘位の場合
+	;また、前々回のコマンドが正常位以外のセックス、骑乘位で、前回の調教がGスポ・子宮口攻めの場合
+	ELSEIF TFLAG:60 && ((PREVCOM == 21 || PREVCOM == 22 || PREVCOM == 23 || PREVCOM == 34 || PREVCOM == 131 || PREVCOM == 132 || PREVCOM == 133 || PREVCOM == 134) || ((TFLAG:59 == 21 || TFLAG:59 == 22 || TFLAG:59 == 23 || TFLAG:59 == 34 || TFLAG:59 == 131 || TFLAG:59 == 132 || TFLAG:59 == 133 || TFLAG:59 == 134) && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORM %SAVESTR:PLAYER%
+		PRINTFORML 的阴茎让%SAVESTR:TARGET%娇喘不已、保持着插入、%SAVESTR:TARGET%仰面躺下、再次开始扭动腰肢…
+		SIF TFLAG:31
+			TFLAG:31 = 2
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%
+		SIF TALENT:PLAYER:121 == 0 && TALENT:PLAYER:122 == 0	
+			PRINTFORM 在自己的腰间装上了假阳具、
+		PRINTFORM 贯穿了%SAVESTR:TARGET%的
+		IF EXP:0 == 0
+			PRINT 未经人事的
+		ELSEIF PALAM:3 >= PALAMLV:4
+			PRINT 湿漉漉的
+		ENDIF
+		IF TALENT:132
+			PRINT 幼女阴部
+		ELSE
+			PRINT 阴部
+		ENDIF
+		PRINTL ……
+	ENDIF
+;--------------------------------------------------------
+;背后位
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 21
+	;死斗场
+	IF TEQUIP:55
+		IF TFLAG:400 == 201
+			PRINTFORM %SAVESTR:ASSI%兴奋地抓住倒下了的%SAVESTR:TARGET%的腰、
+			SIF TALENT:ASSI:121 == 1 || TALENT:ASSI:122 == 1
+				PRINT 用阴茎
+			SIF TALENT:ASSI:121 != 1 && TALENT:ASSI:122 != 1 && ITEM:PBAND == 1
+				PRINT 用假阳具
+			PRINTFORMW 强行插入了私处……
+		ELSEIF TFLAG:400 == 202
+			PRINTFORMW 倒下了的%SAVESTR:TARGET%被最下层居民抱着腰、被充满污垢的阴茎强行插入了私处……
+		ELSEIF TFLAG:400 == 203
+			PRINTFORMW 企图逃跑的%SAVESTR:TARGET%被抓了回来。
+			PRINTFORMW 被绑着的%SAVESTR:TARGET%被一只发霉的狗从后面用阴茎插入了私处……
+		ELSEIF TFLAG:400 == 204
+			PRINTFORMW 倒下了的%SAVESTR:TARGET%的屁股被兽人抱着、用长满瘤子的丑陋阴茎强行插入了私处……
+		ELSEIF TFLAG:400 == 205
+			PRINTFORMW 企图逃跑的%SAVESTR:TARGET%被抓了回来。
+			PRINTFORMW 被绑着的%SAVESTR:TARGET%被一只腐烂的猪用带着腐汁把阴茎插入了私处……
+		ELSEIF TFLAG:400 == 206
+			PRINTFORML 巨魔那自傲的巨大阴茎勃起了、%SAVESTR:TARGET%、请自求多福……
+		ENDIF
+	ENDIF
+	;獣姦かつ前回のコマンドも背后位で抜かないフラグがある場合
+	IF TFLAG:60 && PREVCOM == 21 && TEQUIP:89
+		PRINTFORML 狗让%SAVESTR:TARGET%的屁股紧贴着自己的下体、持续挺动着腰……
+		SIF ABL:39 >= 3 && PALAM:5 > PALAMLV:4
+			PRINTFORML %SAVESTR:TARGET%根据狗的动作、扭动腰肢熟练地配合着……
+		SIF TFLAG:31
+			TFLAG:31 = 2
+	;獣姦の場合
+	ELSEIF TEQUIP:89
+		PRINTFORML 听从%SAVESTR:PLAYER%的指令、流浪狗从后压倒了%SAVESTR:TARGET%的身体、
+		IF EXP:0 == 0
+			PRINT 未经人事的
+		ELSEIF PALAM:3 >= PALAMLV:4
+			PRINT 湿漉漉的
+		ENDIF
+		IF TALENT:132
+			PRINT 幼女的阴部
+		ELSE
+			PRINT 阴部
+		ENDIF
+		PRINTFORML 被鼓胀发红的野兽阴茎插到了最深处…
+	;死斗场で助手以外の場合
+	ELSEIF TEQUIP:55 && (ASSI != PLAYER)
+		IF TFLAG:400 == 206
+			PRINTFORML 巨魔用双手抓住%SAVESTR:TARGET%、将她的身体上下剧烈套弄着、
+			PRINTFORML %SAVESTR:TARGET%口吐白沫、四肢无力、被做得筋疲力尽了。
+		ELSE
+			PRINTFORM 怪物压倒了%SAVESTR:TARGET%、对
+			IF EXP:0 == 0
+				PRINT 未经人事的
+			ELSEIF PALAM:3 >= PALAMLV:4
+				PRINT 湿透了的
+			ENDIF
+			IF TALENT:132
+				PRINT 幼女的阴部
+			ELSE
+				PRINT 肉壺
+			ENDIF
+			PRINTFORML 疯狂地凌辱着……
+		ENDIF
+	;前回と今回の調教者が同じで、前回の調教が背后位、背后位・胸爱抚、背后位打屁股、站立背后位であり、抜かないフラグがある場合
+	;また、前々回のコマンドが背后位、背后位・胸爱抚、背后位打屁股、站立背后位、背后位SPで、前回のコマンドが挿入Gスポ攻めか挿入子宮口攻めの場合
+	ELSEIF TFLAG:60 && ((PREVCOM == 21 || PREVCOM == 131 || PREVCOM == 132 || PREVCOM == 133) || ((TFLAG:59 == 21 || TFLAG:59 == 131 || TFLAG:59 == 132 || TFLAG:59 == 133 || TFLAG:59 == 134) && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		;調教者が男人か扶她である
+		IF TALENT:PLAYER:119 || TALENT:PLAYER:121 || TALENT:PLAYER:122
+			PRINTFORML %SAVESTR:TARGET%享受着私处里的感觉、再次开始扭动腰肢了…
+		ELSE
+		;假阳具を使用している場合
+			PRINTFORML %SAVESTR:TARGET%保持着插入、再次开始扭动腰肢了…
+		ENDIF
+		SIF TFLAG:31
+			TFLAG:31 = 2
+	;同様に、前回の調教が背后位以外のセックスか骑乘位である場合
+	;また、前々回のコマンドが背后位以外のセックスか骑乘位で、前回の調教がGスポ・子宮口攻めの場合
+	ELSEIF TFLAG:60 && ((PREVCOM == 20 || PREVCOM == 22 || PREVCOM == 23 || PREVCOM == 34 || PREVCOM == 128 || PREVCOM == 129 || PREVCOM == 130) || ((TFLAG:59 == 20 || TFLAG:59 == 22 || TFLAG:59 == 23 || TFLAG:59 == 34 || TFLAG:59 == 128 || TFLAG:59 == 129 || TFLAG:59 == 130) && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML 保持着插入、%SAVESTR:TARGET%向后转身、再次开始扭动腰肢了…
+		SIF TFLAG:31
+			TFLAG:31 = 2
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%从后面将%SAVESTR:TARGET%
+		IF EXP:0 == 0
+			PRINT 未经人事的
+		ELSEIF PALAM:3 >= PALAMLV:4
+			PRINT 湿漉漉的
+		ENDIF
+		IF TALENT:132
+			PRINT 幼女的阴部
+		ELSE
+			PRINT 阴部
+		ENDIF
+		PRINTFORM 的最深处
+		IF TALENT:PLAYER:121 || TALENT:PLAYER:122
+			PRINT 用硬得不行的阴茎
+		ELSE
+			PRINT 用腰间的假阳具
+		ENDIF
+		PRINTFORML 刺了进去…
+	ENDIF
+;--------------------------------------------------------
+;对面座位
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 22
+	PRINTFORM %SAVESTR:PLAYER%、
+	;前回と今回の調教者が同じで、前回の調教が对面座位であり、抜かないフラグがある場合
+	;また、前々回のコマンドが对面座位で、前回のコマンドがGスポ・子宮口攻めの場合
+	IF TFLAG:60 && (PREVCOM == 22 || (TFLAG:59 == 22 && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML 和%SAVESTR:TARGET%拥吻着、舌头激烈地交缠、再次开始扭动腰肢…
+	;同様に前回の調教が正常位、正常位・胸爱抚、正常位・接吻、正常位SPか骑乘位の場合
+	;また、前々回のコマンドが正常位、正常位・胸爱抚、正常位・接吻、正常位SPか骑乘位で、前回のコマンドがGスポ・子宮口攻めの場合
+	ELSEIF TFLAG:60 && ((PREVCOM == 20 || PREVCOM == 34 || PREVCOM == 128 || PREVCOM == 129 || PREVCOM == 130) || ((TFLAG:59 == 20 || TFLAG:59 == 34 || TFLAG:59 == 128 || TFLAG:59 == 129 || TFLAG:59 == 130) && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML 保持着插入、%SAVESTR:TARGET%紧紧地抱住%SAVESTR:PLAYER%、再次开始扭动腰肢…
+	ELSE
+		PRINTFORM 抱着%SAVESTR:TARGET%的胴体、慢慢地插入了
+		SIF PALAM:3 >= PALAMLV:4
+			PRINT 湿漉漉的
+		IF TALENT:132
+			PRINT 幼女的阴部
+		ELSE
+			PRINT 阴部
+		ENDIF
+		PRINTFORML ……
+	ENDIF
+;--------------------------------------------------------
+;背面座位
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 23
+	;羞耻PLAY中で、前回と今回の調教者が同じで、前回の調教が背面座位であり、抜かないフラグがある場合
+	;また、前々回のコマンドが背面座位で、前回のコマンドがGスポ・子宮口攻めの場合
+	IF TEQUIP:57 && TFLAG:60 && (PREVCOM == 23 || (TFLAG:59 == 23 && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+			PRINTFORML %SAVESTR:PLAYER%用手从%SAVESTR:TARGET%的阴部摸到胸部、卖弄般地再次扭动腰身了…
+	;同様に、羞耻PLAY中で前回の調教が背后位、背后位・胸爱抚、背后位打屁股、站立背后位、背后位SPか骑乘位である場合
+	;また、前々回のコマンドが背后位、背后位・胸爱抚、背后位打屁股、站立背后位、背后位SPか骑乘位で、前回のコマンドがGスポ・子宮口攻めの場合
+	ELSEIF TEQUIP:57 && TFLAG:60 && ((PREVCOM == 21 || PREVCOM == 34 || PREVCOM == 131 || PREVCOM == 132 || PREVCOM == 133 || PREVCOM == 134) || ((TFLAG:59 == 21 || TFLAG:59 == 131 || TFLAG:59 == 132 || TFLAG:59 == 133 || TFLAG:59 == 134 || TFLAG:59 == 34) && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+			PRINTFORML 阴茎在私处里依依不舍不想拔出来、%SAVESTR:PLAYER%从后抱着%SAVESTR:TARGET%的身子、把她的脚大大地分开了…
+
+	;通常プレイ中で、前回と今回の調教者が同じで、前回の調教が背面座位であり、抜かないフラグがある場合
+	;また、前々回のコマンドが背面座位で、前回のコマンドがGスポ・子宮口攻めの場合
+	ELSEIF TFLAG:60 && (PREVCOM == 23 || (TFLAG:59 == 23 && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML %SAVESTR:PLAYER%从后面抱着%SAVESTR:TARGET%、再次开始剧烈地摇动着%SAVESTR:TARGET%的身体…
+	;同様に、前回の調教が背后位、背后位・胸爱抚、背后位打屁股、站立背后位、背后位SPか骑乘位である場合
+	;また、前々回のコマンドが背后位、背后位・胸爱抚、背后位打屁股、站立背后位、背后位SPか骑乘位で、前回のコマンドがGスポ・子宮口攻めの場合
+	ELSEIF TFLAG:60 && ((PREVCOM == 21 || PREVCOM == 34 || PREVCOM == 131 || PREVCOM == 132 || PREVCOM == 133 || PREVCOM == 134) || ((TFLAG:59 == 21 || TFLAG:59 == 131 || TFLAG:59 == 132 || TFLAG:59 == 133 || TFLAG:59 == 134 || TFLAG:59 == 34) && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML 阴茎在私处里依依不舍不想拔出来、%SAVESTR:PLAYER%从后抱着%SAVESTR:TARGET%的身子、开始了淫靡的摇动…
+
+	ELSEIF TEQUIP:57
+			PRINTFORM %SAVESTR:PLAYER%抱着%SAVESTR:TARGET%的胴体、慢慢地插入了
+			SIF PALAM:3 >= PALAMLV:4
+				PRINT 湿漉漉的
+			IF TALENT:132
+				PRINT 幼女的阴部
+			ELSE
+				PRINT 阴部
+			ENDIF
+			PRINTFORML 进去、顺带着大大地分开了%SAVESTR:TARGET%的双腿……
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%抱着%SAVESTR:TARGET%的胴体、用%SAVESTR:TARGET%期待着的东西缓缓贯穿了
+		SIF PALAM:3 >= PALAMLV:4
+			PRINT 湿漉漉的
+		IF TALENT:132
+			PRINT 幼女的阴部
+		ELSE
+			PRINT 阴部
+		ENDIF
+		PRINTFORML …
+	ENDIF
+	IF TEQUIP:57
+		IF ABL:17 >= 5
+			PRINTFORML %SAVESTR:TARGET%凝视着镜子里自己淫荡的痴态、叫得更加妩媚了…
+		ELSEIF ABL:17 >= 3
+			PRINTFORML %SAVESTR:TARGET%凝视着镜子里自己的痴态、露出了沉醉在羞耻与快感中的表情…
+		ELSEIF ABL:17 >= 1
+			PRINTFORML %SAVESTR:TARGET%羞得脸蛋通红、时而提高了艳丽的呻吟声…
+		ELSE
+			PRINTFORML %SAVESTR:TARGET%用手把脸遮起来、羞耻得身子颤动了…
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;逆强奸 
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 24
+	PRINTFORM %SAVESTR:TARGET%抓住%SAVESTR:PLAYER%的腰、
+	IF TALENT:TARGET:121 || TALENT:TARGET:122
+		PRINT 用硬得不行的阴茎
+	ELSE
+		PRINT 用腰上的假阳具
+	ENDIF
+	PRINTFORM 刺进了
+	IF EXP:PLAYER:0 == 0 && CFLAG:PLAYER:71 == 0
+		PRINT 未经人事的
+	ELSEIF PALAM:PLAYER:3 >= PALAMLV:4
+		PRINT 湿漉漉的
+	ENDIF
+	IF TALENT:PLAYER:132
+		PRINT 幼女的阴部
+	ELSE
+		PRINT 阴部
+	ENDIF
+	PRINTFORML 的最深处、
+	IF EXP:PLAYER:0 > 0 && ABL:TARGET:20 >= 3
+		IF PALAM:5 >= PALAMLV:0 && PALAM:5 <= PALAMLV:3
+			PRINTFORML %SAVESTR:TARGET%因侵犯%SAVESTR:PLAYER%而感觉愉悦、露出了恍惚的表情………
+		ELSEIF PALAM:5 >= PALAMLV:3 && PALAM:5 <= PALAMLV:5
+			PRINTFORML %SAVESTR:TARGET%喘着粗气、多次从后侵犯着%SAVESTR:PLAYER%………
+		ELSEIF PALAM:5 >= PALAMLV:5
+			PRINTFORML %SAVESTR:TARGET%无比兴奋、狠狠地抓住了%SAVESTR:PLAYER%通红的屁股、
+			PRINTFORML 在后面被玩坏之前貌似不会停止………
+		ENDIF
+	ELSEIF PLAYER == MASTER && TALENT:MASTER:0 == 0
+		IF PALAM:5 >= PALAMLV:0 && PALAM:5 <= PALAMLV:3
+			PRINTFORML %SAVESTR:TARGET%沉醉在侵犯%SAVESTR:PLAYER%的快感之中、露出了满足的表情………
+		ELSEIF PALAM:5 >= PALAMLV:3 && PALAM:5 <= PALAMLV:5
+			PRINTFORML %SAVESTR:TARGET%喘着粗气、多次从后侵犯着%SAVESTR:PLAYER%………
+		ELSEIF PALAM:5 >= PALAMLV:5
+			PRINTFORML %SAVESTR:TARGET%无比兴奋、狠狠地抓住了%SAVESTR:PLAYER%通红的屁股、
+			PRINTFORML 在后面被玩坏之前貌似不会停止………
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;逆肛门强奸
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 25
+	PRINTFORM %SAVESTR:TARGET%抓住%SAVESTR:PLAYER%的腰、
+	IF TALENT:TARGET:121 || TALENT:TARGET:122
+		PRINT 用硬得不行的阴茎
+	ELSE
+		PRINT 用腰上的假阳具
+	ENDIF
+	SIF ABL:PLAYER:3 >= 3
+		PRINT 对着充分开发的
+	SIF PALAM:PLAYER:3 >= PALAMLV:4
+		PRINT 对着充满粘液的
+	PRINTFORML 肛门整根插入了进去…
+	IF EXP:PLAYER:1 > 0 && ABL:TARGET:20 >= 3
+		IF PALAM:5 >= PALAMLV:0 && PALAM:5 <= PALAMLV:3
+			PRINTFORML %SAVESTR:TARGET%因侵犯%SAVESTR:PLAYER%的肛门而感觉愉悦、露出恍惚的表情了…………
+		ELSEIF PALAM:5 >= PALAMLV:3 && PALAM:5 <= PALAMLV:5
+			PRINTFORML %SAVESTR:TARGET%喘着粗气、把%SAVESTR:PLAYER%的后面多次侵犯了………
+		ELSEIF PALAM:5 >= PALAMLV:5
+			PRINTFORML %SAVESTR:TARGET%无比兴奋地、把%SAVESTR:PLAYER%通红的屁股被狠狠地抓住了、
+			PRINTFORML 在后面被玩坏之前貌似不会停止………
+		ENDIF
+	ELSEIF PLAYER == MASTER
+		IF PALAM:5 >= PALAMLV:0 && PALAM:5 <= PALAMLV:3
+			PRINTFORML %SAVESTR:TARGET%沉醉在侵犯%SAVESTR:PLAYER%的快感之中、露出了满足的表情………
+		ELSEIF PALAM:5 >= PALAMLV:3 && PALAM:5 <= PALAMLV:5
+			PRINTFORML %SAVESTR:TARGET%喘着粗气、狠狠地抓住了%SAVESTR:PLAYER%的后面连续侵犯着………
+		ELSEIF PALAM:5 >= PALAMLV:5
+			PRINTFORML %SAVESTR:TARGET%无比兴奋、狠狠地抓住了%SAVESTR:PLAYER%通红的屁股、
+			PRINTFORML 在后面被玩坏之前貌似不会停止………
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;正常位肛交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 26
+	PRINTFORM %SAVESTR:PLAYER%
+	;前回と今回の調教者が同じで、前回の調教が正常位肛交であり、抜かないフラグがある場合
+	IF TFLAG:60 && PREVCOM == 26 && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		;調教者が男人か扶她である
+		IF TALENT:PLAYER:121 || TALENT:PLAYER:122
+			PRINTFORML 品尝着%SAVESTR:TARGET%菊花内的蠕动、再次开始扭动腰肢…
+		ELSE
+		;假阳具を使用している場合
+			PRINTFORML 不从%SAVESTR:TARGET%的直肠内拔出假阳具、再次开始扭动腰肢…
+		ENDIF
+	;同様に前回の調教が背后位肛交か骑乘位肛交の場合
+	ELSEIF TFLAG:60 && (PREVCOM == 27 || PREVCOM == 28 || PREVCOM == 36) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML 保持着插入、%SAVESTR:TARGET%仰面躺下、再次开始扭动腰肢…
+	ELSE
+		PRINTFORM 贯穿了%SAVESTR:TARGET%
+		SIF PALAM:3 >= PALAMLV:4
+			PRINT 充满粘液的
+		PRINTL 肛门…
+	ENDIF
+;--------------------------------------------------------
+;背后位肛交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 27
+	;死斗场
+	IF TEQUIP:55
+		IF TFLAG:400 == 201
+			PRINTFORMW 企图逃跑的%SAVESTR:TARGET%被%SAVESTR:ASSI%抓住、压下身下……
+		ELSEIF TFLAG:400 == 202
+			PRINTFORMW 企图逃跑的%SAVESTR:TARGET%被最下层居民无情地追逐着……
+		ELSEIF TFLAG:400 == 203
+			PRINTFORMW 企图逃跑的%SAVESTR:TARGET%被霉菌狗无情地追逐着……
+		ELSEIF TFLAG:400 == 204
+			PRINTFORMW 企图逃跑的%SAVESTR:TARGET%被兽人无情地追逐着……
+		ELSEIF TFLAG:400 == 205
+			PRINTFORMW 企图逃跑的%SAVESTR:TARGET%被腐烂猪无情地追逐着……
+		ELSEIF TFLAG:400 == 206
+			PRINTFORML 巨魔那自傲的巨大阴茎勃起着、%SAVESTR:TARGET%被盯上了……
+		ENDIF
+	ENDIF
+	SIF TEQUIP:89 == 0 && TEQUIP:55 == 0 || (TEQUIP:55 && (ASSI == PLAYER))
+		PRINTFORM %SAVESTR:PLAYER%、
+	;前回と今回の調教者が同じで、前回の調教が背后位肛交であり、抜かないフラグがある場合
+	IF TFLAG:60 && PREVCOM == 27 && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		;兽奸PLAY中
+		IF TEQUIP:89
+			PRINTFORML 狗让%SAVESTR:TARGET%的屁股紧贴着自己的下体、持续挺动着腰……
+			SIF EXP:56 >= 200 && PALAM:5 > PALAMLV:4
+				PRINTFORML %SAVESTR:TARGET%根据狗的动作、扭动腰肢熟练地配合着……
+		;死斗场で助手以外の場合
+		ELSEIF TEQUIP:55 && (ASSI != PLAYER)
+			IF TFLAG:400 == 206
+				PRINTFORML 巨魔用双手抓住%SAVESTR:TARGET%、用着她的肛门、把她身体上下剧烈套弄着。
+				SIF EXP:56 >= 500 && PALAM:5 > PALAMLV:4
+					PRINTFORML %SAVESTR:TARGET%被这样凄惨地对待、却依旧无法反抗来自肛门的快感。
+			ELSE
+				PRINTFORML 怪物从%SAVESTR:TARGET%的背后偷袭、在她毫无防备的时候、被肉棒插进去了……
+				SIF EXP:56 >= 500 && PALAM:5 > PALAMLV:4
+					PRINTFORML 淫乱的%SAVESTR:TARGET%彻底被来自肛门的快感征服了、扭动腰肢热情地配合着。
+			ENDIF
+		;調教者が男人か扶她である
+		ELSEIF TALENT:PLAYER:121 || TALENT:PLAYER:122
+			PRINTFORML 留恋着%SAVESTR:TARGET%的感触、再次开始扭动腰肢了…
+		ELSE
+		;假阳具を使用している場合
+			PRINTFORML 不从%SAVESTR:TARGET%的直肠内拔出假阳具、再次开始扭动腰肢了…
+		ENDIF
+		SIF TFLAG:31
+			TFLAG:31 = 2
+	;同様に、前回の調教が正常位肛交か骑乘位肛交である場合
+	ELSEIF TFLAG:60 && (PREVCOM == 26 || PREVCOM == 29 || PREVCOM == 36) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML 保持着插入、%SAVESTR:TARGET%向后转身、再次开始扭动腰肢了…
+		SIF TFLAG:31
+			TFLAG:31 = 2
+	ELSE
+		;死斗场で助手以外の場合
+		IF TEQUIP:55 && (ASSI != PLAYER)
+			IF TFLAG:400 == 206
+				PRINTFORML 巨魔用双手抓住%SAVESTR:TARGET%、用着她的肛门、将她的身体上下剧烈套弄着。
+				SIF EXP:56 >= 500 && PALAM:5 > PALAMLV:4
+					PRINTFORML %SAVESTR:TARGET%被这样凄惨地对待、却依旧无法反抗来自肛门的快感。
+			ELSE
+				PRINTFORML 怪物从%SAVESTR:TARGET%的背后偷袭、在她毫无防备的时候、被肉棒插进去了……
+				SIF EXP:56 >= 500 && PALAM:5 > PALAMLV:4
+					PRINTFORML 淫乱的%SAVESTR:TARGET%彻底被来自肛门的快感征服了、扭动腰肢热情地配合着。
+			ENDIF
+		ELSE
+			SIF TEQUIP:89
+				PRINT 强壮的狗、将阴茎
+			PRINTFORM 从背后把%SAVESTR:TARGET%
+			SIF ABL:3 >= 3
+				PRINT 对充分开发的
+			SIF PALAM:3 >= PALAMLV:4
+				PRINT 充满粘液的
+			PRINTFORML 肛门整根插入了…
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;对面座位肛交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 28
+	PRINTFORM %SAVESTR:PLAYER%、
+	;前回と今回の調教者が同じで、前回の調教が对面座位であり、抜かないフラグがある場合
+	IF TFLAG:60 && PREVCOM == 28 && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML 和%SAVESTR:TARGET%深吻着、舌头积极地交缠、再次开始扭动腰肢了…
+	;同様に前回の調教が正常位、骑乘位の場合
+	ELSEIF TFLAG:60 && (PREVCOM == 26 || PREVCOM == 36) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML 保持着插入、%SAVESTR:TARGET%紧紧地抱住你、再次开始扭动腰肢了…
+	ELSE
+		PRINTFORM 抱着%SAVESTR:TARGET%的胴体、慢慢地往
+		SIF PALAM:3 >= PALAMLV:4
+			PRINT 充满粘液的
+		PRINTFORML 肛门插入了…
+	ENDIF
+;--------------------------------------------------------
+;背面座位肛交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 29
+	PRINTFORM %SAVESTR:PLAYER%、
+	;前回と今回の調教者が同じで、前回の調教が背面座位であり、抜かないフラグがある場合
+	IF TFLAG:60 && PREVCOM == 29 && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML 从%SAVESTR:TARGET%后面抱着她、再次剧烈地开始摇动着%SAVESTR:TARGET%的身体…
+	;同様に、前回の調教が背后位か骑乘位である場合
+	ELSEIF TFLAG:60 && (PREVCOM == 27 || PREVCOM == 36) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML 阴茎在直肠里依依不舍不想拔出来、从后抱着%SAVESTR:TARGET%的身子、开始了淫靡的摇动…
+	ELSE
+		PRINTFORM 抱着%SAVESTR:TARGET%的胴体、
+		SIF PALAM:3 >= PALAMLV:4
+			PRINT 充满粘液的
+		PRINTFORML 肛门慢慢地被期待着的东西贯穿了…
+	ENDIF
+;--------------------------------------------------------
+;手淫
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 30
+	PRINTFORM %SAVESTR:TARGET%
+	SIF TALENT:85 && ASSIPLAY == 0 && TEQUIP:89 == 0
+		PRINT 带着爱慕的表情、
+	SIF TALENT:76
+		PRINT 自发地
+	PRINTFORM 套弄着
+	IF TEQUIP:89
+		PRINTFORM 狗的
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%的
+	ENDIF
+	PRINTFORML 阴茎、不停摩擦侍奉着……
+;--------------------------------------------------------
+;口交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 31
+	;死斗场
+	IF TEQUIP:55
+		IF TFLAG:400 == 201
+			PRINTFORM %SAVESTR:ASSI%兴奋地抓住倒下了的%SAVESTR:TARGET%的头、
+			SIF TALENT:ASSI:121 == 1 || TALENT:ASSI:122 == 1
+				PRINT 将阴茎
+			SIF TALENT:ASSI:121 != 1 && TALENT:ASSI:122 != 1 && ITEM:PBAND == 1
+				PRINT 将假阳具
+			PRINTFORMW 狠狠地捅进她的嘴里……
+		ELSEIF TFLAG:400 == 202
+			PRINTFORMW 倒下了的%SAVESTR:TARGET%的头被最下层居民抓着、被充满污垢的阴茎捅进她嘴里了……
+		ELSEIF TFLAG:400 == 203
+			PRINTFORMW 倒下了的%SAVESTR:TARGET%被命令舔舐霉菌狗的阴茎……
+		ELSEIF TFLAG:400 == 204
+			PRINTFORMW 倒下了的%SAVESTR:TARGET%的头被兽人抓着、用长满瘤子的丑陋阴茎强行侵犯着她的嘴巴…………
+		ELSEIF TFLAG:400 == 205
+			PRINTFORMW 倒下了的%SAVESTR:TARGET%被命令舔舐腐烂猪的阴茎……
+		ELSEIF TFLAG:400 == 206
+			PRINTFORMW 倒下了的%SAVESTR:TARGET%的头被抓着、整个人被提了起来、巨魔用那自傲的巨大阴茎狠狠地捅进她的嘴里……
+		ENDIF
+	ENDIF
+	PRINTFORM %SAVESTR:TARGET%
+	SIF TALENT:85 && ASSIPLAY == 0 && TEQUIP:89 == 0 && TEQUIP:55 == 0
+		PRINT 带着慈爱的表情、
+	SIF TALENT:76
+		PRINT 主动地
+	PRINTFORM 用舌头仔细舔舐着
+	IF TEQUIP:89
+		PRINTFORML 狗的阴茎…
+	ELSEIF TEQUIP:55 && (ASSI != PLAYER)
+		PRINTFORML 怪物的阴茎…
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%的
+		IF TALENT:PLAYER:122 || (TALENT:PLAYER:121 && RAND:2 == 0)
+			PRINTL 阴茎…
+		ELSEIF TALENT:PLAYER:122 == 0 && TALENT:PLAYER:121 == 0 && ITEM:4 && RAND:8 == 0
+			PRINTL 假鸡巴…
+		ELSE
+			PRINT 阴蒂
+			SIF (ABL:13 >= 4 && TALENT:122) || (ABL:13 >= 1 && TALENT:122 == 0 && ABL:22 >= 2) || TALENT:85
+				PRINTFORM 、吮吸着%SAVESTR:PLAYER%的阴唇
+			SIF (ABL:13 >= 4 && TALENT:122) || (ABL:13 >= 1 && TALENT:122 == 0 && ABL:22 >= 3) || TALENT:85
+				PRINT 、不时地将舌头伸进花瓣之间
+			PRINTL …
+		ENDIF
+	ENDIF
+
+;--------------------------------------------------------
+;乳交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 32
+	PRINTFORM %SAVESTR:TARGET%
+	SIF TALENT:85 && ASSIPLAY == 0
+		PRINT 带着情意绵绵的表情、
+	IF TALENT:109
+		PRINTFORM 努力地挤着没多少的胸部蹭着%SAVESTR:PLAYER%的阴茎
+	ELSEIF TALENT:110
+		PRINTFORM 用两乳之间惊人的深深沟壑包裹着%SAVESTR:PLAYER%的阴茎
+	ELSEIF TALENT:114
+		PRINTFORM 用汹涌豪乳之间那深不可测的峡谷完全淹埋了%SAVESTR:PLAYER%的阴茎
+	ELSE
+		PRINTFORM 用胸部夹住%SAVESTR:PLAYER%的阴茎
+	ENDIF
+	PRINTL 、摩擦侍奉着。
+;--------------------------------------------------------
+;股间性交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 33
+	PRINTFORM %SAVESTR:TARGET%将%SAVESTR:PLAYER%的阴茎夹在两腿之间、
+	IF (TALENT:85 || TALENT:76) && PALAM:5 > PALAMLV:5 && ABL:11 >= 5
+		PRINTFORM 浮现出沉醉在快感之中的表情、
+	ELSEIF TALENT:85 && PALAM:5 > PALAMLV:5
+		PRINT 正露出快被融化的神情、
+	ELSEIF TALENT:76 && PALAM:5 > PALAMLV:5
+		PRINTFORM 带着恳求的眼神、
+	ELSEIF PALAM:5 > PALAMLV:4
+		PRINT 嘴角流出了口水、
+	ELSEIF (TALENT:85 || TALENT:76) && PALAM:5 > PALAMLV:3
+		PRINTFORM 眼中充满着陶醉、
+	ELSEIF TALENT:85
+		PRINT 露出被幸福包围的神情、
+	ELSEIF TALENT:76
+		PRINTFORM 用淫秽的眼神挑逗着、
+	ELSEIF TALENT:36
+		PRINTFORM 放荡地扭着腰、
+	ELSEIF TALENT:22
+		PRINTFORM 脸上染上了一片红霞、
+	ELSE
+		PRINT 害羞地
+	ENDIF
+	PRINT 用
+	IF TALENT:132
+		PRINT 幼女的阴部
+	ELSEIF TALENT:122
+		PRINT 两腿
+	ELSE
+		PRINT 阴唇
+	ENDIF
+	PRINTL 摩擦侍奉着阴茎…
+;--------------------------------------------------------
+;骑乘位
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 34
+	;獣姦かつ前回のコマンドも骑乘位で抜かないフラグがある場合
+	IF TFLAG:60 && PREVCOM == 34 && TEQUIP:89
+		PRINTFORML %SAVESTR:TARGET%大口喘着气、在狗的上面不停地摆动着腰……
+		SIF TFLAG:31
+			TFLAG:31 = 2
+	;獣姦の場合
+	ELSEIF TEQUIP:89
+		PRINTFORML %SAVESTR:TARGET%将狗仰面翻转、跨到了狗的身上、
+		PRINTFORML 对准流浪狗勃起的阴茎、自己主动沉下腰插进去了……
+	;前回と今回の調教者が同じで、前回の調教が骑乘位であり、抜かないフラグがある場合
+	;また、前々回のコマンドが骑乘位で、前回のコマンドがGスポ・子宮口攻めの場合
+	ELSEIF TFLAG:60 && (PREVCOM == 34 || (TFLAG:59 == 34 && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML %SAVESTR:TARGET%剧烈喘着气、娇声呻吟着、在%SAVESTR:PLAYER%的上面持续地扭动着腰肢…
+		SIF TFLAG:31
+			TFLAG:31 = 2
+	;同様に、前回の調教が正常位系コマンドか背后位系コマンドである場合
+	;また、前々回のコマンドが正常位系コマンドか背后位系コマンドで、前回のコマンドがGスポ・子宮口攻めの場合
+	ELSEIF TFLAG:60 && ((PREVCOM == 20 || PREVCOM == 128 || PREVCOM == 129 || PREVCOM == 130 || PREVCOM == 21 || PREVCOM == 131 || PREVCOM == 132 || PREVCOM == 133 || PREVCOM == 134) || ((TFLAG:59 == 20 || TFLAG:59 == 128 || TFLAG:59 == 129 || TFLAG:59 == 130 || TFLAG:59 == 21 || TFLAG:59 == 131 || TFLAG:59 == 132 || TFLAG:59 == 133 || TFLAG:59 == 134) && (PREVCOM == 120 || PREVCOM == 121))) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML %SAVESTR:PLAYER%保持着抽插、将%SAVESTR:TARGET%抱起、从下方挺动着腰…
+		SIF TFLAG:31
+			TFLAG:31 = 2
+	ELSE
+		PRINTFORM %SAVESTR:TARGET%跨到%SAVESTR:PLAYER%的上面、慢慢地沉下了腰
+		IF TALENT:132 && EXP:0 == 0
+			PRINT 、用未经人事的幼女的秘裂、把阴茎迎进去
+		ELSEIF EXP:0 == 0
+			PRINT 、用未经人事的阴部、把阴茎迎进去
+		ELSE
+			PRINT ……
+		ENDIF
+		IF EXP:0 >= EXPLV:3
+			PRINTL  
+			PRINTFORM %SAVESTR:TARGET%
+			IF TALENT:99
+				PRINT 整个身子压上来
+			ELSEIF TALENT:100
+				PRINT 娇小的身躯拼命地
+			ENDIF
+			SIF TALENT:153 && CFLAG:110 <= DAY+10
+				PRINT 抱着怀孕的大肚子、
+			SIF TALENT:110 || TALENT:114
+				PRINT 高城深堑的傲人的双峰欢快地晃荡着、
+			PRINT 自己主动扭着腰…
+		ENDIF
+		PRINTL  
+	ENDIF
+;--------------------------------------------------------
+;全身擦洗
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 35
+	PRINTFORM %SAVESTR:TARGET%用泡沫涂满自己
+	IF TALENT:恶魔肌肤
+		PRINT 蓝色的
+	ELSEIF TALENT:褐色肌肤
+		PRINT 褐色的
+	ELSEIF TALENT:白皙
+		PRINT 白皙的
+	ENDIF
+	PRINT 肌肤、
+	SIF TALENT:85
+		PRINT 带着情意殷殷的表情、
+	IF TALENT:99
+		PRINTFORM 完全包裹着%SAVESTR:PLAYER%、
+	ELSEIF TALENT:100
+		PRINTFORM 娇小的身体努力在%SAVESTR:PLAYER%身上推擦着、
+	ELSEIF TALENT:110 || TALENT:114
+		PRINTFORM 用丰满诱人的胸部擦蹭着%SAVESTR:PLAYER%的皮肤、
+	ELSE
+		PRINTFORM 擦拭着%SAVESTR:PLAYER%的全身、
+	ENDIF
+	PRINTL 爱抚着…
+;--------------------------------------------------------
+;骑乘位肛交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 36
+	;前回と今回の調教者が同じで、前回の調教が骑乘位であり、抜かないフラグがある場合
+	IF TFLAG:60 && PREVCOM == 36 && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML %SAVESTR:TARGET%紧紧地夹着体内的阴茎、再次开始扭动腰了…
+	;同様に、前回の調教が正常位か背后位である場合
+	ELSEIF TFLAG:60 && (PREVCOM == 26 || PREVCOM == 22 || PREVCOM == 28 || PREVCOM == 29) && ((ASSIPLAY && TFLAG:50) || (ASSIPLAY == 0 && TFLAG:50 == 0))
+		PRINTFORML %SAVESTR:PLAYER%保持着抽插、将%SAVESTR:TARGET%抱起、从下方挺动着腰…
+	ELSE
+		PRINTFORM %SAVESTR:TARGET%跨到%SAVESTR:PLAYER%的上面、
+		SIF PALAM:3 >= PALAMLV:4
+			PRINT 充满粘液的
+			PRINTL 肛门、慢慢地把整根阴茎吞入了……
+	ENDIF
+	IF EXP:0 >= EXPLV:3
+		PRINTFORM %SAVESTR:TARGET%
+		IF TALENT:99
+			PRINT 整个身子压上来
+		ELSEIF TALENT:100
+			PRINT 娇小的身躯拼命地
+		ENDIF
+	SIF TALENT:110 || TALENT:114
+		PRINT 高城深堑的傲人的双峰欢快地晃荡着、
+		PRINTL 自己主动扭着腰…
+	ENDIF
+;--------------------------------------------------------
+;肛门侍奉
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 37
+	IF TEQUIP:89
+		PRINTFORML %SAVESTR:TARGET%舔舐着狗的肛门……
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%细致地舔舐着%SAVESTR:PLAYER%的肛门…
+	ENDIF
+;--------------------------------------------------------
+;足交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 38
+	PRINTFORM %SAVESTR:TARGET%用脚夹着%SAVESTR:PLAYER%的阴茎
+	IF TALENT:83 || ABL:20 > 2
+		PRINT 践踏般
+	ELSEIF TALENT:85 || TALENT:76
+		PRINT 精心地
+	ENDIF
+	PRINTL 玩弄着…
+;--------------------------------------------------------
+;打屁股
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 40
+	PRINTFORM %SAVESTR:PLAYER%在
+	IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+		CALL PRINT_CLOTHTYPE_SPECIAL
+		PRINTFORM 外面、
+	ELSE
+		PRINTFORM %SAVESTR:TARGET%
+		SIF TALENT:312 == 23
+			PRINT 又大又翘的
+		PRINT 屁股上、
+	ENDIF
+	PRINTFORML 一掌一掌地拍打着。
+	IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+		CALL PRINT_CLOTHTYPE_SPECIAL
+		PRINTFORML 里的%SAVESTR:TARGET%、好像不太有感觉…
+	ELSEIF PREVCOM == 40 && (CFLAG:40 & 16) == 0
+		PRINTFORML %SAVESTR:TARGET%被打的地方越来越红了…
+	ELSEIF (CFLAG:40 & 16) == 0
+		PRINTFORML %SAVESTR:TARGET%被打的地方变红了…
+	ENDIF
+;--------------------------------------------------------
+;鞭
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 41
+	PRINTFORM %SAVESTR:PLAYER%
+	IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+		CALL PRINT_CLOTHTYPE_SPECIAL
+	ELSE
+		PRINTFORM 在%SAVESTR:TARGET%的身上
+	ENDIF
+	PRINTFORML 挥下鞭子…
+	IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+		CALL PRINT_CLOTHTYPE_SPECIAL
+		PRINTFORML 里的%SAVESTR:TARGET%、好像不太有效…
+	ELSEIF PREVCOM == 41
+		PRINTFORML %SAVESTR:TARGET%身上的鞭痕越来越多了…
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%的身上、开始出现红肿的鞭痕…
+	ENDIF
+;--------------------------------------------------------
+;针
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 42
+	PRINTFORM %SAVESTR:PLAYER%、用针扎
+	IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+		CALL PRINT_CLOTHTYPE_SPECIAL
+		PRINTFORML 了、
+	ELSE
+		PRINTFORM %SAVESTR:TARGET%
+		IF TALENT:恶魔肌肤
+			PRINT 蓝色的
+		ELSEIF TALENT:褐色肌肤
+			PRINT 褐色的
+		ELSEIF TALENT:白皙
+			PRINT 白皙的
+		ENDIF
+		PRINTL 肌肤…
+	ENDIF
+	IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+		CALL PRINT_CLOTHTYPE_SPECIAL
+		PRINTFORML 里的%SAVESTR:TARGET%、好像不太有效…
+	ENDIF
+;--------------------------------------------------------
+;眼罩
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 43
+	IF TEQUIP:43
+		PRINTFORML %SAVESTR:TARGET%的眼罩被解下来了。
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%被眼罩罩着。
+	ENDIF
+;--------------------------------------------------------
+;绳子
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 44
+	PRINTFORM %SAVESTR:PLAYER%把
+	IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+		CALL PRINT_CLOTHTYPE_SPECIAL
+	ELSE
+		PRINTFORM %SAVESTR:TARGET%
+	ENDIF
+	IF TEQUIP:44
+		PRINTFORML 的绳子解开了。
+	ELSE
+		PRINTFORML 绑起来了。
+	ENDIF
+;--------------------------------------------------------
+;口塞
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 45
+	IF TEQUIP:45
+		PRINTFORML %SAVESTR:TARGET%的口塞被拿下来了。
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%被装上了口塞。
+	ENDIF
+;--------------------------------------------------------
+;灌肠+肛塞
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 46
+	IF TEQUIP:46
+		PRINTFORML %SAVESTR:TARGET%的肛塞被拔掉了、里面的污物随之喷出肛门、飞散一地。
+		IF TFLAG:899 == 0
+			IF ABL:21 == 0
+				PRINTFORML %SAVESTR:TARGET%露出了苦闷、耻辱的表情。
+			ELSEIF ABL:21 == 1
+				PRINTFORML %SAVESTR:TARGET%冒出冷汗、被下腹的排泄感所折磨着。
+			ELSEIF ABL:21 == 2
+				PRINTFORML %SAVESTR:TARGET%被强烈的羞耻感所包围、露出了期待开放瞬间的表情。
+			ELSEIF ABL:21 == 3
+				PRINTFORML %SAVESTR:TARGET%感受着直肠内的刺激、时而发出娇艳的呻吟。
+			ELSEIF ABL:21 == 4
+				PRINTFORML %SAVESTR:TARGET%露出陶醉的表情、愉悦地享受着排泄感。
+			ELSEIF ABL:21 >= 5
+				PRINTFORML %SAVESTR:TARGET%尽情品味着排泄感与耻辱的双重折磨、快要不正常了。
+				PRINTFORML %SAVESTR:TARGET%享受快感的表情突然凝固了、肛门开放的同时、一滴一滴的爱液无法抑制地流了出来。
+			ENDIF
+		ENDIF
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%的菊花被灌入了灌肠液、用肛塞栓起来了。
+	ENDIF
+;--------------------------------------------------------
+;拘束衣穿着
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 47
+	IF TEQUIP:47
+		PRINTFORML %SAVESTR:ASSI%脱掉了拘束衣…
+	ELSE
+		PRINTFORM %SAVESTR:ASSI%
+		IF TALENT:ASSI:恶魔肌肤
+			PRINT 蓝色的
+		ELSEIF TALENT:ASSI:褐色肌肤
+			PRINT 褐色的
+		ELSEIF TALENT:ASSI:白皙
+			PRINT 白皙的
+		ENDIF
+		PRINTL 肌肤、被皮革制的拘束衣包裹着…
+	ENDIF
+
+;--------------------------------------------------------
+;践踏
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 48
+	PRINTFORM %SAVESTR:PLAYER%把%SAVESTR:TARGET%的
+	SIF PALAM:5 >= PALAMLV:3
+		PRINT 硬梆梆的
+	PRINTL 阴茎、用脚踩着…
+
+;--------------------------------------------------------
+;肛门电极
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 49
+	IF TEQUIP:49
+		PRINTFORML %SAVESTR:TARGET%体内的电极被拿下来了…
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%的菊花、被插入了电极…
+	ENDIF
+;--------------------------------------------------------
+;润滑液
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 50
+	CALL PRINT_CLOTHTYPE
+	PRINTFORML 的%SAVESTR:TARGET%被涂满了润滑液…
+;--------------------------------------------------------
+;媚药
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 51
+	IF TEQUIP:90
+		PRINTFORML 伸出了带有催淫液体的触手、
+	ELSEIF TEQUIP:55
+		PRINTFORML 媚药的成分、开始渗透到体内了、
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%抱着%SAVESTR:TARGET%
+		SIF ABL:PLAYER:12 >= 3
+			PRINT 嘴对嘴
+		SIF ABL:10 <= 2
+			PRINT 强行
+		PRINTFORML 灌入媚药。
+	ENDIF
+	PRINTFORML %SAVESTR:TARGET%呼吸紊乱、面颊发红、全身开始滚烫起来了…
+;--------------------------------------------------------
+;利尿剂
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 52
+	IF TEQUIP:90
+		PRINTFORML 伸出了极细的触手、把利尿剂直接射到尿道里了…
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%抱着%SAVESTR:TARGET%
+		SIF ABL:PLAYER:12 >= 3
+			PRINT 嘴对嘴
+		SIF ABL:10 <= 2
+			PRINT 强行
+		PRINTFORML 灌入利尿剂。
+	ENDIF
+	IF TFLAG:899 == 0
+		PRINTFORM %SAVESTR:TARGET%呼吸紊乱、
+		SIF TALENT:45 == 0 && TALENT:310 == 0
+			PRINTFORM 梨花带雨地
+		PRINTFORML 忍耐着尿意…
+	ENDIF
+;--------------------------------------------------------
+;ビデオカメラ
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 53
+	IF TEQUIP:53
+		PRINTL ★★★录像摄影结束★★★
+	ELSE
+		PRINTL ★★★录像摄影开始★★★
+	ENDIF
+;--------------------------------------------------------
+;野外PLAY
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 54
+	IF TEQUIP:54
+		PRINTFORML 回到了房间……
+	ELSE
+		CALL PRINT_CLOTHTYPE
+		PRINTFORM 的%SAVESTR:TARGET%
+		IF ASSI > 0
+			IF CFLAG:40 == CFLAG:ASSI:40 && CFLAG:41 == CFLAG:ASSI:41 && CFLAG:42 == CFLAG:ASSI:42
+				PRINTFORM 和%SAVESTR:ASSI%
+			ELSE
+				PRINT 和
+				T = TARGET
+				TARGET = ASSI
+				CALL PRINT_CLOTHTYPE
+				TARGET = T
+				PRINTFORM 的%SAVESTR:ASSI%
+			ENDIF
+		ENDIF
+		IF (CFLAG:40 & 64) && CFLAG:42 == 71
+			PRINTFORML 被绳子拴着、跟%CALLNAME:MASTER%出去了…
+		ELSE
+			PRINTFORML 戴着颈圈、跟着%CALLNAME:MASTER%出去了…
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;交谈
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 56
+	;口上が存在すればそちらを優先
+;	IF TALENT:160 || TALENT:161 || TALENT:162 || TALENT:163 || TALENT:164 || TALENT:165 || TALENT:166
+		PRINTFORML %SAVESTR:PLAYER%对%SAVESTR:TARGET%说话了…
+	;決闘中は口上優先
+;	ELSEIF TEQUIP:55
+;		PRINTFORML %SAVESTR:PLAYER%对%SAVESTR:TARGET%说话了…
+	;ビデオ撮影中なら自己紹介
+;	ELSEIF TEQUIP:53
+;		PRINTFORML %SAVESTR:PLAYER%命令%SAVESTR:TARGET%介绍自己、
+;		IF TALENT:89 || ABL:17 >= 5
+;			PRINTFORM 包括%SAVESTR:TARGET%的真名以及目前为止的性经验、
+;			SIF ABL:31 >= 3
+;				PRINTFORM 连自慰时想什么也要说、
+;			PRINTFORML 微笑着、开始说话了……
+;			PRINTFORML 想到这个视频将要被拿到街上卖、股间就情不自禁地湿润了……
+;			TFLAG:32 |= 2
+;		ELSEIF PALAM:5 >= PALAMLV:4 && (TALENT:76 || ABL:11 >= 5)
+;			PRINTFORML %SAVESTR:TARGET%面向摄影机、开始说着淫秽的话语、
+;			TFLAG:32 |= 2
+;		ELSEIF TALENT:85 || ABL:10 >= 3 || ABL:11 >= 4 || ABL:17 >= 2
+;			PRINTFORML %SAVESTR:TARGET%面向摄影机、开始介绍自己、
+;			TFLAG:32 |= 2
+;		ELSE
+;			PRINTFORML %SAVESTR:TARGET%别过头、什么都不再说了、
+;		ENDIF
+;	ELSE
+;		PRINTFORM %SAVESTR:PLAYER%
+;		IF PALAM:5 >= PALAMLV:4 && (TALENT:85 || ABL:10 >= 5) && TFLAG:60
+;			PRINTFORML 搭话了、%SAVESTR:TARGET%一边扭动腰肢、一边真情流露地表达着对你的爱…
+;		ELSEIF PALAM:5 >= PALAMLV:4 && (TALENT:76 || ABL:11 >= 5) && TFLAG:60
+;			PRINTFORML 搭话了、%SAVESTR:TARGET%一边扭动腰肢、一边不停地说着让人脸红的下流话语…
+;		ELSEIF (PALAM:4 >= PALAMLV:4 || ABL:10 >= 5 || TALENT:85) && PALAM:5 >= PALAMLV:4
+;			PRINTFORM 搭话了、%SAVESTR:TARGET%带着
+;			IF TEQUIP:11 || TEQUIP:13 || TEQUIP:14 || TEQUIP:15 || TEQUIP:16 || TEQUIP:17
+;				PRINT 快乐
+;			ELSEIF TEQUIP:44 || TEQUIP:49
+;				PRINT 痛苦
+;			ENDIF
+;			PRINTFORML 的呻吟越来越高亢了、努力地应答着…
+;		ELSEIF PALAM:4 >= PALAMLV:4 || TALENT:85 || ABL:10 >= 5
+;			PRINTFORML 搭话了、%SAVESTR:TARGET%流畅地应答着…
+;		ELSEIF PALAM:4 >= PALAMLV:2 ||  ABL:10 >= 3
+;			PRINTFORML 搭话了、%SAVESTR:TARGET%断断续续地应答着…
+;		ELSE
+;			PRINTFORML 搭话了、但%SAVESTR:TARGET%装作没听见…
+;		ENDIF
+;	ENDIF
+;--------------------------------------------------------
+;羞耻PLAY
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 57
+	IF TEQUIP:57
+		PRINTFORML %SAVESTR:TARGET%离开了镜子…
+	ELSE
+		CALL PRINT_CLOTHTYPE
+		PRINTFORML 的%SAVESTR:TARGET%被推到镜子前…
+	ENDIF
+;--------------------------------------------------------
+;浴室PLAY
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 58
+	IF TEQUIP:58
+		PRINTFORML %SAVESTR:PLAYER%带%SAVESTR:TARGET%回了房间…
+	ELSE
+		PRINTFORML %SAVESTR:PLAYER%带%SAVESTR:TARGET%去了浴室…
+	ENDIF
+;--------------------------------------------------------
+;新妻PLAY
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 59
+	IF TEQUIP:59
+		PRINTFORML %SAVESTR:TARGET%的围裙脱了下来…
+	ELSE
+		PRINTFORM %SAVESTR:TARGET%
+		IF TALENT:恶魔肌肤
+			PRINT 蓝色的
+		ELSEIF TALENT:褐色肌肤
+			PRINT 褐色的
+		ELSEIF TALENT:白皙
+			PRINT 白皙的
+		ENDIF
+		PRINTL 肌肤被围裙包裹着…
+	ENDIF
+;--------------------------------------------------------
+;助手接吻
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 60
+	PRINTFORML %SAVESTR:ASSI%与%SAVESTR:TARGET%舌头相互交缠、接吻着…
+;--------------------------------------------------------
+;强制舔阴
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 61
+	PRINTFORML %SAVESTR:TARGET%舔舐着%SAVESTR:PLAYER%的阴唇…
+;--------------------------------------------------------
+;侵犯助手
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 62
+	;前回の調教が侵犯助手であり、抜かないフラグがある場合
+	IF TFLAG:60 && PREVCOM == 62
+		PRINTFORML 在%SAVESTR:TARGET%的面前、不断侵犯着%SAVESTR:ASSI%…
+	ELSE
+		PRINTFORM 在%SAVESTR:TARGET%的面前、%SAVESTR:ASSI%
+		IF EXP:ASSI:0 == 0
+			PRINT 第一次
+		ELSE
+			PRINT 的私处
+		ENDIF
+		PRINTL 被贯穿了…
+	ENDIF
+;--------------------------------------------------------
+;磨镜
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 63
+	PRINTFORML %SAVESTR:PLAYER%和%SAVESTR:TARGET%用阴唇相互摩擦着…
+;--------------------------------------------------------
+;3P
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 64
+	IF ASSIPLAY
+		IF TFLAG:40 == 1
+			PRINTFORM %CALLNAME:MASTER%插入了%SAVESTR:TARGET%的私处、
+		ELSEIF TFLAG:40 == 2
+			PRINTFORM %CALLNAME:MASTER%插入了%SAVESTR:TARGET%的肛门、
+		ELSEIF TFLAG:40 == 3
+			PRINTFORM %CALLNAME:MASTER%咬着%SAVESTR:TARGET%、
+		ENDIF
+		IF TFLAG:41 == 1
+			PRINTFORML %SAVESTR:ASSI%贯穿了私处…
+		ELSEIF TFLAG:41 == 2
+			PRINTFORML %SAVESTR:ASSI%突入了肛门…
+		ELSEIF TFLAG:41 == 3
+			PRINTFORML %SAVESTR:ASSI%在蹂躏着嘴巴…
+		ENDIF
+	ELSE
+		IF TFLAG:41 == 1
+			PRINTFORM %SAVESTR:ASSI%贯穿了%SAVESTR:TARGET%的私处、
+		ELSEIF TFLAG:41 == 2
+			PRINTFORM %SAVESTR:ASSI%突入了%SAVESTR:TARGET%的肛门、
+		ELSEIF TFLAG:41 == 3
+			PRINTFORM %SAVESTR:ASSI%侵犯着%SAVESTR:TARGET%的嘴巴、
+		ENDIF
+		IF TFLAG:40 == 1
+			PRINTFORML %CALLNAME:MASTER%插入了阴唇…
+		ELSEIF TFLAG:40 == 2
+			PRINTFORML %CALLNAME:MASTER%插入了肛门…
+		ELSEIF TFLAG:40 == 3
+			PRINTFORML %CALLNAME:MASTER%侵犯着嘴巴…
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;逆侵犯助手
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 65
+	PRINTFORML %SAVESTR:TARGET%抱着%SAVESTR:PLAYER%…
+;--------------------------------------------------------
+;双枪口交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 66
+	PRINTFORML %SAVESTR:TARGET%同时侍奉着%CALLNAME:MASTER%和%SAVESTR:PLAYER%的阴茎…
+;--------------------------------------------------------
+;双人口交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 68
+	;調教対象が爱か淫乱で助手が爱か淫乱
+	IF (TALENT:TARGET:爱慕 || TALENT:TARGET:淫乱) && (TALENT:ASSI:爱慕 || TALENT:ASSI:淫乱)
+		PRINTFORML %SAVESTR:TARGET%和%SAVESTR:ASSI%两人一起用舌头、仔细积极地侍奉着%CALLNAME:MASTER%的阴茎。
+		IF TALENT:TARGET:爱慕 && TALENT:ASSI:淫乱
+			PRINTFORML %SAVESTR:ASSI%吸啜着龟头、舌头灵活地转动着、%SAVESTR:TARGET%温柔地侍奉着棒身、还用嘴唇轻吻着。
+			PRINTFORML 在两人的合作下、前所未有的快感和满足、通过阴茎传达到%CALLNAME:MASTER%的全身了………
+		ELSEIF TALENT:TARGET:淫乱 && TALENT:ASSI:爱慕
+			PRINTFORML %SAVESTR:TARGET%吸啜着龟头、舌头灵活地转动着、%SAVESTR:ASSI%柔地侍奉着棒身、还用嘴唇轻吻着。
+			PRINTFORML 在两人的合作下、前所未有的快感和满足、通过阴茎传达到%CALLNAME:MASTER%的全身了………
+		ELSEIF TALENT:ASSI:爱慕 && TALENT:TARGET:爱慕
+			PRINTFORML %SAVESTR:TARGET%和%SAVESTR:ASSI%眼里射出海洋般的深情、将%CALLNAME:MASTER%的阴茎平分、一人负责一边、用舌头交缠舔舐侍奉着。
+			PRINTFORML 淫靡的动作配上两人温顺又可爱的神情、令%CALLNAME:MASTER%的阴茎兴奋至极………
+		ELSEIF TALENT:ASSI:淫乱 && TALENT:TARGET:淫乱
+			PRINTFORML %SAVESTR:TARGET%和%SAVESTR:ASSI%相互竞争着似得、用舌头争夺着%CALLNAME:MASTER%阴茎的每一寸地方。
+			PRINTFORML 相互用鼻子撞着鼻子、好像把侍奉阴茎的事忘记了………
+		ENDIF
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%和%SAVESTR:ASSI%两人一起、用舌头侍奉着%CALLNAME:MASTER%的阴茎…
+	ENDIF
+;--------------------------------------------------------
+;六九式
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 69
+	PRINTFORM %SAVESTR:TARGET%和
+	IF TEQUIP:89
+		PRINTFORM 狗
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%
+	ENDIF
+	PRINTL 相互舔舐着彼此的性器…
+;--------------------------------------------------------
+;双人股间性交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 70
+	PRINTFORM %SAVESTR:TARGET%和%SAVESTR:ASSI%
+	IF TALENT:263 && TALENT:ASSI:263
+		PRINTFORML 抱着%CALLNAME:MASTER%的阴茎、两人一起用全身侍奉着…
+	ELSE
+		PRINTFORML  用两人的性器夹紧了%CALLNAME:MASTER%的阴茎、一起动着腰、使劲摩擦着…
+	ENDIF
+;--------------------------------------------------------
+;双人乳交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 71
+	PRINTFORML %SAVESTR:TARGET%和%SAVESTR:ASSI%用两人的乳房夹紧了%CALLNAME:MASTER%的阴茎、一起挺着胸、使劲摩擦着…
+;--------------------------------------------------------
+;刮阴毛
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 72
+	IF TEQUIP:44
+		PRINTFORM %SAVESTR:TARGET%被绑了起来并强制分开了双腿、
+	ELSEIF ABL:10 >= 3 && ABL:17 >= 4
+		PRINTFORM %SAVESTR:TARGET%求欢似得地主动打开双腿、阴部暴露着的
+	ELSE
+		PRINTFORM 双腿大开的%SAVESTR:TARGET%那
+	ENDIF
+	SIF TALENT:310 > 400
+		PRINT 任意生长的浓密
+	PRINTFORML 阴毛被%SAVESTR:PLAYER%刮了干净…
+;--------------------------------------------------------
+;强制口交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 80
+	PRINTFORM %SAVESTR:PLAYER%
+		IF TALENT:304 == 8
+			PRINTFORM 用双手紧紧拉扯着%SAVESTR:TARGET%的双马尾、
+		ENDIF
+	PRINTFORML 用阴茎粗暴地肆虐着%SAVESTR:TARGET%的喉咙深处…
+;--------------------------------------------------------
+;拳交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 81
+	PRINTFORML %SAVESTR:TARGET%的私处、被%SAVESTR:PLAYER%用拳头搅动着。
+	IF TFLAG:899 == 0
+		IF ABL:2 == 2
+			PRINTFORML %SAVESTR:TARGET%的私处被彻底打开了。
+		ELSEIF ABL:2 == 3
+			PRINTFORML %SAVESTR:TARGET%的私处被张开、一时三刻缩不回去。
+		ELSEIF ABL:2 == 4
+			PRINTFORML %SAVESTR:TARGET%大开的体内、肉壁和子宫口全部清晰可见。
+		ELSEIF ABL:2 >= 5
+			PRINTFORML %SAVESTR:TARGET%表情恍惚、面带痴笑、自己用手指拉开着私处口……
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;肛门拳交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 82
+	PRINTFORML %SAVESTR:TARGET%的肛门、被%SAVESTR:PLAYER%用拳头搅动着。
+	IF TFLAG:899 == 0
+		IF ABL:3 == 2
+			PRINTFORML %SAVESTR:TARGET%的肛门、被彻底打开了。
+		ELSEIF ABL:3 == 3
+			PRINTFORML %SAVESTR:TARGET%的肛门被张开、一时三刻缩不回去。
+		ELSEIF ABL:3 == 4
+			PRINTFORML %SAVESTR:TARGET%大开的体内、直肠肉壁清晰可见。
+		ELSEIF ABL:3 >= 5
+			PRINTFORML %SAVESTR:TARGET%表情恍惚、面带痴笑、自己用手指拉开着肛门……
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;两穴拳交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 83
+	PRINTFORML %SAVESTR:TARGET%的私处和肛门、被%SAVESTR:PLAYER%用拳头搅动着。
+	IF TFLAG:899 == 0
+		IF ABL:2 <= 4 || ABL:3 <= 4
+			PRINTFORML %SAVESTR:TARGET%双腿乱踢、筋疲力尽。
+			PRINTFORML 被张开的私处及肛门、正飞散出大量的粘液。
+		ELSEIF ABL:2 >= 5 && ABL:3 >= 5
+			PRINTFORML %SAVESTR:TARGET%回味着被残忍侵犯的余韵。
+			PRINTFORML 双手伸到完全张开的私处及肛门处、在周围不停摆弄着。
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;刺激Ｇ点
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 84
+	PRINTFORM %SAVESTR:PLAYER%把%SAVESTR:TARGET%的
+	;着衣設定
+	IF CFLAG:40 & 8 && ABL:17 != 0
+		PRINT 穿着
+		CALL PRINT_CLOTHTYPE_MAIN2
+		PRINT 的裙摆翻起、
+	ENDIF
+	IF EXP:0 == 0
+		PRINT 未经人事的
+	ELSEIF PALAM:3 >= PALAMLV:4
+		PRINT 湿漉漉的
+	ENDIF
+	SIF TALENT:263
+		PRINT 非常小的
+	IF TALENT:132
+		PRINT 幼女的阴部
+	ELSE
+		PRINT 阴部
+	ENDIF
+	IF TEQUIP:11
+		PRINTFORML 里面、有前后抽插着的蠕虫。
+	ELSE
+		PRINTFORM 将自己的手指
+		IF (PREVCOM == 8 || PREVCOM == 84) && ABL:PLAYER:12 >= 3
+			PRINTFORML 温柔地插进去、轻轻地搅动着…
+		ELSE
+			PRINTFORML 慢慢地插入去了…
+		ENDIF
+	ENDIF
+	;Gスポット刺激
+	IF TEQUIP:11 && ABL:PLAYER:12 >= 3
+		PRINTFORML %SAVESTR:PLAYER%灵活地操纵着蠕虫、玩弄着敏感的顶点…
+	ELSEIF ABL:PLAYER:12 >= 3
+		PRINTFORML %SAVESTR:PLAYER%在%SAVESTR:TARGET%的私处内弯曲手指、刺激着敏感的顶点…
+	ENDIF
+;--------------------------------------------------------
+;放尿
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 85
+	;触手プレイ中に放尿
+	IF TEQUIP:90
+		PRINTFORML 被触手缠绕着的%SAVESTR:TARGET%在空中飞射着尿液…
+	;绳子使用中に放尿
+	ELSEIF TEQUIP:44
+		PRINTFORML 被五花大绑的%SAVESTR:TARGET%无法活动身体、就这样把尿漏出来了。
+		SIF CFLAG:42 != 69 || (CFLAG:40 & 64) == 0
+			PRINTFORML 热气腾腾的尿液倒流上来、把%SAVESTR:TARGET%的身体搞脏了…
+	;オムツの中に放尿
+	ELSEIF CFLAG:42 == 69 && (CFLAG:40 & 64) && ABL:10 >= 3 && ABL:17 >= 3
+		PRINTFORML 在%SAVESTR:PLAYER%的命令下、%SAVESTR:TARGET%当场在尿布里撒尿了、
+		PRINTFORML %SAVESTR:TARGET%表情呆滞、身体颤抖着…
+	ELSEIF CFLAG:42 == 69 && (CFLAG:40 & 64)
+		PRINTFORML 在%SAVESTR:PLAYER%的命令下、%SAVESTR:TARGET%瞬间面红耳赤、当场在尿布里撒尿了…
+	;ズーコの着ぐるみの中で放尿
+	ELSEIF CFLAG:42 == 11 && (CFLAG:40 & 64) && ABL:10 >= 3 && ABL:17 >= 3
+		PRINTFORM 在%SAVESTR:PLAYER%的命令下、%SAVESTR:TARGET%微笑着、在
+		CALL PRINT_CLOTHTYPE_SPECIAL
+		PRINTFORML 里面撒尿了…
+		PRINTFORML 似乎因为被一种全新的方式欺负而愉悦着
+	ELSEIF CFLAG:42 == 11 && (CFLAG:40 & 64)
+		PRINTFORM %SAVESTR:TARGET%
+		CALL PRINT_CLOTHTYPE_SPECIAL
+		PRINTFORML 里面撒尿了…
+		PRINTFORML 从外边其实看不出来、但依然委屈地哭了…
+	;服を着たまま放尿
+	ELSEIF (CFLAG:40 & 8) && ABL:10 >= 3 && ABL:17 >= 3 && TALENT:28 && TEQUIP:44 == 0
+		PRINTFORM %SAVESTR:TARGET%毫不犹豫、一鼓作气地在
+		CALL PRINT_CLOTHTYPE_MAIN2
+		PRINTFORML 里面撒尿了…
+		PRINTFORM 视线相交时、突然间、把
+		CALL PRINT_CLOTHTYPE_MAIN2
+		PRINTFORML 的前面翻起来了。
+		IF (CFLAG:40 & 1)
+			PRINT 内裤从里到外都尿湿了、
+		ELSE
+			PRINT 继续滴着尿液的性器、
+		ENDIF
+		PRINTFORML 一边展示人前、一边摆着剪刀手微笑着、
+		PRINTFORML 到底在想什么啊…
+	ELSEIF ((CFLAG:40 & 8) || (CFLAG:40 & 16)) && ABL:10 >= 3 && ABL:17 >= 3
+		PRINTFORM %SAVESTR:TARGET%毫不犹豫、一鼓作气地在
+		CALL PRINT_CLOTHTYPE_MAIN2
+		PRINTFORML 里面撒尿了…
+	ELSEIF (CFLAG:40 & 8) || (CFLAG:40 & 16)
+		PRINTFORM %SAVESTR:TARGET%低下了头、默默地在
+		CALL PRINT_CLOTHTYPE_MAIN2
+		PRINTFORML 里面撒尿了…
+	;パンツの中に放尿
+	ELSEIF (CFLAG:40 & 1) && ABL:10 >= 3 && ABL:17 >= 3
+		PRINTFORML %SAVESTR:TARGET%表情恍惚地在内裤里撒尿了…
+		PRINTFORML 似乎养成了一个穿着湿裤子的习惯…
+	ELSEIF (CFLAG:40 & 1)
+		PRINTFORML %SAVESTR:TARGET%脸红耳赤地在内裤里撒尿了…
+	ELSEIF TALENT:57 && ABL:10 >= 3 && ABL:21 >= 3 && TALENT:132
+		PRINTFORM %SAVESTR:PLAYER%把%SAVESTR:TARGET%的双足抱起、手指不停地拨弄着尿道口、
+		PRINTFORML %SAVESTR:TARGET%小小的身体不住颤抖、反射性地拉出尿来了…
+	ELSEIF TALENT:57 && ABL:10 >= 3 && ABL:21 >= 3
+		PRINTFORM %SAVESTR:PLAYER%用指尖玩弄着%SAVESTR:TARGET%的尿道口、
+		PRINTFORML %SAVESTR:TARGET%无法忍耐、反射性地拉出尿来了…
+	ELSEIF ABL:10 >= 3 && TALENT:28 && ABL:17 >= 3 && TEQUIP:53
+		PRINTFORM %SAVESTR:TARGET%被从后抱起、M字大开脚、
+		PRINTFORML 对着摄影机、一边比划着和平手势、一边尿出来了…
+	ELSEIF ABL:10 >= 3 && ABL:17 >= 3 && TEQUIP:54
+		PRINTFORML %SAVESTR:TARGET%在%SAVESTR:PLAYER%的命令下、
+		PRINTFORML 到很多人的道路中间、双脚大开、露出阴部、
+		PRINTFORML 在路人的注视下、站着撒尿了…
+	ELSEIF ABL:10 >= 3 && ABL:17 >= 3
+		PRINTFORM %SAVESTR:TARGET%
+		SIF TEQUIP:44 == 0
+			PRINTFORM 被从后抱起、M字大开脚、
+		PRINTFORML 在%SAVESTR:PLAYER%的注视下撒尿了…
+	ELSEIF TEQUIP:54
+		PRINTFORML %SAVESTR:TARGET%充满了羞耻和屈辱的感觉、
+		SIF TALENT:45 == 0 && TALENT:310 == 0
+			PRINTFORM 泪眼婆娑地
+		PRINTFORML 在草丛中撒尿了…
+	ELSEIF TEQUIP:57
+		PRINTFORML %SAVESTR:TARGET%蹲下来尿着、完全不敢看镜子里的自己…
+	ELSEIF TALENT:132
+		PRINTFORML %SAVESTR:TARGET%被%SAVESTR:PLAYER%像小孩一样提起双脚、尿出来了…
+	ELSE
+		PRINTFORML %SAVESTR:TARGET%羞耻得脸红耳赤、在那场合蹲下来撒尿了…
+	ENDIF
+;--------------------------------------------------------
+;穿环
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 87
+	PRINTFORM %SAVESTR:PLAYER%将%SAVESTR:TARGET%
+	IF P == 1
+		IF PALAM:5 >= PALAMLV:4
+			PRINT 勃起的
+		ELSEIF ABL:1 >= 4
+			PRINT 敏感的
+		ELSEIF TALENT:132
+			PRINT 稚嫩的
+		ENDIF
+		PRINT 两个乳头
+	ELSEIF P == 2
+		PRINT 肚脐
+	ELSEIF P == 4
+		IF PALAM:5 >= PALAMLV:4
+			PRINT 淫荡的
+		ELSEIF ABL:2 >= 4
+			PRINT 敏感的
+		ELSEIF TALENT:132
+			PRINT 稚嫩的
+		ENDIF
+		PRINT 左右阴唇
+	ELSEIF P == 8
+		IF PALAM:5 >= PALAMLV:4
+			PRINT 勃起的
+		ELSEIF ABL:0 >= 4
+			PRINT 敏感的
+		ELSEIF TALENT:132
+			PRINT 小小的
+		ENDIF
+		IF TALENT:121 || TALENT:122
+			PRINT 阴茎
+		ELSE
+			PRINT 阴蒂
+		ENDIF
+	ELSEIF P == 16
+		PRINT 舌尖
+	ELSEIF P == 32
+		IF TALENT:307 == 1
+			PRINT 肉感的
+		ELSEIF TALENT:307 == 2
+			PRINT 薄薄的
+		ELSEIF TALENT:307 == 3
+			PRINT 丰润的
+		ENDIF
+			PRINT 嘴唇
+	ELSEIF P == 64
+		PRINT 鼻子
+	ENDIF
+	IF CFLAG:7 & P
+		PRINTFORMW 上面的环拿下来了…
+	ELSE
+		PRINTFORMW 上装上了环…
+	ENDIF
+;--------------------------------------------------------
+;兽奸PLAY
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 89
+	IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+		CALL PRINT_CLOTHTYPE_SPECIAL
+	ELSE
+		PRINTFORM %SAVESTR:TARGET%
+	ENDIF
+	SIF (CFLAG:42 != 11 || (CFLAG:40 & 64) == 0) && TEQUIP:89
+		PRINT 的身体
+	IF TEQUIP:89
+		PRINTFORML 把狗叫开了…
+	ELSE
+		PRINTFORML 把狗引过来了…
+	ENDIF
+;--------------------------------------------------------
+;触手生物
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 100
+	IF TEQUIP:90
+		PRINTFORML 触手放开了%SAVESTR:TARGET%的身体、回到原位了…
+	ELSE
+		PRINTFORM %SAVESTR:PLAYER%操控着异形的触手、
+		IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+			CALL PRINT_CLOTHTYPE_SPECIAL
+		ELSE
+			PRINTFORM 将%SAVESTR:TARGET%的身体
+		ENDIF
+		PRINTFORML 缠上了…
+	ENDIF
+;--------------------------------------------------------
+;触手插入
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 101
+	IF TEQUIP:11
+		PRINTFORML 触手从%SAVESTR:TARGET%的性器里拔出来了……
+	ELSE
+		IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+			PRINTFORM 成群的触手通过
+			CALL PRINT_CLOTHTYPE_SPECIAL
+			PRINTFORM 的缝隙伸进去了、
+		ENDIF
+		PRINTFORML 覆盖着细微突起的触手、钻入了%SAVESTR:TARGET%的性器里。
+	ENDIF
+;--------------------------------------------------------
+;肛交触手
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 102
+	IF TEQUIP:13
+		PRINTFORML 触手从%SAVESTR:TARGET%的肛门里拔出来了……
+	ELSE
+		IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+			PRINTFORM 成群的触手通过
+			CALL PRINT_CLOTHTYPE_SPECIAL
+			PRINTFORM 的缝隙伸进去了、
+		ENDIF
+		PRINTFORML 又长又粗的触手、钻入了%SAVESTR:TARGET%的肛门里。
+	ENDIF
+;--------------------------------------------------------
+;触手凌辱阴蒂
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 103
+	IF TEQUIP:14
+		PRINTFORML 触手中止了蹂躏%SAVESTR:TARGET%的阴蒂……
+	ELSE
+		IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+			PRINTFORM 成群的触手通过
+			CALL PRINT_CLOTHTYPE_SPECIAL
+			PRINTFORM 的缝隙伸进去了、
+		ENDIF
+		PRINTFORML 末端有着细细分支的触手、蹂躏着%SAVESTR:TARGET%的阴蒂。
+	ENDIF
+;--------------------------------------------------------
+;触手凌辱乳头
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 104
+	IF TEQUIP:15
+		PRINTFORML 触手离开了%SAVESTR:TARGET%的乳头……
+	ELSE
+		IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+			PRINTFORM 成群的触手通过
+			CALL PRINT_CLOTHTYPE_SPECIAL
+			PRINTFORM 的缝隙伸进去了、
+		ENDIF
+		PRINTFORML 细细而蠢蠢欲动的触手、开始玩弄着%SAVESTR:TARGET%的乳头。
+	ENDIF
+;--------------------------------------------------------
+;触手榨乳
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 105
+	IF TEQUIP:16
+		PRINTFORML 触手放开了%SAVESTR:TARGET%的乳头……
+	ELSE
+		IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+			PRINTFORM 成群的触手通过
+			CALL PRINT_CLOTHTYPE_SPECIAL
+			PRINTFORM 的缝隙伸进去了、
+		ENDIF
+		PRINTFORML 带吸盘的触手、正在%SAVESTR:TARGET%的乳头上用力吸啜着。
+	ENDIF
+;--------------------------------------------------------
+;触手紧缚
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 106
+	IF TEQUIP:44
+		PRINTFORML 触手解开了对%SAVESTR:TARGET%的束缚……
+	ELSE
+		IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+			PRINTFORM 成群的触手通过
+			CALL PRINT_CLOTHTYPE_SPECIAL
+			PRINTFORM 的缝隙伸进去了、
+		ENDIF
+		PRINTFORML 无数的触手、把%SAVESTR:TARGET%的身体捆起来了。
+	ENDIF
+;--------------------------------------------------------
+;触手灌肠
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 107
+	IF TEQUIP:46
+		PRINTFORML 触手拔出来之后、%SAVESTR:TARGET%的肛门里飞散出污物……
+	ELSE
+		IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+			PRINTFORM 成群的触手通过
+			CALL PRINT_CLOTHTYPE_SPECIAL
+			PRINTFORM 的缝隙伸进去了、
+		ENDIF
+		PRINTFORML 极粗的触手、捅进了%SAVESTR:TARGET%的尻穴、注入了液体。
+	ENDIF
+;--------------------------------------------------------
+;触手口辱
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 108
+	IF TEQUIP:98
+		PRINTFORML 触手从%SAVESTR:TARGET%的嘴里出来了……
+	ELSE
+		IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+			PRINTFORM 成群的触手通过
+			CALL PRINT_CLOTHTYPE_SPECIAL
+			PRINTFORM 的缝隙伸进去了、
+		ENDIF
+		PRINTFORML 湿润水亮的触手、侵入了%SAVESTR:TARGET%的嘴巴里。
+	ENDIF
+;--------------------------------------------------------
+;触手凌辱阴茎
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 109
+	IF TEQUIP:17
+		PRINTFORML 触手放开%SAVESTR:TARGET%的阴茎了……
+	ELSE
+		IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+			PRINTFORM 成群的触手通过
+			CALL PRINT_CLOTHTYPE_SPECIAL
+			PRINTFORM 的缝隙伸进去了、
+		ENDIF
+		PRINTFORML 带着恶心肉瘤的触手、卷起了%SAVESTR:TARGET%的阴茎、一起开始撸着。
+	ENDIF
+;--------------------------------------------------
+;插入Ｇ点蹂躏
+;--------------------------------------------------
+ELSEIF SELECTCOM == 120
+	;騎乗Ｇスポ責め
+	IF PREVCOM == 34 && TFLAG:899 == 0
+		PRINTFORMW %SAVESTR:TARGET%上半身夸张地痉挛着、私处内最敏感的那一点、被阴茎好好地疼爱了…
+		IF EXP:0 <= 30
+			PRINTFORMW %SAVESTR:TARGET%露出略感困惑的神情、但这个行动还在持续着…
+		ELSEIF EXP:0 <= 50
+			PRINTFORMW %SAVESTR:TARGET%追逐着快感、积极地扭动着腰肢…
+		ELSEIF EXP:0 <= 80
+			PRINTFORMW %SAVESTR:TARGET%屁股用力收缩、腰部轻微地颤抖着、发出了娇媚的呻吟…
+		ELSEIF EXP:0 <= 120
+			PRINTFORML %SAVESTR:TARGET%身子后仰、双手后撑、激烈地扭腰追逐着快感…
+			PRINTFORMW 被紧紧夹着的阴茎、不断摩擦着Ｇ点…
+		ELSE
+			PRINTFORML %SAVESTR:TARGET%的要害被进攻了、腰身一边不停痉挛着、一边积极扭动着追逐着快感…
+			PRINTFORMW 每一下的抽插、私处内都发出了啧啧的水声、从喉咙深处发出了带着鼻音的淫靡呻吟…
+		ENDIF
+	;插入Ｇ点蹂躏
+	ELSE
+		;正常位か正常位・接吻か正常位・胸爱抚か正常位SP
+		IF PREVCOM == 20 || PREVCOM == 128 || PREVCOM == 129 || PREVCOM == 130
+			PRINTFORMW 从下往上地挺动着腰、%SAVESTR:TARGET%私处内最敏感的那一点、被仔细摩擦着…
+		;背后位か背后位・胸爱抚か背后位・打屁股か站立背后位か背后位SP
+		ELSEIF PREVCOM == 21 || PREVCOM == 131 || PREVCOM == 132 || PREVCOM == 133 || PREVCOM == 134
+			PRINTFORMW 上身趴下、%SAVESTR:TARGET%私处内最敏感的那一点、被不停突进着…
+		;对面座位
+		ELSEIF PREVCOM == 22
+			PRINTFORMW 放开上身、压着%SAVESTR:TARGET%的小腹、仔细摩擦着私处内最敏感的那一点…
+		;背面座位
+		ELSEIF PREVCOM == 23
+			PRINTFORMW 抓住%SAVESTR:TARGET%的腰把她整个人上下套弄着、顽强地刺激私处内的那一点…
+		;乱れ牡丹
+		;ELSEIF PREVCOM == 612
+			;PRINTFORML %SAVESTR:PLAYER%在镜子前一步、逼着%SAVESTR:TARGET%看着自己的痴态、
+			;PRINTFORMW 抓住%SAVESTR:TARGET%的腰把她整个人上下套弄着、顽强地刺激私处内的那一点…
+		ENDIF
+		IF TFLAG:899 == 0
+			IF EXP:0 <= 30
+				PRINTFORMW %SAVESTR:TARGET%艰难地晃动着腰…
+			ELSEIF EXP:0 <= 50
+				PRINTFORMW %SAVESTR:TARGET%紧闭嘴唇、忍受着不熟悉的快感…
+			ELSEIF EXP:0 <= 80
+				PRINTFORMW %SAVESTR:TARGET%的要害被进攻了、深远的快感让她眼睛都亮了起来…
+			ELSEIF EXP:0 <= 120
+				PRINTFORML %SAVESTR:PLAYER%奋力地扭动着腰、私处内的肉壁剧烈收缩、颤抖着…
+				PRINTFORMW %SAVESTR:TARGET%最敏感的地方被侵犯了、喷出了炽热的气息…
+			ELSE
+				PRINTFORML %SAVESTR:TARGET%的喉咙差点被自己的口水呛到、手指脚趾紧紧地收合着、不停摇头、似乎感到苦闷…
+				PRINTFORMW 连呼吸都变得困难了、张大嘴巴却发不出声音、只能娇媚地喘着大气…
+			ENDIF
+		ENDIF
+	ENDIF
+;--------------------------------------------------
+;插入子宫口蹂躏
+;--------------------------------------------------
+ELSEIF SELECTCOM == 121
+	;騎乗子宮口責め
+	IF PREVCOM == 34 && TFLAG:899 == 0
+		PRINTFORMW %SAVESTR:TARGET%用手扶在%SAVESTR:PLAYER%的胸部上、私处把整根阴茎都吞入了…
+		IF EXP:0 <= 30
+			PRINTFORMW %SAVESTR:TARGET%就这样前后摇晃着腰…
+		ELSEIF EXP:0 <= 50 && TALENT:121
+			PRINTFORMW %SAVESTR:TARGET%用阴茎压着%SAVESTR:PLAYER%的腹部…
+		ELSEIF EXP:0 <= 50
+			PRINTFORMW %SAVESTR:TARGET%利用%SAVESTR:PLAYER%的阴毛刺激着阴蒂…
+		ELSEIF EXP:0 <= 80
+			PRINTFORMW %SAVESTR:TARGET%扭动着腰、因被插入的愉悦感而喷出炽热的气息…
+		ELSEIF EXP:0 <= 120
+			PRINTFORML %SAVESTR:TARGET%沉腰下探、陶醉在被插到最深的欢愉之中…
+			PRINTFORMW 脆弱而敏感的子宫口绽放着、心神皆醉地做好了受孕的准备…
+		ELSE
+			PRINTFORML %SAVESTR:TARGET%纵情地扭动着、腰身有节奏地不停颤抖、露出了牝奴的痴迷表情、口水流出来了…
+			PRINTFORMW 被播种的快感将理性彻底淹没了、成为了恳求种子不顾一切的牝奴的肉体…
+		ENDIF
+	;插入子宫口蹂躏
+	ELSE
+		;正常位か正常位・接吻か正常位・胸爱抚か正常位SP
+		SIF PREVCOM == 20 || PREVCOM == 128 || PREVCOM == 129 || PREVCOM == 130
+			PRINTFORMW 抓住%SAVESTR:TARGET%的腰、往最深处突进、子宫被敲击着发出咚咚咚的声音…
+		;背后位か背后位・胸爱抚か背后位・打屁股か站立背后位か背后位SP
+		SIF PREVCOM == 21 || PREVCOM == 131 || PREVCOM == 132 || PREVCOM == 133 || PREVCOM == 134
+			PRINTFORMW 抓住%SAVESTR:TARGET%的屁股、往最深处突进、子宫被敲击着发出咚咚咚的声音…
+		;对面座位
+		SIF PREVCOM == 22
+			PRINTFORMW 紧紧地抱住%SAVESTR:TARGET%的腰、把腰围都收细了、阴茎在子宫口不停打转…
+		;背面座位
+		SIF PREVCOM == 23
+			PRINTFORMW 压着%SAVESTR:TARGET%的腰往下拉、突进到最深处了…
+		;乱れ牡丹
+		IF PREVCOM == 612
+			PRINTFORML %SAVESTR:PLAYER%在镜子前一步、逼着%SAVESTR:TARGET%看着自己的痴态、
+			PRINTFORMW 压着%SAVESTR:TARGET%的腰往下拉、突进到最深处了…
+		ENDIF
+		IF EXP:0 <= 30 || (EXP:0 >= 31 && EXP:0 <= 50 && (PREVCOM == 21 || PREVCOM == 612))
+			PRINTFORMW %SAVESTR:TARGET%觉得异物感太强了、很痛苦的样子…
+		ELSEIF EXP:0 <= 50 && TALENT:121
+			PRINTFORMW %SAVESTR:TARGET%在阴毛和肚脐之间摩擦着阴茎、漏出了呻吟声…
+		ELSEIF EXP:0 <= 50
+			PRINTFORMW %SAVESTR:TARGET%用阴毛摩擦着阴蒂、漏出了呻吟声…
+		ELSEIF EXP:0 <= 80
+			PRINTFORMW %SAVESTR:TARGET%发出了长长的甘甜吐息、因强烈的插入感咬紧牙关…
+		ELSEIF EXP:0 <= 120
+			PRINTFORML 子宫做好了接种的准备、扭动着纤细的腰、引导阴茎去到最深处那窟窿里…
+			PRINTFORMW %SAVESTR:TARGET%子宫被重重地叩击着、嘴巴大张、身体剧烈地颤抖…
+		ELSE
+			PRINTFORML 突入到%SAVESTR:TARGET%的子宫、狠狠地摇晃着她的身体、
+			PRINTFORMW %SAVESTR:TARGET%发了疯似的、沉醉在牝奴能得到的最高快乐之中…
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;阴茎互捅
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 122
+	IF PALAM:3 > PALAMLV:3
+		PRINTFORML %CALLNAME:PLAYER%用%SAVESTR:TARGET%已经湿掉的阴茎摩擦着自己的阴茎……
+	ELSE
+		PRINTFORML %CALLNAME:PLAYER%和%SAVESTR:TARGET%用勃起的阴茎相互摩擦着……
+	ENDIF
+;--------------------------------------------------------
+;乳夹口交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 123
+	PRINTFORM %SAVESTR:TARGET%
+	SIF TALENT:85
+		PRINT 一边时不时带着可爱又温顺的表情偷看着你、一边
+	IF TALENT:109
+		PRINTL 挤着小小的胸部摩擦着阴茎、用舌头侍奉着龟头…
+	ELSEIF TALENT:110
+		PRINTL 用波涛汹涌的巨乳包裹着阴茎、伸头舔舐着阴茎…
+	ELSEIF TALENT:114
+		PRINTL 双峰合拢、用令人目眩魂摇的沟壑将阴茎淹没其中、低头把脸埋入自己深深的乳沟之间、仔细地舔舐着阴茎…
+	ELSE
+		PRINTL 用胸部夹着阴茎、舔舐刺激着…
+	ENDIF
+;--------------------------------------------------------
+;深喉
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 124
+	PRINTFORM %SAVESTR:TARGET%
+	SIF TALENT:85
+		PRINT 一边带着对你朝思暮想的神情看着你、一边
+	SIF TALENT:52
+		PRINT 用舌头灵活地缠绕着棒身、
+	PRINT 用喉咙最深处对阴茎又吸又夹
+	IF TALENT:16 >= 3
+		PRINTL 、被淫秽的声音深深地刺激着…
+	ELSE
+		PRINTL …
+	ENDIF
+;--------------------------------------------------------
+;口交时自慰
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 125
+	PRINTFORM %SAVESTR:TARGET%
+	SIF TALENT:85
+		PRINT 带着发烧似的表情、
+	SIF TALENT:76
+		PRINT 带着淫媚的表情、
+	SIF TALENT:52
+		PRINT 用舌头灵活地缠绕着棒身、
+	PRINT 一边吸啜着阴茎、一边
+	IF TEQUIP:11 && TEQUIP:13
+		PRINTL 抽动着私处和肛门里的虫子…
+	ELSEIF TEQUIP:11
+		PRINTL 抽动着私处里的虫子…
+	ELSEIF TEQUIP:13
+		PRINTL 抽动着肛门里的虫子…
+	ELSE
+		IF TALENT:122
+			PRINTL 玩弄着自己的阴茎…
+		ELSE
+			PRINTL 玩弄着自己的阴唇…
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;手搓口交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 126
+	PRINTFORM %SAVESTR:TARGET%
+	SIF TALENT:85
+		PRINT 带着对你拳拳在念的表情、
+	SIF TALENT:52
+		PRINT 用舌头灵活地缠绕着棒身、
+	IF TALENT:PLAYER:122
+		PRINTL 吸啜着阴茎、一只手按摩着阴囊、另一只手按摩着阴茎的根部。
+	ELSE
+		PRINTL 吸啜着阴茎、按摩着阴茎的根部。
+	ENDIF
+;--------------------------------------------------------
+;真空口交
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 127
+	PRINTFORM %SAVESTR:TARGET%将%SAVESTR:PLAYER%的龟头、用舌头
+	IF TALENT:52
+		PRINT 来回打转着、
+	ELSE
+		PRINT 舔舐着、
+	ENDIF
+	PRINT 脸颊凹陷、发出淫秽的声音、
+	SIF ABL:12 >= 4 && ABL:13 >= 3
+		PRINT 让人腰都酥软了、
+	PRINTL 强烈地吮吸着…
+;--------------------------------------------------------
+;正常位・接吻
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 128
+	PRINTFORML %SAVESTR:TARGET%被贯穿的身体迎接着压下来的分量、嘴唇与%SAVESTR:PLAYER%重重地吻着、舌头缠绕在一起…
+;--------------------------------------------------------
+;正常位・胸爱抚
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 129
+	PRINTFORM %SAVESTR:TARGET%被贯穿的身体上、
+	IF TALENT:110 || TALENT:114
+		PRINTFORM 那对摇晃不已的豪乳被%SAVESTR:PLAYER%又揉又抓
+	ELSEIF TALENT:109
+		PRINTFORM 小小的胸部被%SAVESTR:PLAYER%按摩
+	ELSE
+		PRINTFORM 晃动的胸部被%SAVESTR:PLAYER%揉搓
+	ENDIF
+	PRINTL 着…
+;--------------------------------------------------------
+;正常位ＳＰ
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 130
+	PRINTFORML %SAVESTR:TARGET%用被贯穿的身体迎接着压下来的分量、嘴唇与%SAVESTR:PLAYER%重重地吻着、舌头缠绕在一起…
+	IF TALENT:110 || TALENT:114
+		PRINTFORML 正在翻腾起波涛乳浪的双峰被与%SAVESTR:PLAYER%抓住、充满弹性的乳肉、被揉的时候好像要跳起来一样。
+	ELSEIF TALENT:109
+		PRINTFORM 小小的胸部被%SAVESTR:PLAYER%按摩着。
+	ELSE
+		PRINTFORM 晃动的胸部被%SAVESTR:PLAYER%揉搓着。
+	ENDIF
+	SIF TALENT:85
+		PRINTL 接着两人双手十指紧扣、
+	PRINTL 在肉体与灵魂交汇中挺动着腰、不停地捅着子宫…
+	IF TFLAG:899 == 0
+		IF EXP:0 <= 30 || (EXP:0 >= 31 && EXP:0 <= 50)
+			PRINTFORMW %SAVESTR:TARGET%觉得异物感太强了、很痛苦的样子…
+		ELSEIF EXP:0 <= 50 && TALENT:121
+			PRINTFORMW %SAVESTR:TARGET%在阴毛和肚脐之间摩擦着阴茎、漏出了呻吟声…
+		ELSEIF EXP:0 <= 50
+			PRINTFORMW %SAVESTR:TARGET%用阴毛摩擦着阴蒂、漏出了呻吟声…
+		ELSEIF EXP:0 <= 80
+			PRINTFORMW %SAVESTR:TARGET%发出了长长的甘甜吐息、因强烈的插入感咬紧牙关…
+		ELSEIF EXP:0 <= 120
+			PRINTFORML 子宫做好了接种的准备、扭动着纤细的腰、引导阴茎去到最深处那窟窿里…
+			PRINTFORMW %SAVESTR:TARGET%子宫被重重地叩击着、嘴巴大张、身体剧烈地颤抖…
+		ELSE
+			PRINTFORML 突入到%SAVESTR:TARGET%的子宫、狠狠地摇晃着她的身体、
+			PRINTFORM %SAVESTR:TARGET%
+			SIF TALENT:85
+				PRINT 眼里泛起幸福的泪水、
+			SIF PALAM:5 > PALAMLV:4
+				PRINT 口水流出来了、
+			SIF PALAM:3 > PALAMLV:4
+				PRINT 私处湿得一塌糊涂、
+			PRINTFORMW 样子发了疯似的、沉醉在牝奴能得到的最高快乐之中…
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;背后位・胸爱抚
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 131
+	PRINTFORM %SAVESTR:TARGET%
+	IF TALENT:110 || TALENT:114
+		PRINT 一对摇晃不已的豪乳、被从后又揉又抓着、
+	ELSEIF TALENT:109
+		PRINT 小小的胸部被从后按摩、
+	ELSE
+		PRINT 正在摇晃的胸部被从后抓住、不停揉搓着、
+	ENDIF
+	PRINTL 腰都僵硬了…
+;--------------------------------------------------------
+;背后位・打屁股
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 132
+	PRINTFORML %SAVESTR:TARGET%被从后侵犯着、颤抖着的屁股被打着…
+	IF TFLAG:899 == 0
+		IF ABL:21 < 3
+			PRINTFORML %SAVESTR:TARGET%一边被贯穿着、一边承受着屁股上的痛苦、面容扭曲、脸都歪了…
+		ELSEIF ABL:21 >= 3 && ABL:21 < 5
+			PRINTFORML %SAVESTR:TARGET%每被打一下屁股、私处就更湿一分、主动扭动腰肢、抬起屁股、沉醉在被欺凌的快感之中…
+		ELSE
+			PRINTFORML 屁股被打得通红、%SAVESTR:TARGET%已经分不清痛苦和快感的区别、私处兴奋至极、肉壁不自觉地蠕动着、发出混合着悲鸣与快乐的高亢呻吟、快要疯掉了…
+		ENDIF
+	ENDIF
+;--------------------------------------------------------
+;站立背后位
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 133
+	PRINTFORM 被贯穿的%SAVESTR:TARGET%上身上抬、向后仰起、
+	IF TALENT:110 || TALENT:114
+		PRINTL 波涛汹涌的双峰被从后抓住了、被又揉又捏着、
+	ELSEIF TALENT:109
+		PRINTL 小小的胸部被从后按摩、
+	ELSE
+		PRINTL 晃动的胸部被揉着、
+	ENDIF
+	PRINT 下巴被你抓住、扭头向后、
+	IF TALENT:85
+		PRINT 舌头积极地相互交缠、浓情地深吻着、
+	ELSE
+		PRINT 舌头交缠、口腔被蹂躏着、
+	ENDIF
+	PRINTL 把腰顶起来了…
+;--------------------------------------------------------
+;背后位ＳＰ
+;--------------------------------------------------------
+ELSEIF SELECTCOM == 134
+	PRINTFORM %SAVESTR:TARGET%
+	IF TALENT:110 || TALENT:114
+		PRINTL 那翻腾着波涛的双乳被从后抓住了、充满弹性的乳肉被揉的时候好像要跳起来一样、
+	ELSEIF TALENT:109
+		PRINTL 小小的胸部被从后按摩、
+	ELSE
+		PRINTL 晃动的胸部被揉着、
+	ENDIF
+	PRINTFORM 下巴被%SAVESTR:PLAYER%抓住、扭头向后、
+	IF TALENT:85
+		PRINTL 舌头积极地相互交缠、浓情地深吻着、
+	ELSE
+		PRINTL 舌头交缠着、口腔被蹂躏着、
+	ENDIF
+	PRINTFORML %SAVESTR:TARGET%的手腕被抓住拉到腰的两旁、保持这样的姿态、阴茎不断突进、蹂躏着子宫口…
+	IF TFLAG:899 == 0
+		IF EXP:0 <= 30 || (EXP:0 >= 31 && EXP:0 <= 50)
+			PRINTFORMW %SAVESTR:TARGET%觉得异物感太强了、很痛苦的样子…
+		ELSEIF EXP:0 <= 50 && TALENT:121
+			PRINTFORMW %SAVESTR:TARGET%阴茎在空中兴奋地晃荡着、漏出了呻吟声…
+		ELSEIF EXP:0 <= 50
+			PRINTFORMW %SAVESTR:TARGET%用阴毛摩擦着阴蒂、漏出了呻吟声…
+		ELSEIF EXP:0 <= 80
+			PRINTFORMW %SAVESTR:TARGET%发出了长长的甘甜吐息、因强烈的插入感咬紧牙关…
+		ELSEIF EXP:0 <= 120
+			PRINTFORML %SAVESTR:TARGET%做好了接种的准备、扭动着纤细的腰、引导着阴茎前往那最深处的洞穴…
+			PRINTFORMW %SAVESTR:TARGET%子宫被重重地叩击着、大张着嘴巴、身体剧烈地颤抖…
+		ELSE
+			PRINTFORML 突入到%SAVESTR:TARGET%的子宫、狠狠地摇晃着她的身体、
+			PRINTFORM %SAVESTR:TARGET%
+			SIF TALENT:85
+				PRINT 眼里泛起幸福的泪水、
+			SIF PALAM:5 > PALAMLV:4
+				PRINT 嘴角流出了口水、
+			SIF PALAM:3 > PALAMLV:4
+				PRINT 私处湿得一塌糊涂、
+			PRINTFORMW 像是发了疯似的、沉醉在牝奴能得到的最高快乐之中…
+		ENDIF
+	ENDIF
+;-----------------------------------------------------------------
+;自助舔舐
+;-----------------------------------------------------------------
+ELSEIF SELECTCOM == 135
+	PRINTFORM %SAVESTR:TARGET%
+	PRINTFORM 拿下自己的头、放到阴部处舔舐了起来
+	IF TALENT:121 && PALAM:5 >= PALAMLV:3
+		PRINT 、然后叼着勃起的阴茎、
+		SIF ABL:11 > 3
+			PRINT 像用飞机杯似得用自己的头套弄着、眼睛不住转动、追逐着快感
+	ELSEIF TALENT:121
+		PRINT 阴茎的根部、也仔细地舔舐着
+	ELSEIF PALAM:5 >= PALAMLV:3
+		PRINT 用嘴唇的前端、爱抚着阴蒂
+	ENDIF
+	PRINTL 了…
+
+;-----------------------------------------------------------------
+;フリー調教
+;-----------------------------------------------------------------
+ELSEIF SELECTCOM == 150
+	
+	PRINTFORM %SAVESTR:PLAYER%向
+	
+	IF CSTR:7 == "嗅觉"
+		PRINTFORM %SAVESTR:TARGET%坚持不懈地熏陶着那个味道、似乎想要将味道烙进灵魂一般…
+	ELSEIF CSTR:7 == "腋"
+		PRINTFORM %SAVESTR:TARGET%的侧胸不断地爱抚着、并舔起了腋下……
+	ELSE
+		PRINTFORM %CSTR:7%调教开始了…
+	ENDIF
+	
+	PRINTL  
+	
+
+
+;-----------------------------------------------------------------
+;死斗场
+;-----------------------------------------------------------------
+
+ELSEIF SELECTCOM == 200
+	IF TEQUIP:55
+		PRINTFORML %SAVESTR:PLAYER%把%SAVESTR:TARGET%带回了房间…
+	ELSE
+		IF (CFLAG:40 & 64) && CFLAG:42 <= 50
+			CALL PRINT_CLOTHTYPE_SPECIAL
+			PRINT 的模样、
+		ELSEIF CFLAG:40 & 28
+			CALL PRINT_CLOTHTYPE_MAIN2
+			PRINT 的模样、
+		ELSEIF CFLAG:40
+			PRINT 下着的模样、
+		ELSE
+			PRINT 全裸的
+		ENDIF
+		IF BASE:1 <= 0
+			PRINTFORMW %SAVESTR:TARGET%被带到了死斗场。%SAVESTR:TARGET%已经完全没有战斗的力气了…
+		ELSE
+			PRINTFORMW %SAVESTR:TARGET%被带到了死斗场…
+		ENDIF
+		PRINTW ……………
+		PRINTW …………
+		PRINTW ………
+		;全裸判定
+		IF CFLAG:40 == 0
+			PRINTFORMW %SAVESTR:TARGET%全裸地在死斗场中示众。
+			PRINTFORMW 被下流的笑容和好奇的视线所包围、%SAVESTR:TARGET%在异样的气氛中沉默不语。
+		ENDIF
+	ENDIF
+ENDIF
+
+;处女丧失の後でペニスを抜いているか
+IF TFLAG:31 == 2
+	TFLAG:31 = 1
+ELSE
+	TFLAG:31 = 0
+ENDIF
+
+RETURN 1

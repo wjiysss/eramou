@@ -1,0 +1,1847 @@
+﻿;eraIM@Sから流用しました
+
+;=================================================
+;@SOURCE_CHECK関連の関数群
+;=================================================
+;INDEX
+;@SOURCE_SEX_CHECK:同性の場合のチェック
+;;;@SOURCE_LESBIAN_SEX_CHECK:女性同士の場合のチェック（SYSTEM_SOURCE_SUB2.ERBに記述）
+;;;@SOURCE_GAY_SEX_CHECK:男性同士の場合のチェック（SYSTEM_SOURCE_SUB2.ERBに記述）
+;@PLAYER_SKILL_CHECK:調教者のスキルによるチェック
+;@MASTER_SKILL_CHECK:調教者のスキルによるチェック
+;@INCEST_SEX_CHECK:近親相姦のチェック
+;;;@INCEST:親族関係の判定（SYSTEM_SOURCE_SUB2.ERBに記述）
+;@LOST_VIRGIN_CHECK:处女丧失のチェック
+;@TARGET_EJAC_CHECK:調教対象の射精チェック
+;@TARGET_MILK_CHECK:調教対象の噴乳チェック
+;@UP_TALENT_CVA_CHECK:素質などによる上下の処理（快楽系）
+;@UP_TALENT_CHECK:素質などによる上下の処理
+;@MARK_GOT_CHECK:刻印取得のチェック
+;@YOKUBO_UP_CHECK:欲望の上昇による[压抑][抵抗]の消滅をチェック
+;@JUJUN_UP_CHECK:顺从の上昇による[反抗心]の反転をチェック
+;@EXP_GOT_CHECK:被虐快乐经验、侍奉快乐经验のチェック
+;@SOKUOCHI_CHECK:[容易陷落]のチェック
+;@ECST_CHECK:絶頂時の追加処理
+;@PISSING_ECST_CHECK:絶頂時のおもらし処理
+;@MASTER_FLAG_CHECK:主人による調教の经验值
+;=================================================
+;-------------------------------------------------
+;同性の場合のチェック
+;-------------------------------------------------
+@SOURCE_SEX_CHECK
+;レズ
+IF TALENT:122 == 0 && TALENT:PLAYER:122 == 0
+	;女性同士の場合のチェック
+	;関数はSOURCE_SUB_SUB.ERBに記述
+	CALL SOURCE_LESBIAN_SEX_CHECK
+ELSEIF TALENT:122 && TALENT:PLAYER:122
+	;男性同士の場合のチェック
+	;関数はSOURCE_SUB_SUB.ERBに記述
+	CALL SOURCE_GAY_SEX_CHECK
+ENDIF
+;-------------------------------------------------
+;調教者のスキルによるチェック
+;-------------------------------------------------
+@PLAYER_SKILL_CHECK
+;調教者のTALENT:开放をみる
+IF TALENT:PLAYER:33
+	TIMES SOURCE:0 , 1.20
+	TIMES SOURCE:1 , 1.20
+	TIMES SOURCE:2 , 1.20
+	TIMES SOURCE:3 , 1.20
+	TIMES SOURCE:17 , 1.20
+ENDIF
+;調教者のTALENT:小恶魔をみる
+IF TALENT:PLAYER:87
+	TIMES SOURCE:12 , 1.60
+ENDIF
+;調教者のTALENT:魅惑をみる
+IF TALENT:PLAYER:91
+	TIMES SOURCE:8 , 0.50
+	TIMES SOURCE:14 , 0.50
+
+	TIMES SOURCE:0 , 1.20
+	TIMES SOURCE:1 , 1.20
+	TIMES SOURCE:2 , 1.20
+	TIMES SOURCE:5 , 1.20
+	TIMES SOURCE:17 , 1.20
+ENDIF
+;調教者のTALENT:谜之魅力をみる
+IF TALENT:PLAYER:92
+	TIMES SOURCE:8 , 0.50
+	TIMES SOURCE:14 , 0.50
+
+	TIMES SOURCE:0 , 1.20
+	TIMES SOURCE:1 , 1.20
+	TIMES SOURCE:2 , 1.20
+	TIMES SOURCE:5 , 1.20
+	TIMES SOURCE:17 , 1.20
+ENDIF
+
+;調教者が【母性】か【人妻】で調教対象が【恋母情结】
+IF (TALENT:PLAYER:155 || TALENT:PLAYER:157) && TALENT:TARGET:140
+	TIMES SOURCE:8 , 0.50
+	TIMES SOURCE:14 , 0.50
+
+	TIMES SOURCE:3 , 1.20
+	TIMES SOURCE:5 , 1.20
+ENDIF
+
+;調教者が【父性】で調教対象が【恋父情结】
+IF TALENT:PLAYER:156 && TALENT:TARGET:141
+	TIMES SOURCE:8 , 0.50
+	TIMES SOURCE:14 , 0.50
+
+	TIMES SOURCE:3 , 1.20
+	TIMES SOURCE:5 , 1.20
+ENDIF
+
+;調教者が【男人】ではなく【未熟】か【娇小】で調教対象が【萝莉控】
+IF TALENT:PLAYER:122 == 0 && (TALENT:PLAYER:100 || TALENT:PLAYER:135) && TALENT:TARGET:142
+	TIMES SOURCE:8 , 0.50
+	TIMES SOURCE:14 , 0.50
+
+	TIMES SOURCE:3 , 1.20
+	TIMES SOURCE:5 , 1.20
+ENDIF
+
+;調教者が【男人】であり【未熟】か【娇小】で調教対象が【正太控】
+IF TALENT:PLAYER:122 && (TALENT:PLAYER:100 || TALENT:PLAYER:135) && TALENT:TARGET:143
+	TIMES SOURCE:8 , 0.50
+	TIMES SOURCE:14 , 0.50
+
+	TIMES SOURCE:3 , 1.20
+	TIMES SOURCE:5 , 1.20
+ENDIF
+
+;調教者が【萝莉控】で調教対象が【未熟】か【娇小】かつ【男人】ではない
+IF TALENT:PLAYER:142 && (TALENT:TARGET:100 || TALENT:TARGET:135) && TALENT:TARGET:122 == 0
+	TIMES SOURCE:0 , 1.20
+	TIMES SOURCE:1 , 1.20
+	TIMES SOURCE:2 , 1.20
+	TIMES SOURCE:17 , 1.20
+		
+	TIMES SOURCE:14 , 0.80
+ENDIF
+
+;調教者が【正太控】で調教対象が【未熟】か【娇小】かつ【男人】である
+IF TALENT:PLAYER:143 && (TALENT:TARGET:100 || TALENT:TARGET:135) && TALENT:TARGET:122
+	TIMES SOURCE:0 , 1.20
+	;TIMES SOURCE:1 , 1.20
+	TIMES SOURCE:2 , 1.20
+	TIMES SOURCE:17 , 1.20
+		
+	TIMES SOURCE:14 , 0.80
+ENDIF
+
+;調教者のABL:技巧
+IF ABL:PLAYER:12 == 0
+	TIMES SOURCE:0 , 0.50
+	TIMES SOURCE:1 , 0.50
+	TIMES SOURCE:2 , 0.50
+	TIMES SOURCE:17 , 0.50
+ELSEIF ABL:PLAYER:12 == 1
+	TIMES SOURCE:0 , 0.80
+	TIMES SOURCE:1 , 0.80
+	TIMES SOURCE:2 , 0.80
+	TIMES SOURCE:17 , 0.80
+ELSEIF ABL:PLAYER:12 == 2
+	TIMES SOURCE:0 , 1.00
+	TIMES SOURCE:1 , 1.00
+	TIMES SOURCE:2 , 1.00
+	TIMES SOURCE:17 , 1.00
+ELSEIF ABL:PLAYER:12 == 3
+	TIMES SOURCE:0 , 1.20
+	TIMES SOURCE:1 , 1.20
+	TIMES SOURCE:2 , 1.20
+	TIMES SOURCE:17 , 1.20
+ELSEIF ABL:PLAYER:12 == 4
+	TIMES SOURCE:0 , 1.50
+	TIMES SOURCE:1 , 1.50
+	TIMES SOURCE:2 , 1.50
+	TIMES SOURCE:17 , 1.50
+ELSEIF ABL:PLAYER:12 >= 5
+	TIMES SOURCE:0 , 2.00
+	TIMES SOURCE:1 , 2.00
+	TIMES SOURCE:2 , 2.00
+	TIMES SOURCE:17 , 2.00
+ENDIF
+;-------------------------------------------------
+;主人による調教のボーナス
+;-------------------------------------------------
+@MASTER_SKILL_CHECK
+;主人による調教経験
+IF ASSIPLAY == 0
+	IF CFLAG:2 >= 500
+		TIMES SOURCE:8 , 0.70
+		TIMES SOURCE:14 , 0.70
+
+		TIMES SOURCE:0 , 1.20
+		TIMES SOURCE:1 , 1.20
+		TIMES SOURCE:2 , 1.20
+		TIMES SOURCE:3 , 1.30
+		TIMES SOURCE:17 , 1.20
+	ELSEIF CFLAG:2 >= 300
+		TIMES SOURCE:8 , 0.80
+		TIMES SOURCE:14 , 0.80
+
+		TIMES SOURCE:0 , 1.10
+		TIMES SOURCE:1 , 1.10
+		TIMES SOURCE:2 , 1.10
+		TIMES SOURCE:3 , 1.20
+		TIMES SOURCE:17 , 1.10
+	ELSEIF CFLAG:2 >= 100
+		TIMES SOURCE:8 , 0.90
+		TIMES SOURCE:14 , 0.90
+
+		TIMES SOURCE:3 , 1.10
+	ENDIF
+ENDIF
+
+;淫乱
+;主人経験との重複前提で計算
+IF TALENT:76 && ASSIPLAY == 0
+	TIMES SOURCE:0 , 1.80
+	TIMES SOURCE:1 , 1.80
+	TIMES SOURCE:2 , 1.80
+	TIMES SOURCE:17 , 1.80
+ENDIF
+
+;爱慕
+;主人経験との重複前提で計算
+IF TALENT:85 && ASSIPLAY == 0
+	TIMES SOURCE:0 , 1.30
+	TIMES SOURCE:1 , 1.30
+	TIMES SOURCE:2 , 1.30
+	TIMES SOURCE:3 , 1.80
+	TIMES SOURCE:17 , 1.30
+ENDIF
+;-------------------------------------------------
+;近親相姦のチェック
+;-------------------------------------------------
+@INCEST_SEX_CHECK
+
+;親族関係の判定
+TFLAG:14 = 0
+CALL INCEST
+
+IF TFLAG:14 && TFLAG:19
+	IF TFLAG:14 == 1 && TALENT:PLAYER:122
+		PRINTL 父女相奸
+	ELSEIF  TFLAG:14 == 1 && TALENT:PLAYER:122 == 0
+		PRINTL 母女相奸
+	ELSEIF  TFLAG:14 == 2 && TALENT:PLAYER:122
+		PRINTL 母子相奸
+	ELSEIF  TFLAG:14 == 2 && TALENT:PLAYER:122 == 0
+		PRINTL 母女相奸
+	ELSEIF  TFLAG:14 == 3 && TALENT:PLAYER:122
+		PRINTL 兄妹相奸
+	ELSEIF  TFLAG:14 == 3 && TALENT:PLAYER:122 == 0
+		PRINTL 姐妹相奸
+	ELSEIF  TFLAG:14 == 4 && TALENT:PLAYER:122
+		PRINTL 姐弟相奸
+	ELSEIF  TFLAG:14 == 4 && TALENT:PLAYER:122 == 0
+		PRINTL 姐妹相奸
+	ELSEIF  TFLAG:14 == 5 && TALENT:PLAYER:122 == 0
+		PRINTL 表弟相奸
+	ELSEIF  TFLAG:14 == 6 && TALENT:PLAYER:122
+		PRINTL 表姐相奸
+	ENDIF
+
+	IF TFLAG:14 == 1 || TFLAG:14 == 2
+		TIMES SOURCE:3 , 2.00
+		TIMES SOURCE:14 , 2.00
+		TIMES SOURCE:16 , 2.00
+	ELSEIF TFLAG:14 == 3 || TFLAG:14 == 4
+		TIMES SOURCE:3 , 1.50
+		TIMES SOURCE:14 , 1.50
+		TIMES SOURCE:16 , 1.50
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;处女丧失のチェック
+;-------------------------------------------------
+@LOST_VIRGIN_CHECK
+;处女でないか私处经验を伴うコマンドフラグが立ってなければそのまま終了
+SIF TALENT:0 == 0 || TFLAG:19 == 0
+	RETURN 0
+
+PRINTL 【处女丧失】
+TALENT:0 = 0
+
+;处女丧失フラグ(今回のコマンド)
+TFLAG:3 = 1
+;处女丧失フラグ(今回の調教)
+TFLAG:31 = 1
+;处女丧失フラグ(ビデオ撮影)
+SIF TEQUIP:53
+	TFLAG:32 |= 1
+
+R = NO:PLAYER
+
+;親族関係の判定
+TFLAG:14 = 0
+CALL INCEST
+
+IF CFLAG:15 == 0
+	;初体験の相手を記録（初期値が0のため、+1して記録）
+	CFLAG:15 = NO:PLAYER + 1
+	CSTR:TARGET:3 = %SAVESTR:PLAYER%
+	;初体験が近親相姦
+	;初体験の相手が自分の息子・娘という状況は生物学的にありえないので省く
+	IF TFLAG:14 == 1 && TALENT:PLAYER:122
+		CFLAG:15 = 300
+	ELSEIF TFLAG:14 == 1 && TALENT:PLAYER:122 == 0
+		CFLAG:15 = 301
+	ELSEIF TFLAG:14 == 3 && TALENT:PLAYER:122
+		CFLAG:15 = 304
+	ELSEIF TFLAG:14 == 3 && TALENT:PLAYER:122 == 0
+		CFLAG:15 = 305
+	ELSEIF TFLAG:14 == 4 && TALENT:PLAYER:122
+		CFLAG:15 = 306
+	ELSEIF TFLAG:14 == 4 && TALENT:PLAYER:122 == 0
+		CFLAG:15 = 307
+	ELSEIF TFLAG:14 == 5 && TALENT:PLAYER:122 == 0
+		CFLAG:15 = 308
+	ELSEIF TFLAG:14 == 6 && TALENT:PLAYER:122
+		CFLAG:15 = 309
+	ENDIF
+	;初体験がバイブの場合
+	SIF SELECTCOM == 11
+		CFLAG:15 = 101
+	;初体験が触手生物の場合
+	SIF TEQUIP:90 && SELECTCOM == 101
+		CFLAG:15 = 102
+	;初体験が犬の場合
+	SIF TEQUIP:89
+		CFLAG:15 = 103
+	;初体験が死斗场怪物の場合
+	SIF TEQUIP:55 && ASSIPLAY == 0
+		CFLAG:15 = 104
+ENDIF
+
+;初体験の相手が主人で【爱慕】
+IF PLAYER == MASTER && TALENT:85
+	;反抗刻印回避
+	TFLAG:150 = 1
+	TIMES SOURCE:3 , 2.00
+	TIMES SOURCE:15 , 0.30
+;初体験の時点で既に【淫乱】
+ELSEIF TALENT:76
+	;反抗刻印回避
+	TFLAG:150 = 1
+	TIMES SOURCE:3 , 2.00
+	TIMES SOURCE:6 , 0.50
+	TIMES SOURCE:15 , 0.30
+;初体験の相手が助手で相性最高で親族でない
+ELSEIF ASSIPLAY && RELATION:R >= 200 && TFLAG:14 == 0
+	;反抗刻印回避
+	TFLAG:150 = 1
+ENDIF
+;-------------------------------------------------
+;調教対象の射精チェック
+;-------------------------------------------------
+@TARGET_EJAC_CHECK
+#DIM MIJYUKU
+#DIM MIJYUKU_KENKAI
+MIJYUKU = 0
+MIJYUKU_KENKAI = BASE:2
+SIF TALENT:121 == 0 && TALENT:122 == 0
+	RETURN 0
+SIF TALENT:135
+	MIJYUKU = RAND:700 - RAND:800 + 400
+	;RETURN 0
+
+LOCAL = UP:0 + UP:1 + UP:2 + UP:14
+
+;克制
+SIF TALENT:20
+	LOCAL /= 2
+
+;接受快感
+SIF TALENT:70
+	TIMES LOCAL , 1.20
+
+;淫乱化
+SIF TALENT:76
+	TIMES LOCAL , 1.10
+
+;否定快感
+SIF TALENT:71
+	TIMES LOCAL , 0.80
+
+;媚药
+SIF TEQUIP:21
+	LOCAL *= 2
+
+;利尿剂
+SIF TEQUIP:22
+	LOCAL /= 2
+
+;調教対象が安全套装着
+SIF TEQUIP:37
+	LOCAL /= 2
+;未熟
+SIF TALENT:135
+	LOCAL -= MIJYUKU
+	
+LOCAL = 1000+(LOCAL-1000)/2
+BASE:2 += LOCAL
+SIF TALENT:135 && MIJYUKU_KENKAI < 2000 && BASE:2 >= 2000
+	PRINTFORML %SAVESTR:TARGET%尚未成熟的阴茎似乎渐渐有了感觉。
+SIF TALENT:135 && MIJYUKU_KENKAI >= 2000 && BASE:2 <= 2000
+	BASE:2 = 2000
+LOCAL = BASE:2
+EJAC = MAXBASE:2
+
+IF  LOCAL > EJAC * 2
+	LOCAL:1 = 2
+ELSEIF LOCAL > EJAC
+	LOCAL:1 = 1
+ELSE
+	LOCAL:1 = 0
+ENDIF
+
+;大量射精
+IF LOCAL:1 == 2
+	LOSEBASE:0 += 20
+	LOSEBASE:1 += 100
+
+	IF EXP:3 < EXPLV:1
+		SOURCE:12 += 20000
+		SOURCE:13 += 10000
+	ELSEIF EXP:3 < EXPLV:2
+		SOURCE:12 += 10000
+		SOURCE:13 += 8000
+	ELSEIF EXP:3 < EXPLV:3
+		SOURCE:12 += 7000
+		SOURCE:13 += 6000
+	ELSEIF EXP:3 < EXPLV:4
+		SOURCE:12 += 5000
+		SOURCE:13 += 4000
+	ELSEIF EXP:3 < EXPLV:5
+		SOURCE:12 += 3000
+		SOURCE:13 += 2000
+	ELSE
+		SOURCE:12 += 1800
+		SOURCE:13 += 1200
+	ENDIF
+
+	PRINTS SAVESTR:TARGET
+	PRINTL 大量射精
+	PRINTL 精液经验＋１
+	PRINTL 射精经验＋２
+	IF EXP:3 == 0 && TALENT:122 == 0
+		EXP:50 += 1
+		PRINTL 异常经验＋1
+	ENDIF
+	EXP:20 += 1
+	EXP:3 += 2
+	
+	;未熟
+	IF TALENT:135
+		MAXBASE:0 -= 10
+		MAXBASE:1 -= 30
+		LOSEBASE:0 += 50
+		LOSEBASE:1 += 100
+		PRINTFORML %SAVESTR:TARGET%感到身体被掏空。
+		PRINTFORML 体力上限下降了10。
+		PRINTFORML 气力上限下降了30。
+		;最大体力は600まで下がる（それ以下にはならない）
+		SIF MAXBASE:0 < 600
+			MAXBASE:0 = 600
+		;最大気力は100まで下がる（それ以下にはならない）
+		SIF MAXBASE:1 < 100
+			MAXBASE:1 = 100
+	ENDIF
+		
+	;Ｐに精液汚れ
+	STAIN:2 |= 4
+
+	BASE:2 -= EJAC*2
+	SIF BASE:2 >= EJAC
+		BASE:2 = EJAC-1
+
+	;調教対象が射精フラグ
+	TFLAG:10 = 2
+	NOWEX:5 += 1
+	EX:5 += 1
+;通常の射精
+ELSEIF LOCAL:1 == 1
+	LOSEBASE:1 += 40
+
+	IF EXP:3 < EXPLV:1
+		SOURCE:12 += 10000
+		SOURCE:13 += 5000
+	ELSEIF EXP:3 < EXPLV:2
+		SOURCE:12 += 5000
+		SOURCE:13 += 4000
+	ELSEIF EXP:3 < EXPLV:3
+		SOURCE:12 += 2500
+		SOURCE:13 += 2000
+	ELSEIF EXP:3 < EXPLV:4
+		SOURCE:12 += 1600
+		SOURCE:13 += 1400
+	ELSEIF EXP:3 < EXPLV:5
+		SOURCE:12 += 800
+		SOURCE:13 += 500
+	ELSE
+		SOURCE:12 += 200
+		SOURCE:13 += 250
+	ENDIF
+
+	PRINTS SAVESTR:TARGET
+	PRINTL 射精
+	PRINTL 射精经验＋１
+	IF EXP:3 == 0 && TALENT:122 == 0
+		EXP:50 += 1
+		PRINTL 异常经验＋1
+	ENDIF
+	EXP:3 += 1
+
+	;未熟
+	IF TALENT:135
+		MAXBASE:0 -= 10
+		MAXBASE:1 -= 10
+		LOSEBASE:0 += 10
+		LOSEBASE:1 += 40
+		PRINTFORML %SAVESTR:TARGET%感到身体一阵空虚。
+		PRINTFORML 体力和气力上限下降了10。
+	ENDIF
+	
+	;Ｐに精液汚れ
+	STAIN:2 |= 4
+
+	BASE:2 -= EJAC
+	SIF BASE:2 >= EJAC
+		BASE:2 = EJAC-1
+
+	;調教対象が射精フラグ
+	TFLAG:10 = 1
+	NOWEX:6 += 1
+	EX:6 += 1
+ENDIF
+
+;-------------------------------------------------
+;調教対象の噴乳チェック
+;-------------------------------------------------
+@TARGET_MILK_CHECK
+SIF TALENT:130 == 0
+	RETURN 0
+
+LOCAL = UP:0 / 5 + UP:1 / 5 + UP:2 / 5 + UP:14 * 3
+
+;克制
+SIF TALENT:20
+	LOCAL /= 2
+
+;接受快感
+SIF TALENT:70
+	TIMES LOCAL , 1.20
+
+;淫乱化
+SIF TALENT:76
+	TIMES LOCAL , 1.10
+
+;否定快感
+SIF TALENT:71
+	TIMES LOCAL , 0.80
+
+;B敏感
+SIF TALENT:108
+	TIMES LOCAL , 1.50
+
+;媚药
+SIF TEQUIP:21
+	LOCAL *= 2
+
+;利尿剂
+SIF TEQUIP:22
+	LOCAL /= 2
+
+;調教者が幼儿退行
+SIF TALENT:PLAYER:131
+	LOCAL *= 2
+
+;調教者が幼稚
+SIF TALENT:PLAYER:132
+	LOCAL *= 2
+
+;贫乳
+SIF TALENT:109
+	TIMES LOCAL , 0.50
+
+;绝壁
+SIF TALENT:116
+	TIMES LOCAL , 0.20
+
+LOCAL = 1000+(LOCAL-1000)/2
+BASE:3 += LOCAL
+
+LOCAL = BASE:3
+EJAC = MAXBASE:3
+
+IF  LOCAL > EJAC * 2
+	LOCAL:1 = 2
+ELSEIF LOCAL > EJAC
+	LOCAL:1 = 1
+ELSE
+	LOCAL:1 = 0
+ENDIF
+
+;大量噴乳
+IF LOCAL:1 == 2
+	LOSEBASE:0 += 20
+	LOSEBASE:1 += 100
+
+	IF EXP:54 < EXPLV:1
+		SOURCE:12 += 20000
+		SOURCE:13 += 10000
+	ELSEIF EXP:54 < EXPLV:2
+		SOURCE:12 += 10000
+		SOURCE:13 += 8000
+	ELSEIF EXP:54 < EXPLV:3
+		SOURCE:12 += 7000
+		SOURCE:13 += 6000
+	ELSEIF EXP:54 < EXPLV:4
+		SOURCE:12 += 5000
+		SOURCE:13 += 4000
+	ELSEIF EXP:54 < EXPLV:5
+		SOURCE:12 += 3000
+		SOURCE:13 += 2000
+	ELSE
+		SOURCE:12 += 1800
+		SOURCE:13 += 1200
+	ENDIF
+
+	PRINTFORML %SAVESTR:TARGET%的乳头喷出了大量的母乳。
+	PRINTL 喷奶经验＋２
+	IF EXP:54 == 0
+		EXP:50 += 1
+		PRINTL 异常经验＋1
+	ENDIF
+	EXP:54 += 2
+	;Ｂに母乳汚れ
+	STAIN:5 |= 16
+
+	BASE:3 -= EJAC*2
+	SIF BASE:3 >= EJAC
+		BASE:3 = EJAC-1
+
+	;調教対象が噴乳フラグ
+	TFLAG:11 += 2
+	;搾乳器で母乳が集められているかチェック
+	SIF TEQUIP:16 && TEQUIP:90 == 0
+		TFLAG:35 += 2
+
+	NOWEX:5 += 1
+	EX:5 += 1
+;通常の噴乳
+ELSEIF LOCAL:1 == 1
+	LOSEBASE:1 += 40
+
+	IF EXP:54 < EXPLV:1
+		SOURCE:12 += 10000
+		SOURCE:13 += 5000
+	ELSEIF EXP:54 < EXPLV:2
+		SOURCE:12 += 5000
+		SOURCE:13 += 4000
+	ELSEIF EXP:54 < EXPLV:3
+		SOURCE:12 += 2500
+		SOURCE:13 += 2000
+	ELSEIF EXP:54 < EXPLV:4
+		SOURCE:12 += 1600
+		SOURCE:13 += 1400
+	ELSEIF EXP:54 < EXPLV:5
+		SOURCE:12 += 800
+		SOURCE:13 += 500
+	ELSE
+		SOURCE:12 += 200
+		SOURCE:13 += 250
+	ENDIF
+
+	PRINTFORML %SAVESTR:TARGET%的乳头流出了母乳。
+	PRINTL 喷奶经验＋１
+	IF EXP:54 == 0
+		EXP:50 += 1
+		PRINTL 异常经验＋1
+	ENDIF
+	EXP:54 += 1
+	;Ｂに母乳汚れ
+	STAIN:5 |= 16
+
+	BASE:3 -= EJAC
+	SIF BASE:3 >= EJAC
+		BASE:3 = EJAC-1
+
+	;調教対象が噴乳フラグ
+	TFLAG:11 += 1
+	;搾乳器で母乳が集められているかチェック
+	SIF TEQUIP:16 && TEQUIP:90 == 0
+		TFLAG:35 += 1
+
+	NOWEX:5 += 1
+	EX:5 += 1
+ENDIF
+
+;-------------------------------------------------
+;素質などによる上下の処理（快楽系）
+;-------------------------------------------------
+@UP_TALENT_CVA_CHECK
+;媚药
+IF TEQUIP:21
+	TIMES UP:0 , 2.00
+	TIMES UP:1 , 2.00
+	TIMES UP:2 , 2.00
+	TIMES UP:14 , 2.00
+ENDIF
+
+;利尿剂
+IF TEQUIP:22
+	TIMES UP:0 , 0.70
+	TIMES UP:1 , 0.70
+	TIMES UP:2 , 0.70
+	TIMES UP:14 , 0.70
+ENDIF
+
+;失神中
+IF TFLAG:899 > 0
+	TIMES UP:0 , 0.20
+	TIMES UP:1 , 0.20
+	TIMES UP:2 , 0.20
+	TIMES UP:14 , 0.20
+ENDIF
+
+;克制
+IF TALENT:20
+	TIMES UP:0 , 0.30
+	TIMES UP:1 , 0.50
+	TIMES UP:2 , 0.70
+	TIMES UP:14 , 0.30
+ENDIF
+
+;男人
+IF TALENT:122
+	TIMES UP:2 , 1.30
+ENDIF
+
+;性豪
+IF TALENT:272
+	TIMES UP:0 , 1.20
+	TIMES UP:1 , 1.20
+	TIMES UP:2 , 1.20
+	TIMES UP:14 , 1.20
+ENDIF
+
+;-------------------------------------------------
+;素質などによる上下の処理
+;-------------------------------------------------
+@UP_TALENT_CHECK
+
+;媚药
+IF TEQUIP:21
+	TIMES UP:4 , 1.20
+	TIMES UP:5 , 2.00
+	TIMES UP:6 , 1.20
+	TIMES UP:11 , 0.75
+	TIMES UP:12 , 0.50
+ENDIF
+
+;利尿剂
+IF TEQUIP:22
+	TIMES UP:4 , 0.80
+	TIMES UP:5 , 1.50
+	TIMES UP:6 , 0.80
+	TIMES UP:11 , 0.50
+	TIMES UP:12 , 1.20
+	TIMES UP:13 , 1.50
+	;TIMES UP:14 , 2.00
+	TIMES UP:15 , 1.20
+ENDIF
+
+;失神中
+IF TFLAG:899 > 0
+	TIMES UP:4 , 0.50
+	TIMES UP:5 , 0.75
+	TIMES UP:6 , 0.10
+	TIMES UP:8 , 0.10
+	TIMES UP:10 , 0.00
+	TIMES UP:11 , 0.00
+	TIMES UP:12 , 0.10
+	TIMES UP:13 , 0.00
+ENDIF
+
+;胆怯
+IF TALENT:10
+	TIMES UP:10 , 2.00
+	TIMES UP:11 , 0.50
+	TIMES UP:13 , 0.25
+ENDIF
+;反抗心
+IF TALENT:11
+	TIMES UP:4 , 0.25
+	TIMES UP:5 , 0.50
+	TIMES UP:11 , 1.50
+ENDIF
+;刚强
+IF TALENT:12
+	TIMES UP:4 , 0.30
+	TIMES UP:5 , 0.75
+	TIMES UP:10 , 0.80
+	TIMES UP:11 , 2.00
+	TIMES UP:13 , 2.00
+ENDIF
+;坦率
+IF TALENT:13
+	TIMES UP:4 , 2.00
+	TIMES UP:11 , 0.60
+ENDIF
+;文静
+IF TALENT:14
+	TIMES UP:11 , 0.30
+ENDIF
+;高姿态
+IF TALENT:15
+	TIMES UP:6 , 0.50
+	TIMES UP:10 , 0.60
+	TIMES UP:11 , 1.20
+ENDIF
+;低姿态
+IF TALENT:17
+	TIMES UP:6 , 2.00
+	TIMES UP:10 , 1.50
+	TIMES UP:11 , 0.80
+ENDIF
+
+;冷漠
+IF TALENT:21
+	TIMES UP:4 , 0.50
+	TIMES UP:5 , 0.50
+	TIMES UP:6 , 0.50
+	TIMES UP:10 , 0.80
+	TIMES UP:11 , 0.80
+ENDIF
+;感情淡薄
+IF TALENT:22
+	TIMES UP:4 , 0.60
+	TIMES UP:5 , 0.60
+	TIMES UP:6 , 0.60
+	TIMES UP:8 , 0.60
+	TIMES UP:10 , 0.60
+	TIMES UP:11 , 0.60
+	TIMES UP:12 , 0.60
+	TIMES UP:13 , 0.60
+ENDIF
+;好奇心
+SIF TALENT:23
+	TIMES UP:7 , 1.20
+
+;保守的
+SIF TALENT:24
+	TIMES UP:7 , 0.80
+
+;乐观的
+SIF TALENT:25
+	TIMES UP:13 , 0.30
+
+;悲观的
+SIF TALENT:26
+	TIMES UP:13 , 2.50
+
+;压抑
+IF TALENT:32
+	TIMES UP:5 , 0.50
+	TIMES UP:11 , 2.00
+	TIMES UP:13 , 1.50
+ENDIF
+;开放
+IF TALENT:33
+	TIMES UP:5 , 2.00
+	TIMES UP:6 , 2.00
+ENDIF
+;抵抗
+IF TALENT:34
+	TIMES UP:5 , 0.50
+	TIMES UP:11 , 2.00
+ENDIF
+
+;害怕疼痛
+IF TALENT:40
+	TIMES UP:10 , 2.00
+	TIMES UP:11 , 1.50
+ENDIF
+;不惧疼痛
+IF TALENT:41
+	TIMES UP:10 , 0.50
+	TIMES UP:11 , 0.75
+ENDIF
+
+;快速学习
+SIF TALENT:50
+	TIMES UP:7 , 2.00
+;学习缓慢
+SIF TALENT:51
+	TIMES UP:7 , 0.50
+
+;献身的
+SIF TALENT:63
+	TIMES UP:6 , 2.00
+
+;接受快感
+SIF TALENT:70
+	TIMES UP:5 , 2.00
+;否定快感
+SIF TALENT:71
+	TIMES UP:5 , 0.50
+
+;爱慕
+IF TALENT:85 && ASSIPLAY == 0
+	TIMES UP:4 , 1.20
+	TIMES UP:6 , 2.00
+	TIMES UP:11 , 0.50
+	TIMES UP:12 , 0.50
+ENDIF
+
+;盲从
+IF TALENT:86
+	TIMES UP:6 , 4.00
+	TIMES UP:11 , 0.50
+ENDIF
+
+;調教者がTALENT:威圧感
+IF TALENT:PLAYER:93
+	TIMES UP:10 , 2.00
+	TIMES UP:11 , 0.50
+ENDIF
+
+;性豪
+IF TALENT:272
+	TIMES UP:5 , 1.20
+ENDIF
+
+;时常发情
+IF TALENT:271
+	TIMES UP:5 , 1.20
+	TIMES UP:3 , 1.20
+ENDIF
+
+;膣内射精による妊娠への恐怖（安全套使用中か【爱慕】持ちもしくは相性最高なら平気）
+IF TFLAG:2 && (SELECTCOM == 20 || SELECTCOM == 21 || SELECTCOM == 22 || SELECTCOM == 23 || SELECTCOM == 34)
+	IF ASSIPLAY == 0 && TEQUIP:35 == 0 && TFLAG:2 && TALENT:85 == 0
+		TIMES UP:10 , 2.00
+	ELSEIF ASSI > 0 && ASSIPLAY && TEQUIP:36 == 0 
+		R = NO:ASSI
+		SIF RELATION:TARGET:R < 200
+			TIMES UP:10 , 2.00
+	ENDIF
+ENDIF
+
+;反抗刻印
+IF MARK:3 == 3
+	TIMES UP:4 , 0.10
+ELSEIF MARK:3 == 2
+	TIMES UP:4 , 0.40
+ELSEIF MARK:3 == 1
+	TIMES UP:4 , 0.70
+ENDIF
+
+;-------------------------------------------------
+;刻印取得のチェック
+;-------------------------------------------------
+@MARK_GOT_CHECK
+;-------------------------------------------------
+;反抗刻印
+;------------------------------------------------- 
+
+
+;PALAM:反感+PALAM:不快の上昇量に応じて反発刻印を取得
+LOCAL = UP:11 + UP:12
+IF LOCAL >= 500 && LOCAL < 1200 && MARK:4 <= 0 && TFLAG:150 == 0
+	MARK:3 = 1
+	MARK:4 = 1
+	TFLAG:21 = 1
+	PRINTL 获得反抗刻印LV1
+ELSEIF LOCAL >= 1200 && LOCAL < 3000 && MARK:4 <= 1 && TFLAG:150 == 0
+	MARK:3 = 2
+	MARK:4 = 2
+	TFLAG:21 = 2
+	PRINTL 获得反抗刻印LV2
+	;感情淡薄の場合は反抗刻印による顺从ダウンは无
+	IF ABL:10 == 1 && TALENT:22 == 0
+		PRINTL 顺从下降到LV0
+		ABL:10 = 0
+	ELSEIF ABL:10 == 2 && TALENT:22 == 0
+		PRINTL 顺从下降到LV1
+		ABL:10 = 1
+	ENDIF
+ELSEIF LOCAL >= 3000 && MARK:4 <= 2 && TFLAG:150 == 0
+	MARK:3 = 3
+	MARK:4 = 3
+	TFLAG:21 = 3
+	PRINTL 获得反抗刻印LV3
+	;感情淡薄の場合は反抗刻印による顺从ダウンは无
+	IF ABL:10 > 0 && ABL:10 <= 2 && TALENT:22 == 0
+		PRINTL 顺从下降到LV0
+		ABL:10 = 0
+	ELSEIF ABL:10 == 3 && TALENT:22 == 0
+		PRINTL 顺从下降到LV1
+		ABL:10 = 2
+	ENDIF
+ENDIF
+TFLAG:150 = 0
+;-------------------------------------------------
+;苦痛刻印
+;-------------------------------------------------
+;PALAM:苦痛の上昇量に応じて反抗刻印を取得
+IF UP:9 >= 500 && UP:9 < 1500 && MARK:0 <= 0
+	MARK:0 = 1
+	TFLAG:22 = 1
+	PRINTL 获得苦痛刻印LV1
+ELSEIF UP:9 >= 1500 && UP:9 < 3000 && MARK:0 <= 1
+	MARK:0 = 2
+	TFLAG:22 = 2
+	PRINTL 获得苦痛刻印LV2
+	;刚强・感情淡薄の場合は苦痛刻印による顺从アップは无
+	IF ABL:10 == 0 && TALENT:12 == 0 && TALENT:22 == 0
+		PRINTL 然后，顺从提升到LV1
+		ABL:10 = 1
+		CALL JUJUN_UP_CHECK
+	ENDIF
+ELSEIF UP:9 >= 3000 && MARK:0 <= 2
+	MARK:0 = 3
+	TFLAG:22 = 3
+	PRINTL 获得苦痛刻印LV3
+	;刚强・感情淡薄の場合は苦痛刻印による顺从アップは无
+	IF ABL:10 == 0 && TALENT:12 == 0 && TALENT:22 == 0
+		PRINTL 然后，顺从提升到LV1
+		ABL:10 = 1
+		CALL JUJUN_UP_CHECK
+	ENDIF
+	IF TALENT:PLAYER:83
+		;PRINTL （【施虐狂】的助手）
+		PRINTFORML %EXPNAME:50%＋１
+		EXP:50 += 1
+	ENDIF
+ENDIF
+
+
+;-------------------------------------------------
+;快乐刻印
+;-------------------------------------------------
+
+;PALAM:快ＣＶＡＢの上昇量に応じて快楽刻印を取得
+LOCAL = UP:0 + UP:1 + UP:2 + UP:14
+
+
+IF LOCAL >= 500 && LOCAL < 1500 && MARK:1 <= 0
+	MARK:1 = 1
+	TFLAG:23 = 1
+	PRINTL 获得快乐刻印LV1
+ELSEIF LOCAL >= 1500 && LOCAL < 3000 && MARK:1 <= 1
+	MARK:1 = 2
+	TFLAG:23 = 2
+	PRINTL 获得快乐刻印LV2
+ELSEIF LOCAL >= 3000 && MARK:1 <= 2
+	MARK:1 = 3
+	TFLAG:23 = 3
+	PRINTL 获得快乐刻印LV3
+	;克制・感情淡薄の場合は快乐刻印による顺从アップは无
+	IF ABL:10 == 0 && TALENT:20 == 0 && TALENT:22 == 0
+		PRINTL 顺从提升到LV1
+		ABL:10 = 1
+		CALL JUJUN_UP_CHECK
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;屈服刻印
+;-------------------------------------------------
+;プレイ中の行為に応じて屈服刻印を取得
+IF TFLAG:200 == 1 && MARK:2 <= 0
+	MARK:2 = 1
+	TFLAG:24 = 1
+	PRINTL 获得屈服刻印LV1
+ELSEIF TFLAG:200 == 2 && MARK:2 <= 1
+	MARK:2 = 2
+	TFLAG:24 = 2
+	PRINTL 获得屈服刻印LV2
+	;感情淡薄の場合は屈服刻印による顺从アップは无
+	IF ABL:10 == 0 && TALENT:22 == 0
+		PRINTL 然后，顺从提升到LV1
+		ABL:10 = 1
+		CALL JUJUN_UP_CHECK
+	ENDIF
+ELSEIF TFLAG:200 == 3 && MARK:2 <= 2
+	MARK:2 = 3
+	TFLAG:24 = 3
+	PRINTL 获得屈服刻印LV3
+	;感情淡薄の場合は屈服刻印による顺从アップは无
+	IF ABL:10 <= 1 && TALENT:22 == 0
+		PRINTL 然后，顺从提升到LV2
+		ABL:10 = 2
+		CALL JUJUN_UP_CHECK
+	ENDIF
+ENDIF
+
+
+;-------------------------------------------------
+;欲望の上昇による[压抑][抵抗]の消滅をチェック
+;-------------------------------------------------
+@YOKUBO_UP_CHECK
+IF ABL:11 >= 3 && (TALENT:32 || TALENT:34)
+	PRINTFORM %SAVESTR:TARGET%的
+	IF TALENT:32
+		PRINTFORM 【%TALENTNAME:32%】
+		TALENT:32 = 0
+	ENDIF
+	IF TALENT:34
+		PRINTFORM 【%TALENTNAME:34%】
+		TALENT:34 = 0
+	ENDIF
+	PRINTL 失去了
+	PRINTL 否定点数减半
+	JUEL:100 /= 2
+
+	TFLAG:25 = 1
+ENDIF
+
+;-------------------------------------------------
+;顺从の上昇による[反抗心]の反転をチェック
+;-------------------------------------------------
+@JUJUN_UP_CHECK
+IF ABL:10 >= 4 && TALENT:11 && TALENT:18
+	PRINTFORM %SAVESTR:TARGET%的【%TALENTNAME:11%】失去了，
+	PRINTFORML 【%TALENTNAME:13%】获得。
+	TALENT:11 = 0
+	TALENT:13 = 1
+ENDIF
+
+;-------------------------------------------------
+;侍奉快乐经验、被虐快乐经验、肛门快乐经验のチェック
+;-------------------------------------------------
+@EXP_GOT_CHECK
+
+LOCAL = UP:0 + UP:1 + UP:2 + UP:14
+
+
+;奉仕快楽経験のチェック
+LOCAL:1 = 0
+
+
+IF UP:7 < 100
+	LOCAL = 0
+ELSEIF UP:7 < 300
+	LOCAL *= 1
+ELSEIF UP:7 < 700
+	LOCAL *= 2
+ELSEIF UP:7 < 1500
+	LOCAL *= 3
+ELSE
+	LOCAL *= 4
+ENDIF
+
+IF TFLAG:100
+	IF LOCAL >= 12000
+		LOCAL:1 = 16
+		TIMES UP:11 , 0.65
+		TIMES UP:12 , 0.30
+	ELSEIF LOCAL >= 8000
+		LOCAL:1 = 12
+		TIMES UP:11 , 0.70
+		TIMES UP:12 , 0.40
+	ELSEIF LOCAL >= 5000
+		LOCAL:1 = 8
+		TIMES UP:11 , 0.75
+		TIMES UP:12 , 0.50
+	ELSEIF LOCAL >= 3000
+		LOCAL:1 = 4
+		TIMES UP:11 , 0.80
+		TIMES UP:12 , 0.60
+	ELSEIF LOCAL >= 2000
+		LOCAL:1 = 2
+		TIMES UP:11 , 0.85
+		TIMES UP:12 , 0.70
+	ELSEIF LOCAL >= 1000
+		LOCAL:1 = 1
+		TIMES UP:11 , 0.90
+		TIMES UP:12 , 0.80
+	ENDIF
+	IF LOCAL:1
+		PRINT 侍奉快乐经验+
+		PRINTVL LOCAL:1
+		EXP:21 += LOCAL:1
+		TFLAG:26 = LOCAL:1
+	ENDIF
+ENDIF
+
+
+
+;Ａ快楽経験のチェック
+LOCAL = UP:2
+LOCAL:1 = 0
+
+
+IF UP:2 < 300
+	LOCAL = 0
+ELSEIF UP:2 < 1000
+	LOCAL *= 1
+ELSEIF UP:2 < 5000
+	LOCAL *= 2
+ELSEIF UP:2 < 10000
+	LOCAL *= 3
+ELSE
+	LOCAL *= 4
+ENDIF
+
+IF LOCAL >= 12000
+	LOCAL:1 = 16
+	TIMES UP:11 , 0.80
+	TIMES UP:12 , 0.90
+	TIMES UP:6 , 1.20
+ELSEIF LOCAL >= 8000
+	LOCAL:1 = 12
+	TIMES UP:11 , 0.85
+	TIMES UP:12 , 0.90
+	TIMES UP:6 , 1.15
+ELSEIF LOCAL >= 5000
+	LOCAL:1 = 8
+	TIMES UP:11 , 0.85
+	TIMES UP:12 , 0.95
+	TIMES UP:6 , 1.10
+ELSEIF LOCAL >= 3000
+	LOCAL:1 = 4
+	TIMES UP:11 , 0.90
+	TIMES UP:12 , 0.95
+	TIMES UP:6 , 1.05
+ELSEIF LOCAL >= 2000
+	LOCAL:1 = 2
+	TIMES UP:11 , 0.90
+	TIMES UP:12 , 1.00
+	TIMES UP:6 , 1.00
+ELSEIF LOCAL >= 1000
+	LOCAL:1 = 1
+	TIMES UP:11 , 0.95
+	TIMES UP:12 , 1.00
+	TIMES UP:6 , 1.00
+ENDIF
+
+
+IF LOCAL:1
+	PRINT 肛门快乐经验+
+	PRINTVL LOCAL:1
+	EXP:32 += LOCAL:1
+	TFLAG:28 = LOCAL:1
+ENDIF
+
+;被虐・嗜虐快楽経験のチェック
+LOCAL = UP:0 + UP:1 + UP:2 + UP:14
+SIF LOCAL == 0
+	LOCAL = UP:5
+
+LOCAL:1 = 0
+LOCAL:2 = 0
+IF LOCAL >= 3000 && UP:9 >= 2000
+	LOCAL:1 = 16
+	TIMES UP:11 , 0.65
+ELSEIF LOCAL >= 2500 && UP:9 >= 1500
+	LOCAL:1 = 12
+	TIMES UP:11 , 0.70
+ELSEIF LOCAL >= 1500 && UP:9 >= 1000
+	LOCAL:1 = 8
+	TIMES UP:11 , 0.75
+ELSEIF LOCAL >= 1000 && UP:9 >= 500
+	LOCAL:1 = 4
+	TIMES UP:11 , 0.80
+ELSEIF LOCAL >= 600 && UP:9 >= 300
+	LOCAL:1 = 2
+	TIMES UP:11 , 0.85
+ELSEIF LOCAL >= 300 && UP:9 >= 100
+	LOCAL:1 = 1
+	TIMES UP:11 , 0.90
+ENDIF
+
+IF LOCAL:1
+	PRINT 被虐快乐经验+
+	PRINTVL LOCAL:1
+	EXP:30 += LOCAL:1
+	TFLAG:27 = LOCAL:1
+	;助手の嗜虐快楽経験上昇
+
+	IF ASSIPLAY && ASSI > 0
+		IF ABL:ASSI:20 + TEQUIP:47 == 0
+			TIMES LOCAL:1 , 0.00
+			LOCAL:2 = 0
+		ELSEIF  ABL:ASSI:20 + TEQUIP:47 == 1
+			TIMES LOCAL:1 , 0.50
+			LOCAL:2 = 0
+		ELSEIF  ABL:ASSI:20 + TEQUIP:47 == 2
+			TIMES LOCAL:1 , 1.00
+			LOCAL:2 = LOCAL:1 / 2
+		ELSEIF  ABL:ASSI:20 + TEQUIP:47 == 3
+			LOCAL:2 = LOCAL:1 * 2
+		ELSEIF  ABL:ASSI:20 + TEQUIP:47 == 4
+			LOCAL:2 = LOCAL:1 * 10
+		ELSEIF  ABL:ASSI:20 + TEQUIP:47 >= 5
+			LOCAL:2 = LOCAL:1 * 50
+		ENDIF
+		IF LOCAL:1
+			PRINTFORML 施虐快乐经验+{LOCAL:1}(%SAVESTR:ASSI%)
+			EXP:ASSI:33 += LOCAL:1
+		ENDIF
+		IF LOCAL:2
+			PRINTFORML %PALAMNAME:5%点数＋{LOCAL:2}(%SAVESTR:ASSI%)
+			JUEL:ASSI:5 += LOCAL:2
+		ENDIF
+	ENDIF
+ENDIF
+
+;-------------------------------------------------
+;[容易陷落]のチェック
+;-------------------------------------------------
+@SOKUOCHI_CHECK
+
+SIF TALENT:73 == 0
+	RETURN 0
+
+IF !(TALENT:101 & 2)
+	IF UP:0 > 1 && ABL:0 < 1
+		ABL:0 = 1
+		PRINTFORML %ABLNAME:0%LV1了
+	ELSEIF UP:0 > 30 && ABL:0 < 2
+		ABL:0 = 2
+		PRINTFORML %ABLNAME:0%LV2了
+	ELSEIF UP:0 > 60 && ABL:0 < 3
+		ABL:0 = 3
+		PRINTFORML %ABLNAME:0%LV3了
+	ELSEIF UP:0 > 200 && ABL:0 < 4
+		ABL:0 = 4
+		PRINTFORML %ABLNAME:0%LV4了
+	ELSEIF UP:0 > 1000 && ABL:0 < 5
+		ABL:0 = 5
+		PRINTFORML %ABLNAME:0%LV5了
+	ENDIF
+ENDIF
+
+IF !(TALENT:103 & 2)
+	IF UP:1 > 1 && ABL:2 < 1
+		ABL:2 = 1
+		PRINTFORML %ABLNAME:2%LV1了
+	ELSEIF UP:1 > 30 && ABL:2 < 2
+		ABL:2 = 2
+		PRINTFORML %ABLNAME:2%LV2了
+	ELSEIF UP:1 > 60 && ABL:2 < 3
+		ABL:2 = 3
+		PRINTFORML %ABLNAME:2%LV3了
+	ELSEIF UP:1 > 200 && ABL:2 < 4
+		ABL:2 = 4
+		PRINTFORML %ABLNAME:2%LV4了
+	ELSEIF UP:1 > 1000 && ABL:2 < 5
+		ABL:2 = 5
+		PRINTFORML %ABLNAME:2%LV5了
+	ENDIF
+ENDIF
+
+IF !(TALENT:105 & 2)
+	IF UP:2 > 1 && ABL:3 < 1
+		ABL:3 = 1
+		PRINTFORML %ABLNAME:3%LV1了
+	ELSEIF UP:2 > 30 && ABL:3 < 2
+		ABL:3 = 2
+		PRINTFORML %ABLNAME:3%LV2了
+	ELSEIF UP:2 > 60 && ABL:3 < 3
+		ABL:3 = 3
+		PRINTFORML %ABLNAME:3%LV3了
+	ELSEIF UP:2 > 200 && ABL:3 < 4
+		ABL:3 = 4
+		PRINTFORML %ABLNAME:3%LV4了
+	ELSEIF UP:2 > 1000 && ABL:3 < 5
+		ABL:3 = 5
+		PRINTFORML %ABLNAME:3%LV5了
+	ENDIF
+ENDIF
+
+IF !(TALENT:107 & 2)
+	IF UP:14 > 1 && ABL:1 < 1
+		ABL:1 = 1
+		PRINTFORML %ABLNAME:1%LV1了
+	ELSEIF UP:14 > 30 && ABL:1 < 2
+		ABL:1 = 2
+		PRINTFORML %ABLNAME:1%LV2了
+	ELSEIF UP:14 > 60 && ABL:1 < 3
+		ABL:1 = 3
+		PRINTFORML %ABLNAME:1%LV3了
+	ELSEIF UP:14 > 200 && ABL:1 < 4
+		ABL:1 = 4
+		PRINTFORML %ABLNAME:1%LV4了
+	ELSEIF UP:14 > 1000 && ABL:1 < 5
+		ABL:1 = 5
+		PRINTFORML %ABLNAME:1%LV5了
+	ENDIF
+ENDIF
+
+IF UP:4 > 1 && ABL:10 < 1
+	ABL:10 = 1
+	PRINTFORML %ABLNAME:10%LV1了
+ELSEIF UP:4 > 30 && ABL:10 < 2
+	ABL:10 = 2
+	PRINTFORML %ABLNAME:10%LV2了
+ELSEIF UP:4 > 60 && ABL:10 < 3
+	ABL:10 = 3
+	PRINTFORML %ABLNAME:10%LV3了
+ELSEIF UP:4 > 200 && ABL:10 < 4
+	ABL:10 = 4
+	PRINTFORML %ABLNAME:10%LV4了
+ELSEIF UP:4 > 1000 && ABL:10 < 5
+	ABL:10 = 5
+	PRINTFORML %ABLNAME:10%LV5了
+ENDIF
+
+IF UP:5 > 1 && ABL:11 < 1
+	ABL:11 = 1
+	PRINTFORML %ABLNAME:11%LV1了
+ELSEIF UP:5 > 30 && ABL:11 < 2
+	ABL:11 = 2
+	PRINTFORML %ABLNAME:11%LV2了
+ELSEIF UP:5 > 60 && ABL:11 < 3
+	ABL:11 = 3
+	PRINTFORML %ABLNAME:11%LV3了
+ELSEIF UP:5 > 200 && ABL:11 < 4
+	ABL:11 = 4
+	PRINTFORML %ABLNAME:11%LV4了
+ELSEIF UP:5 > 1000 && ABL:11 < 5
+	ABL:11 = 5
+	PRINTFORML %ABLNAME:11%LV5了
+ENDIF
+
+IF UP:7 > 1 && ABL:12 < 1
+	ABL:12 = 1
+	PRINTFORML %ABLNAME:12%LV1了
+ELSEIF UP:7 > 30 && ABL:12 < 2
+	ABL:12 = 2
+	PRINTFORML %ABLNAME:12%LV2了
+ELSEIF UP:7 > 60 && ABL:12 < 3
+	ABL:12 = 3
+	PRINTFORML %ABLNAME:12%LV3了
+ELSEIF UP:7 > 200 && ABL:12 < 4
+	ABL:12 = 4
+	PRINTFORML %ABLNAME:12%LV4了
+ELSEIF UP:7 > 1000 && ABL:12 < 5
+	ABL:12 = 5
+	PRINTFORML %ABLNAME:12%LV5了
+ENDIF
+
+IF UP:6 > 1 && ABL:16 < 1 && ABL:0 >= 1
+	ABL:16 = 1
+	PRINTFORML %ABLNAME:16%LV1了
+ELSEIF UP:6 > 30 && ABL:16 < 2 && ABL:0 >= 2
+	ABL:16 = 2
+	PRINTFORML %ABLNAME:16%LV2了
+ELSEIF UP:6 > 60 && ABL:16 < 3 && ABL:0 >= 3
+	ABL:16 = 3
+	PRINTFORML %ABLNAME:16%LV3了
+ELSEIF UP:6 > 200 && ABL:16 < 4 && ABL:0 >= 4
+	ABL:16 = 4
+	PRINTFORML %ABLNAME:16%LV4了
+ELSEIF UP:6 > 1000 && ABL:16 < 5 && ABL:0 >= 5
+	ABL:16 = 5
+	PRINTFORML %ABLNAME:16%LV5了
+ENDIF
+
+IF UP:8 > 1 && ABL:17 < 1 && ABL:1 >= 1
+	ABL:17 = 1
+	PRINTFORML %ABLNAME:17%LV1了
+ELSEIF UP:8 > 30 && ABL:17 < 2 && ABL:1 >= 2
+	ABL:17 = 2
+	PRINTFORML %ABLNAME:17%LV2了
+ELSEIF UP:8 > 60 && ABL:17 < 3 && ABL:1 >= 3
+	ABL:17 = 3
+	PRINTFORML %ABLNAME:17%LV3了
+ELSEIF UP:8 > 200 && ABL:17 < 4 && ABL:1 >= 4
+	ABL:17 = 4
+	PRINTFORML %ABLNAME:17%LV4了
+ELSEIF UP:8 > 1000 && ABL:17 < 5 && ABL:1 >= 5
+	ABL:17 = 5
+	PRINTFORML %ABLNAME:17%LV5了
+ENDIF
+
+IF UP:9 > 1 && ABL:21 < 1 && ABL:11 >= 1
+	ABL:21 = 1
+	PRINTFORML %ABLNAME:21%LV1了
+ELSEIF UP:9 > 30 && ABL:21 < 2 && ABL:11 >= 2
+	ABL:21 = 2
+	PRINTFORML %ABLNAME:21%LV2了
+ELSEIF UP:9 > 60 && ABL:21 < 3 && ABL:11 >= 3
+	ABL:21 = 3
+	PRINTFORML %ABLNAME:21%LV3了
+ELSEIF UP:9 > 200 && ABL:21 < 4 && ABL:11 >= 4
+	ABL:21 = 4
+	PRINTFORML %ABLNAME:21%LV4了
+ELSEIF UP:9 > 1000 && ABL:21 < 5 && ABL:11 >= 5
+	ABL:21 = 5
+	PRINTFORML %ABLNAME:21%LV5了
+ENDIF
+
+IF EXP:40 > 1 && ABL:22 < 1 && ABL:11 >= 1
+	ABL:22 = 1
+	PRINTFORML %ABLNAME:22%LV1了
+ELSEIF EXP:40 > 5 && ABL:22 < 2 && ABL:11 >= 2
+	ABL:22 = 2
+	PRINTFORML %ABLNAME:22%LV2了
+ELSEIF EXP:40 > 20 && ABL:22 < 3 && ABL:11 >= 3
+	ABL:22 = 3
+	PRINTFORML %ABLNAME:22%LV3了
+ELSEIF EXP:40 > 40 && ABL:22 < 4 && ABL:11 >= 4
+	ABL:22 = 4
+	PRINTFORML %ABLNAME:22%LV4了
+ELSEIF EXP:40 > 100 && ABL:22 < 5 && ABL:11 >= 5
+	ABL:22 = 5
+	PRINTFORML %ABLNAME:22%LV5了
+ENDIF
+
+IF EXP:41 > 1 && ABL:23 < 1 && ABL:11 >= 1
+	ABL:23 = 1
+	PRINTFORML %ABLNAME:23%LV1了
+ELSEIF EXP:41 > 5 && ABL:23 < 2 && ABL:11 >= 2
+	ABL:23 = 2
+	PRINTFORML %ABLNAME:23%LV2了
+ELSEIF EXP:41 > 20 && ABL:23 < 3 && ABL:11 >= 3
+	ABL:23 = 3
+	PRINTFORML %ABLNAME:23%LV3了
+ELSEIF EXP:41 > 40 && ABL:23 < 4 && ABL:11 >= 4
+	ABL:23 = 4
+	PRINTFORML %ABLNAME:23%LV4了
+ELSEIF EXP:41 > 100 && ABL:23 < 5 && ABL:11 >= 5
+	ABL:23 = 5
+	PRINTFORML %ABLNAME:23%LV5了
+ENDIF
+
+;-------------------------------------------------
+;絶頂時の追加処理
+;-------------------------------------------------
+@ECST_CHECK,ARG
+TFLAG:29 = ARG
+
+;-------------------------------------------------
+;絶頂時のおもらし処理
+;-------------------------------------------------
+@PISSING_ECST_CHECK
+;超大量放尿
+IF TFLAG:29 >= 7 && TEQUIP:22 && TALENT:57
+	PRINTFORML %EXPNAME:31%＋５
+	EXP:31 += 5
+	TEQUIP:22 = 0
+	;奴隷のＶとＰに＜尿＞の汚れが発生
+	STAIN:2 |= 32
+	STAIN:3 |= 32
+	;着衣おもらし処理
+	CALL SOILING_CLOTH_NO1
+;大量放尿
+ELSEIF (TFLAG:29 >= 7 && TEQUIP:22) || (TFLAG:29 >= 5 && TEQUIP:22 && TALENT:57)
+	PRINTFORML %EXPNAME:31%＋４
+	EXP:31 += 4
+	TEQUIP:22 = 0
+	;奴隷のＶとＰに＜尿＞の汚れが発生
+	STAIN:2 |= 32
+	STAIN:3 |= 32
+	;着衣おもらし処理
+	CALL SOILING_CLOTH_NO1
+;放尿
+ELSEIF (TFLAG:29 >= 7 && TALENT:57) || (TFLAG:29 >= 5 && TEQUIP:22) || (TFLAG:29 >= 3 && TEQUIP:22 && TALENT:57)
+	PRINTFORML %EXPNAME:31%＋３
+	EXP:31 += 3
+	TEQUIP:22 = 0
+	;奴隷のＶとＰに＜尿＞の汚れが発生
+	STAIN:2 |= 32
+	STAIN:3 |= 32
+	;着衣おもらし処理
+	CALL SOILING_CLOTH_NO1
+;失禁
+ELSEIF (TFLAG:29 >= 5 && TALENT:57) || (TFLAG:29 >= 3 && TEQUIP:22) || (TFLAG:29 >= 1 && TEQUIP:22 && TALENT:57)
+	PRINTFORML %EXPNAME:31%＋２
+	EXP:31 += 2
+	SIF TALENT:57 == 0
+		TEQUIP:22 = 0
+	;奴隷のＶとＰに＜尿＞の汚れが発生
+	STAIN:2 |= 32
+	STAIN:3 |= 32
+	;着衣おもらし処理
+	CALL SOILING_CLOTH_NO1
+;微量失禁
+ELSEIF (TFLAG:29 >= 3 && TALENT:57) || (TFLAG:29 >= 1 && TEQUIP:22)
+	PRINTFORML %EXPNAME:31%＋１
+	EXP:31 += 1
+	;奴隷のＶとＰに＜尿＞の汚れが発生
+	STAIN:2 |= 32
+	STAIN:3 |= 32
+ENDIF
+
+;-------------------------------------------------
+;主人による調教の经验值
+;-------------------------------------------------
+@MASTER_FLAG_CHECK
+;絶頂
+TFLAG:29 += TFLAG:10 + TFLAG:11
+Q = 0
+SIF NOWEX:0 > 0
+	Q += 1
+SIF NOWEX:1 > 0
+	Q += 1
+SIF NOWEX:2 > 0
+	Q += 1
+SIF NOWEX:3 > 0
+	Q += 1
+SIF TFLAG:10 > 0
+	Q += 1
+SIF TFLAG:11 > 0
+	Q += 1
+TFLAG:30 += TFLAG:29 * Q
+
+;射精
+REPEAT 5
+	SIF TFLAG:COUNT > 0 && EXP:20 >= EXPLV:3
+		TFLAG:30 += TFLAG:COUNT
+REND
+SIF TFLAG:9 > 0 && EXP:20 >= EXPLV:3
+	TFLAG:30 += TFLAG:9
+
+;主人と対象の能力を計算
+IF ASSIPLAY == 0 && TEQUIP:90 == 0
+	;ABL:顺从をみる
+	R = ABL:10
+
+	;素質による増減
+	;反抗心
+	SIF TALENT:11
+ 		R -= 1
+	;坦率
+	SIF TALENT:13
+		R += 1
+	;克制
+	SIF TALENT:20
+		R -= 1
+	;冷漠
+	SIF TALENT:21
+		R -= 1
+	;感情淡薄
+	SIF TALENT:22
+ 		R -= 1
+	;抵抗
+	SIF TALENT:34
+		R -= 1
+	;献身的
+	SIF TALENT:63
+		R += 1
+	;接受快感
+	SIF TALENT:70
+		R += 1
+	;否定快感
+	SIF TALENT:71
+		R -= 1
+	;男人婆
+	SIF TALENT:79 && TALENT:MASTER:122 == 0
+		R -= 1
+	;讨厌男人
+	SIF TALENT:82 && TALENT:MASTER:122
+		R -= 1
+	;爱慕
+	SIF TALENT:85
+ 		R += 2
+	;盲从
+	SIF TALENT:86
+		R += 2
+	;主人の魅惑
+	SIF TALENT:MASTER:91
+		R += 1
+	;主人の谜之魅力
+	SIF TALENT:MASTER:92
+		R += 1
+	;主人の魅力
+ 	SIF TALENT:MASTER:113
+		R += 1
+	;主人の人気
+ 	SIF TALENT:MASTER:126
+		R += 1
+
+	;結果が0以下の場合
+	SIF R <= 0
+		R = 1
+
+	R += TFLAG:30
+
+	;相性による修正
+	IF RELATION:MASTER != 0
+		R *= RELATION:MASTER
+		R /= 100
+	ENDIF
+
+	CFLAG:2 += R
+
+	;好感测定仪があれば好感度表示
+	IF ITEM:37
+		PRINTFORML 好感度上升:{R/10}.{R%10}％
+		PRINTFORML 好感度合计:{(CFLAG:2)/10}％
+	ENDIF
+
+ENDIF
+R = 0
+TFLAG:30 = 0
+;
+;
+;
+;
+;---------------------------------------------
+@TARGET_WORMBABY_CHECK
+;---------------------------------------------
+;ワーム出産
+SIF TALENT:190 == 0 && TALENT:191 == 0
+	RETURN 0
+
+
+LOCAL = UP:0 + UP:1 + UP:2 + UP:14
+
+;克制
+SIF TALENT:20
+	LOCAL /= 2
+
+;接受快感
+SIF TALENT:70
+	TIMES LOCAL , 1.20
+
+;淫乱化
+SIF TALENT:76
+	TIMES LOCAL , 1.10
+
+;否定快感
+SIF TALENT:71
+	TIMES LOCAL , 0.80
+
+;媚药
+SIF TEQUIP:21
+	LOCAL *= 2
+
+IF  LOCAL > 25000
+	LOCAL:1 = 2
+ELSEIF LOCAL > 10000
+	LOCAL:1 = 1
+ELSE
+	LOCAL:1 = 0
+ENDIF
+
+;大量出産
+IF LOCAL:1 == 2
+	LOSEBASE:0 += 20
+	LOSEBASE:1 += 100
+
+	IF EXP:3 < EXPLV:1
+		SOURCE:12 += 20000
+		SOURCE:13 += 10000
+	ELSEIF EXP:3 < EXPLV:2
+		SOURCE:12 += 10000
+		SOURCE:13 += 8000
+	ELSEIF EXP:3 < EXPLV:3
+		SOURCE:12 += 7000
+		SOURCE:13 += 6000
+	ELSEIF EXP:3 < EXPLV:4
+		SOURCE:12 += 5000
+		SOURCE:13 += 4000
+	ELSEIF EXP:3 < EXPLV:5
+		SOURCE:12 += 3000
+		SOURCE:13 += 2000
+	ELSE
+		SOURCE:12 += 1800
+		SOURCE:13 += 1200
+	ENDIF
+
+	PRINTFORM %SAVESTR:TARGET%的
+	IF TALENT:190 == 1 && TALENT:191 == 1
+		PRINT 膣内和直肠
+	ELSEIF TALENT:190 == 1
+		PRINT 膣内
+	ELSE
+		PRINT 直肠
+	ENDIF
+	PRINTW 排出了大量的蠕虫幼虫
+	PRINTL 生育经验＋２
+	EXP:60 += 2
+;通常の射精
+ELSEIF LOCAL:1 == 1
+	LOSEBASE:1 += 40
+
+	IF EXP:3 < EXPLV:1
+		SOURCE:12 += 10000
+		SOURCE:13 += 5000
+	ELSEIF EXP:3 < EXPLV:2
+		SOURCE:12 += 5000
+		SOURCE:13 += 4000
+	ELSEIF EXP:3 < EXPLV:3
+		SOURCE:12 += 2500
+		SOURCE:13 += 2000
+	ELSEIF EXP:3 < EXPLV:4
+		SOURCE:12 += 1600
+		SOURCE:13 += 1400
+	ELSEIF EXP:3 < EXPLV:5
+		SOURCE:12 += 800
+		SOURCE:13 += 500
+	ELSE
+		SOURCE:12 += 200
+		SOURCE:13 += 250
+	ENDIF
+
+	PRINTFORM %SAVESTR:TARGET%的
+	IF TALENT:190 == 1 && TALENT:191 == 1
+		PRINT 膣内和直肠
+	ELSEIF TALENT:190 == 1
+		PRINT 膣内
+	ELSE
+		PRINT 直肠
+	ENDIF
+	PRINTW 排出了的蠕虫幼虫
+	PRINTL 生育经验＋１
+	EXP:60 += 1
+ENDIF
+
+IF TALENT:190 == 1 && TALENT:191 == 1
+	;VA産卵
+	TFLAG:120 = LOCAL:1
+	TFLAG:121 = LOCAL:1
+ELSEIF TALENT:190 == 1
+	;V産卵
+	TFLAG:120 = LOCAL:1
+ELSE
+	;A産卵
+	TFLAG:121 = LOCAL:1
+ENDIF
+
+;-------------------------------------------------
+;自動調教回数による調教のボーナス
+;-------------------------------------------------
+@AUTO_NUM_CHECK
+
+FOR LOCAL,0,17
+	
+	SIF LOCAL >= 11 && LOCAL != 14
+		CONTINUE
+	
+	IF CFLAG:667 < 5
+		TIMES UP:LOCAL , 1.25
+	ELSEIF CFLAG:667 < 10
+		TIMES UP:LOCAL , 1.50
+	ELSEIF CFLAG:667 < 15
+		TIMES UP:LOCAL , 2.10
+	ELSEIF CFLAG:667 < 20
+		TIMES UP:LOCAL , 2.85
+	ELSEIF CFLAG:667 < 25
+		TIMES UP:LOCAL , 3.90
+	ELSEIF CFLAG:667 < 30
+		TIMES UP:LOCAL , 5.30
+	ELSEIF CFLAG:667 < 40
+		TIMES UP:LOCAL , 7.25
+	ELSE
+		TIMES UP:LOCAL , 9.90
+	ENDIF
+	
+NEXT
+
+RETURN 0
+

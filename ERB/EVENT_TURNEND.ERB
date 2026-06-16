@@ -1,0 +1,338 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+;>売却と助手化の処理を削除(SHOPでまとめて行う)
+
+;=================================================
+;BEGIN TURNEND後最初に呼び出される関数
+;=================================================
+@EVENTTURNEND
+#PRI
+#DIM SENGEN
+#DIM SENGENMAX
+#DIM EFFECT
+
+; 调试输出 - 捕获回合结束时的游戏状态
+PRINTFORML 【DEBUG】回合结束 - Day:{DAY}, Time:{TIME}, MONEY:{MONEY}, 角色数:{CHARANUM}
+
+LOCAL = TARGET
+FOR TARGET,0,CHARANUM
+	;売却可・助手可判定の処理
+	CALL CHECK_SELLASSIABLE
+
+	;特殊素質獲得判定の処理
+	SIF TARGET != LOCAL
+		CALL CHECK_SPECIALSKIL
+
+	;妊娠判定の処理
+	CALL IN_VAGINA_ALL
+	
+	;妊娠確定時の処理
+	CALL CONCEPTION_CHECK_ALL
+NEXT
+
+TARGET = LOCAL
+
+;完全に死んだキャラがいたら削除
+;REPEAT CHARANUM
+	;主人公は除外
+;	SIF COUNT == 0
+;		CONTINUE
+	;キャラ人数がCOUNT以下になっていたらREPEAT抜ける
+;	SIF COUNT >= CHARANUM
+;		BREAK
+;
+;	IF BASE:COUNT:0 <= -1
+;		T = -1
+;		SIF TARGET != COUNT
+;			T = TARGET
+;		TARGET = COUNT
+;		C = COUNT
+;		CALL KILL_TARGET
+;		COUNT = C - 1
+;		SIF T != -1
+;			TARGET = T
+;	ENDIF
+;REND
+
+;休憩フラグ外す
+FLAG:0 = 0
+
+;午后なら次の日、午前なら午后にする
+IF TIME == 1
+	;娼館営業結果のイベントの呼び出し
+	;CALL YUUKAKU_RESULT
+
+	LOCAL = TARGET
+	FOR TARGET,0,CHARANUM
+		;売春による妊娠判定
+		CALL IN_VAGINA_EXTRA
+		CALL CONCEPTION_CHECK_EXTRA
+	
+		;狂王と獣姦ショーによる妊娠判定
+		CALL IN_VAGINA_KYOUOU_TO_T
+		CALL CONCEPTION_CHECK_KYOUOU_TO_T
+		CALL IN_VAGINA_NTRD_TO_T
+		CALL CONCEPTION_CHECK_NTRD_TO_T
+	NEXT
+	
+	TARGET = LOCAL
+
+	;日付変更時のイベント呼び出し
+	CALL EVENT_NEXTDAY
+	
+	DAY:0 += 1
+	
+	DAY:2 = DAY:2 + 1
+	;毎月29日以上になってたら月替わり処理
+	SIF DAY:2 > 28
+		CALL EVENT_NEXTMONTH
+
+	DAY:3 = DAY:3 + 1
+	;日曜の次は月曜にする
+	SIF DAY:3 > 6
+		DAY:3 = 0
+
+	TIME = 0
+	
+	CALL ENTER_ENEMY,0
+	
+	IF DAY >= 100
+		SENGEN = EX_FLAG:9012 - 2
+		SENGENMAX = 12 - 2
+	ELSEIF DAY >= 300
+		SENGEN = EX_FLAG:9012 - 3
+		SENGENMAX = 12 - 3
+	ELSEIF DAY >= 500
+		SENGEN = EX_FLAG:9012 - 4
+		SENGENMAX = 12 - 4
+	ELSE
+		SENGEN = EX_FLAG:9012 - 2
+		SENGENMAX = 12 - 1
+	ENDIF
+	SIF SENGEN >= SENGENMAX
+		SENGEN = SENGENMAX
+	EFFECT = 0	
+	SIF DAY >= 100
+		CALL ENTER_ENEMY
+	SIF DAY >= 300
+		CALL ENTER_ENEMY
+	SIF DAY >= 500
+		CALL ENTER_ENEMY
+	SIF SENGEN <= 0 && EX_FLAG:9012 > 0
+		SENGEN = 1
+	SIF EX_FLAG:9012 == 0
+		SENGEN = 0
+	IF SENGEN > 0
+		FOR EFFECT, 0, SENGEN
+			CALL ENTER_ENEMY
+		NEXT
+	ENDIF
+ELSE
+	TIME = 1
+ENDIF
+
+;アイテムの自動購入
+CALL AUTO_BUYING
+
+;調教対象と助手を空に
+TARGET = -1
+ASSI = -1
+
+;CALL DEBUG_CHECK
+
+BEGIN SHOP
+
+;-------------------------------------------------
+;アイテムの自動購入処理
+;-------------------------------------------------
+@AUTO_BUYING
+;润滑液
+IF (FLAG:34 & 1) && MONEY >= 200 && ITEM:25 == 0
+	ITEM:25 += 1
+	MONEY -= 200
+	EX_FLAG:4444 -= 200
+ENDIF
+;ビデオテープ
+IF (FLAG:34 & 2) && MONEY >= 500 && ITEM:6 && ITEM:28 == 0
+	ITEM:28 += 1
+	MONEY -= 500
+	EX_FLAG:4444 -= 500
+ENDIF
+;安全套
+IF (FLAG:34 & 8)
+	REPEAT 10
+		IF MONEY >= 100 && ITEM:24 < 10
+			ITEM:24 += 1
+			MONEY -= 100
+			EX_FLAG:4444 -= 100
+		ENDIF
+	REND
+ENDIF
+
+
+@DEBUG_CHECK
+#DIM COUNTER
+#DIM MINUS
+MINUS = MONEY - EX_FLAG:4444
+EX_FLAG:4444 = MONEY - 8766
+SIF MONEY != EX_FLAG:4444 + 8766
+	EX_FLAG:2802 = 1
+	
+COUNTER = 0
+DO
+	SIF CFLAG:COUNTER:9 >= 5000 && CFLAG:(COUNTER):1 == 0
+		EX_FLAG:2803 = COUNTER
+	COUNTER += 1
+LOOP COUNTER < CHARANUM
+
+SIF CFLAG:0:9 >= 5000
+	EX_FLAG:2804 = 1
+
+IF EX_FLAG:2802 == 1 && EX_FLAG:2801 % 100 < 10
+	DRAWLINE
+	PRINTFORMW 一些贪婪的魔物们对宝库里的财宝动起了歪念头。
+	FORCEWAIT
+	PRINTFORMW 趁着夜深人静，几只无法克制金钱欲望的哥布林企图炸开宝库大门，偷取财宝。
+	PRINTFORMW 【这是魔王大人的财宝，我们这么干不好吧？】其中一只哥布林担心地说到。
+	PRINTFORMW 【魔王大人努力得来的我们不偷，这些神力变出来的，我们拿一点也没什么吧！】为首的哥布林充满不屑。
+	PRINTFORMW 无奈宝库的大门太过结实，一般的炸药无法撼动。
+	PRINTFORMW 贪婪的绿皮们只能不断地添加当量，结果炸药过多，发生了大爆炸。
+	PRINTFORMW 肇事的哥布林们和宝库里的财富都被炸得粉碎了……
+	PRINTFORMW 
+	MONEY = 0
+	EX_FLAG:4444 = MONEY - 8766
+	PRINTFORMW 资金清零了。
+	LOCAL:1 = 1
+	DO
+		LOCAL:1 = RAND:CHARANUM
+		LOCAL:5 ++
+		IF LOCAl:1 > 0 && LOCAL:5 < 5000 && CFLAG:(LOCAL:1):1 == 0
+				PRINTFORMW %SAVESTR:(LOCAL:1)%的房间，刚好在宝库的正上方。
+				PRINTFORMW 睡梦中的她没有任何防备，不幸地被猛烈的爆炸所淹没。
+				PRINTFORMW %SAVESTR:(LOCAL:1)%被炸死了。
+				;前回の助手・調教対象だった場合はフラグを空に
+				SIF FLAG:1 == LOCAL:1
+				FLAG:1 = -1
+				SIF FLAG:2 == LOCAL:1
+				FLAG:2 = -1
+
+				;前回の助手・調教対象より前だった場合はフラグを減算
+				SIF FLAG:1 > LOCAL:1
+				FLAG:1 -= 1
+				SIF FLAG:2 > LOCAL:1
+				FLAG:2 -= 1
+
+				TARGET = FLAG:1
+				ASSI = FLAG:2
+
+				CALL PARTY_CHAR_DEL, LOCAL:1
+
+				DELCHARA LOCAL:1
+
+				CALL NAME_RESET
+				LOCAL:1 = -1
+			ELSEIF LOCAL:5 >= 5000
+				LOCAL:1 = -1
+		ENDIF
+	LOOP LOCAL:1 >= 0
+	EX_FLAG:2802 = 0
+ENDIF			
+
+IF EX_FLAG:2803 > 0 && EX_FLAG:2801 % 100 < 10		
+        LOCALS = %SAVESTR:(EX_FLAG:2803)%
+		DRAWLINE
+		PRINTFORMW 整个地下城，其实就是一个巨大的封印，
+		FORCEWAIT
+		PRINTFORMW 封印着魔王的力量，也封印着勇者的力量。
+		PRINTFORMW 加上日常生活和战斗所需的魔力，连同地底不断涌出的魔力，
+		PRINTFORMW 组成了地下城里错综复杂的魔力流动。
+		PRINTFORMW 几只特别强大的怪物和你本人，会聚集大量的魔力。
+		PRINTFORMW 但还是有一些魔力，从封印和法师们的掌控中流出，聚集到奴隶的身边。
+		PRINTFORMW 你能感觉得到，有一个奴隶，与众不同，身边的魔力在不断聚集着。
+		PRINTFORMW 因为她的力量已经强于你施加于她的封印，魔力之间相互碰撞，越来越不稳定了。
+		PRINTFORMW 
+		PRINTFORMW 魔力失控！发生大爆炸！
+		PRINTFORMW %LOCALS%被自己暴走的魔力炸得粉碎！
+				;前回の助手・調教対象だった場合はフラグを空に
+				SIF FLAG:1 == EX_FLAG:2803
+				FLAG:1 = -1
+				SIF FLAG:2 == EX_FLAG:2803
+				FLAG:2 = -1
+
+				;前回の助手・調教対象より前だった場合はフラグを減算
+				SIF FLAG:1 > EX_FLAG:2803
+				FLAG:1 -= 1
+				SIF FLAG:2 > EX_FLAG:2803
+				FLAG:2 -= 1
+
+				TARGET = FLAG:1
+				ASSI = FLAG:2
+
+				CALL PARTY_CHAR_DEL, EX_FLAG:2803
+
+				DELCHARA EX_FLAG:2803
+
+				CALL NAME_RESET
+				
+				
+		DO
+			LOCAL:1 = RAND:CHARANUM
+			LOCAL:5 ++
+			IF LOCAl:1 > 0 && LOCAL:1 != EX_FLAG:2803 && LOCAL:5 < 5000 && CFLAG:(LOCAL:1):1 == 0
+				PRINTFORMW %SAVESTR:(LOCAL:1)%因为房间就在%LOCALS%的旁边，也被她暴走的魔力波及了。
+				PRINTFORMW %SAVESTR:(LOCAL:1)%也被炸死了。
+				;前回の助手・調教対象だった場合はフラグを空に
+				SIF FLAG:1 == LOCAL:1
+				FLAG:1 = -1
+				SIF FLAG:2 == LOCAL:1
+				FLAG:2 = -1
+
+				;前回の助手・調教対象より前だった場合はフラグを減算
+				SIF FLAG:1 > LOCAL:1
+				FLAG:1 -= 1
+				SIF FLAG:2 > LOCAL:1
+				FLAG:2 -= 1
+
+				TARGET = FLAG:1
+				ASSI = FLAG:2
+
+				CALL PARTY_CHAR_DEL, LOCAL:1
+
+				DELCHARA LOCAL:1
+
+				CALL NAME_RESET
+				
+				LOCAL:1 = -1
+				
+			ELSEIF	LOCAL:5 >= 5000
+				
+			ENDIF
+		LOOP LOCAL:1 >= 0
+		EX_FLAG:2803 = 0
+ENDIF			
+			
+IF EX_FLAG:2804 == 1 && EX_FLAG:2801 % 100 < 10					
+	DRAWLINE
+	PRINTFORMW 整个地下城，其实就是一个巨大的封印，
+	FORCEWAIT
+	PRINTFORMW 封印着魔王的力量，也封印着勇者的力量。
+	PRINTFORMW 加上日常生活和战斗所需的魔力，连同地底不断涌出的魔力，
+	PRINTFORMW 组成了地下城里错综复杂的魔力流动。
+	PRINTFORMW 几只特别强大的怪物和你本人，会聚集大量的魔力。
+	PRINTFORMW 但最近，你感觉魔力在身边聚集越来越多，挥之不去。
+	PRINTFORMW 你能感觉得到，各式各样的魔力在体内不停汇聚着，相互冲击。
+	PRINTFORMW 好难受！！！
+	PRINTFORMW 终于有一天，你再也无法控制。感觉到一股暖流从身体喷涌而出！
+	PRINTFORMW 
+	EX_FLAG:2804 = 0
+	PRINTFORMW 你的魔力失控！发生大爆炸！
+	PRINTFORMW 巨大的威力，将你本人和整个地下城都化为齑粉。
+	PRINTFORMW 四界都能感受到大地的颤抖，余波引起的海啸和地震，摧毁了无数地方。
+	PRINTFORMW 这次事件造成的伤亡，比你所有侵攻的造成的伤害还要多，世人将这次爆炸称为【大冲击】。
+	PRINTFORMW 
+	PRINTL -------------------------------GAMEOVER---------------------------------
+	INPUT
+	QUIT
+ENDIF					
+
+RETURN 0

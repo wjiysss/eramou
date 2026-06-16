@@ -1,0 +1,723 @@
+﻿;-------------------------------------------------
+;キャラの特殊技能獲得判定
+;2009/11/14 EVENTCHECK_Mより改名
+;erapokeへの改造に際して親爱(TALENT:88)は廃止
+;eraIM@Sから導入しました(eramaou)
+;-------------------------------------------------
+@CHECK_SPECIALSKIL, SEIIN = 0
+#DIM SEIIN
+#DIM SEXSKILL_COUNT
+#DIM SEXSKILL_EXP, 4
+;調教対象がいないとダメ
+SIF TARGET < 0 || TARGET >= CHARANUM
+	RETURN 0
+;【崩壊】してるとダメ
+IF TALENT:9
+	CALL CHECK_SPECIALSKIL_BODYSHIFT
+	RETURN 0
+ENDIF
+$STEP1
+;反抗刻印がない場合、
+;主人による調教経験他依存で特殊技能を獲得
+;女魔王導入で百合经验による制限を排除
+IF MARK:3 == 0
+	;調教経験2000以上で【爱慕】か【淫乱】であれば売却・助手可能に
+	IF CFLAG:2 >= 2000 && CFLAG:0 < 2 && (TALENT:76 || TALENT:85)
+			PRINTFORMW %SAVESTR:TARGET%带着崇敬的眼神看着你…
+			PRINTFORML %SAVESTR:TARGET%无论是灵魂还是肉体，都全心全意地献给%CALLNAME:MASTER%了…
+			IF ABL:10 < 5
+				ABL:10 = 5
+				PRINTL 顺从LV5了
+			ENDIF
+			SIF CFLAG:0 < 1
+				PRINTFORML %SAVESTR:TARGET%可以被卖掉了。
+			PRINTFORMW %SAVESTR:TARGET%可以做助手了。
+			CFLAG:0 = 2
+	;主人による調教経験1000以上で
+	ELSEIF CFLAG:2 >= 1000
+		;顺从3以上、侍奉精神LV3以上、屈服刻印LV3、侍奉快乐经验200以上で【淫乱】【求爱】がなければ【爱慕】を獲得
+		IF ABL:10 >= 3 && EXP:21 >= EXPLV:5 && TALENT:76 == 0 && TALENT:85 == 0 && TALENT:184 == 0 && MARK:2 == 3 && ABL:16 >= 3
+			PRINTFORMW %SAVESTR:TARGET%柔情似水地看着你…
+			;龙公主实装后启用
+			;SIF NO:TARGET == 32
+			;	GOTO STEP2
+			PRINTFORML %SAVESTR:TARGET%因%CALLNAME:MASTER%的行为而感到喜悦。想粘着你，想为你分忧，为你做些什么…渴望着你的宠爱。
+			PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:85%】。
+			TALENT:85 = 1
+			
+			;剧情阶段检定
+			;CALL CHARAENDCHECK,TARGET
+			
+			;堕とした人数＋１。既に淫乱だと无
+			SIF TALENT:76 == 0
+				FLAG:30 += 1
+			;【傲娇】なら【反抗】が【顺从】に変化
+			IF  TALENT:11 && TALENT:18
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:11%】，获得了【%TALENTNAME:13%】。
+				TALENT:11 = 0
+				TALENT:13 = 1
+			ENDIF
+			;【傲娇】以外での【反抗】は消滅
+			IF  TALENT:18 == 0 && TALENT:11
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:11%】。
+				TALENT:11 = 0
+			ENDIF
+			;【克制】か【冷漠】なら消える
+			IF TALENT:20 || TALENT:21
+				PRINTFORM %SAVESTR:TARGET%的
+				IF TALENT:20
+					PRINTFORM 【%TALENTNAME:20%】
+					TALENT:20 = 0
+				ENDIF
+				IF TALENT:21
+					PRINTFORM 【%TALENTNAME:21%】
+					TALENT:21 = 0
+				ENDIF
+				PRINTL 失去了。
+				PRINTL 否定点数减半。
+				JUEL:100 /= 2
+			ENDIF
+			;【一線を越えない】持ちの場合は消える
+			IF TALENT:27 == 1
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:27%】。
+				TALENT:27 = 0
+			ENDIF
+			;【绝不侍奉】持ちの場合は消える
+			IF TALENT:151 == 1
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:151%】。
+				TALENT:151 = 0
+			ENDIF
+			;【嫉妒】持ちの場合は消える
+			IF TALENT:84 == 1
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:84%】。
+				TALENT:84 = 0
+			ENDIF
+			;寿命持ちの場合は残り寿命を表示
+			IF BASE:10 > 0
+				D = BASE:10 / 2
+				PRINTFORMW %SAVESTR:TARGET%时日无多，生命还剩下{D}天。
+			ENDIF
+			;【魂缚】持ちの場合は消える
+			IF TALENT:魂缚
+				PRINTFORML %SAVESTR:TARGET%被束缚的灵魂，在向自己的爱与欲望屈服时被解放了。
+				PRINTFORMW %SAVESTR:TARGET%失去了【魂缚】。
+				TALENT:魂缚 = 0
+			ENDIF
+			;【貞操封印】持ちの場合は消えるか選択できる
+			IF TALENT:273 == 1
+				PRINTFORMW %SAVESTR:TARGET%的【%TALENTNAME:273%】的力量消失了……
+				PRINTFORMW 如果是现在的话，可以解开封印。要解开封印吗？
+				PRINTL  
+				
+				PRINTL [0] - 保留封印
+				PRINTL [1] - 解开封印
+				$INPUT_LOOP_SEAL
+				INPUT
+				IF RESULT < 0
+					GOTO INPUT_LOOP_SEAL
+				ELSEIF RESULT >= 2
+					GOTO INPUT_LOOP_SEAL
+				ENDIF
+				IF RESULT == 1
+					PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:273%】。
+					TALENT:273 = 0
+				ENDIF
+			ENDIF
+			
+			;玛奥以及其他人物的替身判定，先做玛奥的
+			IF NO:TARGET == 17
+				EX_TALENT:3 = 1
+				PRINTFORMW %SAVESTR:TARGET%一阵眩晕、似乎拥有了【%EX_TALENTNAME:3%】的素质……
+			ENDIF
+		ENDIF
+		;欲望3以上、CVAB感覚合計10以上、快楽・屈服刻印LV3、异常经验3以上で【爱慕】がなければ【淫乱】に
+		IF ABL:11 >= 3 && ABL:0+ABL:1+ABL:2+ABL:3 >= 10 && EXP:50 >= 3 && TALENT:85 == 0 && TALENT:76 == 0 && MARK:1 == 3 && MARK:2 == 3
+			PRINTFORMW %SAVESTR:TARGET%看你的眼神，好像忘记了你还有上半身…
+			PRINTFORML %SAVESTR:TARGET%沉迷于%CALLNAME:MASTER%给予的快感之中了……
+			PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:76%】。
+			TALENT:76 = 1
+			
+			;剧情阶段检定
+			;CALL CHARAENDCHECK,TARGET
+			
+			;堕とした人数。既に爱だと无
+			SIF TALENT:85 == 0
+				FLAG:30 += 1
+			;【克制】か【冷漠】なら消える
+			IF TALENT:20 || TALENT:21
+				PRINTFORM %SAVESTR:TARGET%的
+				IF TALENT:20
+					PRINTFORM 【%TALENTNAME:20%】
+					TALENT:20 = 0
+				ENDIF
+				IF TALENT:21
+					PRINTFORM 【%TALENTNAME:21%】
+					TALENT:21 = 0
+				ENDIF
+				PRINTL 失去了。
+				PRINTL 否定点数减半。
+				JUEL:100 /= 2
+			ENDIF
+			;【一線を越えない】持ちの場合は消える
+			IF TALENT:27 == 1
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:27%】。
+				TALENT:27 = 0
+			ENDIF
+			;【压抑】か【抵抗】か【嫉妒】なら消える
+			IF TALENT:32 || TALENT:34 || TALENT:84
+				PRINTFORM %SAVESTR:TARGET%的
+				IF TALENT:32
+					PRINTFORM 【%TALENTNAME:32%】
+					TALENT:32 = 0
+				ENDIF
+				IF TALENT:34
+					PRINTFORM 【%TALENTNAME:34%】
+					TALENT:34 = 0
+				ENDIF
+				IF TALENT:84
+					PRINTFORM 【%TALENTNAME:32%】
+					TALENT:84 = 0
+				ENDIF
+				PRINTL 失去了。
+				PRINTL 否定点数减半。
+				JUEL:100 /= 2
+			ENDIF
+			;【否定快感】持ちの場合は消える
+			IF TALENT:71 == 1
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:71%】。
+				TALENT:71 = 0
+			ENDIF
+			;【从不自慰】持ちの場合は消える
+			IF TALENT:150 == 1
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:150%】。
+				TALENT:150 = 0
+			ENDIF
+			;悪堕ちする种族は悪堕ちする
+			IF !TALENT:魂缚
+				IF TALENT:314 == 1
+					PRINTFORMW %SAVESTR:TARGET%从高洁的精灵，堕落为卑微的肉壶了。
+					TALENT:314 = 7
+					;青肌以外は褐色肌になる
+					SIF TALENT:244 == 0
+						TALENT:253 = 1
+					TALENT:255 = 0
+				ELSEIF TALENT:314 == 6
+					PRINTFORMW %SAVESTR:TARGET%纯洁的灵魂完全堕落了，成为了被淫靡欲望所支配的下等性奴隶。
+					TALENT:314 = 8
+					;青肌以外は褐色肌になる
+					SIF TALENT:244 == 0
+						TALENT:253 = 1
+					TALENT:255 = 0
+				ENDIF
+			ENDIF
+			;【貞操封印】持ちの場合は消えるか選択できる
+			IF TALENT:273 == 1
+				PRINTFORMW %SAVESTR:TARGET%的【%TALENTNAME:273%】的力量消失了……
+				PRINTFORMW 如果是现在的话，可以解开封印。要解开封印吗？
+				PRINTL  
+				
+				PRINTL [0] - 保留封印
+				PRINTL [1] - 解开封印
+				$INPUT_LOOP_SEAL_2
+				INPUT
+				IF RESULT < 0
+					GOTO INPUT_LOOP_SEAL_2
+				ELSEIF RESULT >= 2
+					GOTO INPUT_LOOP_SEAL_2
+				ENDIF
+				IF RESULT == 1
+					PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:273%】。
+					TALENT:273 = 0
+				ENDIF
+			ENDIF
+			
+			;玛奥以及其他人物的替身判定，先做玛奥的
+			IF NO:TARGET == 17
+				EX_TALENT:3 = 1
+				PRINTFORMW %SAVESTR:TARGET%一阵眩晕、似乎拥有了【%EX_TALENTNAME:3%】的素质……
+			ENDIF
+		ENDIF
+		;主人による調教経験5000以上、顺从LV5以上、快楽・屈服刻印LV3で、【从不自慰】【绝不侍奉】【不受洗脑】が消滅
+		IF CFLAG:2 >= 5000 && ABL:10 >= 5 && MARK:1 == 3 && MARK:2 == 3
+			IF TALENT:150
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:150%】。
+				TALENT:150 = 0
+			ENDIF
+			IF TALENT:151
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:151%】。
+				TALENT:151 = 0
+			ENDIF
+			IF TALENT:152
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:152%】。
+				TALENT:152 = 0
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+$STEP2
+;---------------------------------------------------------
+;精飲相關素質
+;---------------------------------------------------------
+IF TALENT:47 == 0
+	;技巧Lv7以上かつ侍奉技术Lv7以上かつ口交经验2000以上（[学习缓慢]ありの場合）で【喜欢精液】
+	IF ABL:12 >= 7 && ABL:13 >= 7 && EXP:22 >= 2000 && TALENT:52 == 0 && CFLAG:600 >= 100
+		PRINTFORMW %SAVESTR:TARGET%因为不断地强制精饮绝顶，终于完全适应了精液的味道……
+		PRINTFORMW 甚至还喜欢上了。
+		PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:47%】。
+		TALENT:47 = 1
+	;技巧Lv5以上かつ侍奉技术Lv5以上かつ口交经验1500以上（[学习缓慢]无の場合）で【喜欢精液】
+	ELSEIF ABL:12 >= 5 && ABL:13 >= 5 && EXP:22 >= 1500 && TALENT:52 == 0 && CFLAG:600 >= 80
+		PRINTFORMW %SAVESTR:TARGET%喜欢上了精液的味道……
+		PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:47%】。
+		TALENT:47 = 1
+	;技巧Lv5以上かつ侍奉技术Lv5以上かつ口交经验1000以上（擅用舌头ありの場合）で【喜欢精液】
+	ELSEIF ABL:12 >= 5 && ABL:13 >= 5 && EXP:22 >= 1000 && TALENT:52 && CFLAG:600 >= 50
+		PRINTFORMW %SAVESTR:TARGET%感到似乎离不开精液了……
+		PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:47%】。
+		TALENT:47 = 1
+	ENDIF
+ENDIF
+
+;---------------------------------------------------------
+;特殊技能素質
+;---------------------------------------------------------
+IF TALENT:51
+	;技巧Lv7以上かつ侍奉技术Lv7以上かつ口交经验1500以上（[学习缓慢]ありの場合）で【擅用舌头】
+	IF ABL:12 >= 7 && ABL:13 >= 7 && EXP:22 >= 1500 && TALENT:52 == 0
+		PRINTFORMW %SAVESTR:TARGET%通过持续的侍奉，侍奉技术获得了飞跃的进步……
+		PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:52%】。
+		TALENT:52 = 1
+	ENDIF
+ELSE
+	;技巧Lv5以上かつ侍奉技术Lv5以上かつ口交经验1000以上（[学习缓慢]无の場合）で【擅用舌头】
+	IF ABL:12 >= 5 && ABL:13 >= 5 && EXP:22 >= 1000 && TALENT:52 == 0
+		PRINTFORMW %SAVESTR:TARGET%的侍奉技术精进了……
+		PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:52%】。
+		TALENT:52 = 1
+	ENDIF
+ENDIF
+
+;---------------------------------------------------------
+;特殊性癖素質
+;---------------------------------------------------------
+
+;抖S气质Lv４以上かつ技巧Lv４以上、施虐快乐经验３００以上で【施虐狂】に
+IF ABL:20 >= 4 && ABL:12 >= 4 && EXP:33 >= 300 && TALENT:83 == 0
+	PRINTFORMW %SAVESTR:TARGET%的眼神变得凌厉了…
+	PRINTFORML %SAVESTR:TARGET%学会了将快乐建立在他人的痛苦之上。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:83%】。
+	TALENT:83 = 1
+ENDIF
+
+;抖M气质Lv４以上かつ露出癖Lv２以上、被虐快乐经验３００以上で【受虐狂】に
+IF ABL:21 >= 4 && ABL:17 >= 2 && EXP:30 >= 300 && TALENT:88 == 0
+	PRINTFORMW %SAVESTR:TARGET%的眼神变得卑微了…
+	PRINTFORML %SAVESTR:TARGET%将痛楚和快感视为一体，学会了享受被支配，被凌辱的喜悦。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:88%】。
+	TALENT:88 = 1
+ENDIF
+
+;露出癖Lv４以上かつ抖M气质Lv２以上、调教自慰经验＋放尿经验＋喷奶经验２００以上で【露出狂】に
+IF ABL:17 >= 4 && ABL:21 >= 2 && EXP:11 + EXP:31 + EXP:54 >= 200 && TALENT:89 == 0
+	PRINTFORMW %SAVESTR:TARGET%的神情变得害羞…
+	PRINTFORML 但是，却学会了将这份羞耻变成快感。将自己的被羞辱的姿态呈现他人，令她感到身心无比圆满。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:89%】。
+	TALENT:89 = 1
+ENDIF
+
+
+;欲望Lv５以上かつ兽奸中毒Lv３以上、兽奸经验３００以上で【牝犬】に
+IF ABL:11 >= 5 && ABL:39 >= 3 && EXP:56 >= 300 && TALENT:136 == 0
+	PRINTFORMW %SAVESTR:TARGET%的行为彻底变化了…
+	PRINTFORML 整天喜欢四脚爬爬地在地上爬行，一边扭腰抬臀，一边仰视着你。
+	PRINTFORML 完全像是一只发春的牝犬一样。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:136%】。
+	TALENT:136 = 1
+ENDIF
+
+
+;---------------------------------------------------------
+;特殊性感素質
+;---------------------------------------------------------
+;特殊性感素質は一般的には一つだけ。
+;でも、他の感覚と経験は凄く高いの場合、その制限を超えすできる。
+;SEXSKILL_COUNT
+;SIF TALENT:74 || TALENT:75 || TALENT:77 || TALENT:78
+;	GOTO END_SEXSKILL
+
+SIF TALENT:74 == 1 && TALENT:75 == 1 && TALENT:77 == 1 && TALENT:78 == 1
+	GOTO END_SEXSKILL
+;念のため
+SEXSKILL_COUNT = 0
+;カウント
+SIF TALENT:74
+	SEXSKILL_COUNT += 1
+SIF TALENT:75
+	SEXSKILL_COUNT += 1
+SIF TALENT:77
+	SEXSKILL_COUNT += 1
+SIF TALENT:78
+	SEXSKILL_COUNT += 1
+SEXSKILL_EXP:1 = 100 + 50 * SEXSKILL_COUNT
+SEXSKILL_EXP:2 = 100 + 10 * SEXSKILL_COUNT
+SEXSKILL_EXP:3 = 300 + 50 * SEXSKILL_COUNT
+IF SEXSKILL_COUNT == 4
+	GOTO END_SEXSKILL
+ELSEIF SEXSKILL_COUNT == 0
+	GOTO ADD_SEXSKILL
+ELSE
+;カウントの関係で、必要の経験とレベルは高くなった。
+	IF TALENT:74 == 0 && ABL:0 >= 5 && EXP:11 >= SEXSKILL_EXP:1 && EXP:2 >= SEXSKILL_EXP:2
+		GOTO ADD_SEXSKILL
+	ELSEIF TALENT:75 == 0 && TALENT:122 && ABL:0 >= 5 && EXP:5 >= SEXSKILL_EXP:3 && EXP:2 >= SEXSKILL_EXP:1
+		GOTO ADD_SEXSKILL
+	ELSEIF TALENT:75 == 0 && ABL:2 >= 5 && EXP:0 >= SEXSKILL_EXP:3 && EXP:2 >= SEXSKILL_EXP:2
+		GOTO ADD_SEXSKILL
+	ELSEIF TALENT:77 == 0 && ABL:3 >= 5 && EXP:32 >= SEXSKILL_EXP:3 && EXP:2 >= SEXSKILL_EXP:2
+		GOTO ADD_SEXSKILL
+	ELSEIF TALENT:78 == 0 && TALENT:122 && ABL:1 >= 5 && JUEL:14 >= SEXSKILL_EXP:1 && EXP:2 >= SEXSKILL_EXP:2
+	    GOTO ADD_SEXSKILL
+	ELSEIF TALENT:78 == 0 && ABL:1 >= 5 && EXP:54 >= SEXSKILL_EXP:1 && EXP:2 >= SEXSKILL_EXP:2
+		GOTO ADD_SEXSKILL
+	ELSE
+		GOTO END_SEXSKILL
+	ENDIF
+	GOTO END_SEXSKILL
+ENDIF
+
+$ADD_SEXSKILL
+;阴蒂感觉４以上、调教自慰经验１００以上で绝顶经验１００以上で【自慰狂】
+IF ABL:0 >= 4 && EXP:11 >= 100 && EXP:2 >= 100 && TALENT:74 == 0
+	PRINTFORMW 总觉得最近，%SAVESTR:TARGET%连呼吸都变得色情了起来…
+	PRINTFORM 调教结束之后，%SAVESTR:TARGET%当着%CALLNAME:MASTER%的面，肆无忌惮地继续玩弄着自己的
+	IF TALENT:121 || TALENT:122
+		PRINT 阴茎
+	ELSE
+		PRINT 阴蒂
+	ENDIF
+	PRINTFORML 。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:74%】。
+	TALENT:74 = 1
+	GOTO END_SEXSKILL
+ENDIF
+
+;私处感觉４以上、私处经验３００以上、绝顶经验１００以上で【性爱狂い】
+IF ABL:2 >= 4 && EXP:0 >= 300 && EXP:2 >= 100 && TALENT:75 == 0
+	PRINTFORMW %SAVESTR:TARGET%最近对私处的运用，越来越炉火纯青…
+	PRINTFORML 调教结束之后，%SAVESTR:TARGET%依依不舍地抱着%CALLNAME:MASTER%，恳求着欢好。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:75%】。
+	TALENT:75 = 1
+	GOTO END_SEXSKILL
+ELSEIF TALENT:122 && ABL:0 >= 4 && EXP:5 >= 300 && EXP:2 >= 100 && TALENT:74 == 0
+	PRINTFORMW %SAVESTR:TARGET%最近对性器的运用，越来越炉火纯青…
+	PRINTFORML 调教结束之后，%SAVESTR:TARGET%依依不舍地抱着%CALLNAME:MASTER%，恳求着欢好。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:75%】。
+	TALENT:75 = 1
+	GOTO END_SEXSKILL
+ENDIF
+
+;肛门感觉４以上、肛门快乐经验３００以上、绝顶经验１００以上で【尻穴狂】
+IF ABL:3 >= 4 && EXP:32 >= 300 && EXP:2 >= 100 && TALENT:77 == 0
+	PRINTFORMW %SAVESTR:TARGET%最近好像学会了控制直肠的蠕动…
+	PRINTFORML 调教结束之后，%SAVESTR:TARGET%一边摆弄自己的肛门，一边用勾引的眼神目送%CALLNAME:MASTER%。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:77%】。
+	TALENT:77 = 1
+	GOTO END_SEXSKILL
+ENDIF
+
+;乳房感觉４以上、喷奶经验１００以上、绝顶经验１００以上で【弄乳狂】
+IF ABL:1 >= 4 && EXP:54 >= 100 && EXP:2 >= 100 && TALENT:78 == 0 && TALENT:122 == 0
+	PRINTFORMW 最近，总觉得%SAVESTR:TARGET%的胸部，好像有着神奇的引力一般…
+	PRINTFORML 调教结束之后，%SAVESTR:TARGET%用尖立的乳头直直地对着%CALLNAME:MASTER%，眼里充满了勾人的销魂神色。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:78%】。
+	TALENT:78 = 1
+	GOTO END_SEXSKILL
+ELSEIF ABL:1 >= 4 && JUEL:14 >= 100 && EXP:2 >= 100 && TALENT:78 == 0 && TALENT:122
+	PRINTFORMW 最近，%SAVESTR:TARGET%总觉得胸部越发敏感…
+	PRINTFORML 调教结束之后，%SAVESTR:TARGET%用尖立的乳头直直地对着%CALLNAME:MASTER%，眼里充满了渴望。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:78%】。
+	TALENT:78 = 1
+	GOTO END_SEXSKILL
+ENDIF
+
+$END_SEXSKILL
+
+;---------------------------------------------------------
+;強化素質
+;---------------------------------------------------------
+;素質強化を適応している場合
+IF FLAG:73 <= 0
+	;阴蒂感觉５以上、调教自慰经验１００以上で绝顶经验３００以上で【淫核】
+	IF ABL:0 >= 5 && EXP:11 >= 100 && EXP:2 >= 300 && TALENT:230 == 0
+		PRINTFORMW %SAVESTR:TARGET%好像无法停止娇媚的呻吟，
+		PRINTFORM %SAVESTR:TARGET%在调教结束之后依然哀求着%CALLNAME:MASTER%为
+		IF TALENT:122
+			PRINT 他缓解
+		ELSE
+			PRINT 她解除
+		ENDIF
+		IF TALENT:121 || TALENT:122
+			PRINT 阴茎的肿涨。
+		ELSE
+			PRINT 阴蒂的肿痛。
+		ENDIF
+		PRINTL 但一摸下去，
+		IF TALENT:122
+			PRINT 他便喘息了起来，
+		ELSE
+			PRINT 她便高声娇喘起来，
+		ENDIF
+		PRINT 越来越亢奋了…
+		IF TALENT:122
+			PRINTFORMW %SAVESTR:TARGET%获得了【绝伦】。
+		ELSE
+			PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:230%】。
+		ENDIF
+		TALENT:230 = 1
+	ENDIF
+
+	;私处感觉５以上、私处经验３００以上、绝顶经验３００以上で【淫壶】
+	IF ABL:2 >= 5 && EXP:0 >= 300 && EXP:2 >= 300 && TALENT:232 == 0
+		PRINTFORMW %SAVESTR:TARGET%不停地发出【唔～唔～唔……】的勾魂声音…
+		PRINTFORML %SAVESTR:TARGET%在调教结束之后依然哀求着%CALLNAME:MASTER%疼爱她的子宫。但一插进去，她便全身夸张地痉挛了起来，子宫口依依不舍地紧紧吸啜着龟头…
+		PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:232%】。
+		TALENT:232 = 1
+	ENDIF
+
+	;肛门感觉５以上、肛门快乐经验３００以上、绝顶经验３００以上で【淫肛】
+	IF ABL:3 >= 5 && EXP:32 >= 300 && EXP:2 >= 300 && TALENT:233 == 0
+		PRINTFORMW %SAVESTR:TARGET%用舌头轻轻地舔着嘴唇…
+		PRINTFORML %SAVESTR:TARGET%在调教结束之后依然哀求着%CALLNAME:MASTER%疼爱她的尻穴。但一插进去，她便全身夸张地痉挛了起来，直肠疯狂地蠕动，摩擦着阴茎…
+		PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:233%】。
+		TALENT:233 = 1
+	ENDIF
+
+	;乳房感觉５以上、喷奶经验１００以上、绝顶经验３００以上で【淫乳】
+	IF ABL:1 >= 5 && EXP:54 >= 100 && EXP:2 >= 300 && TALENT:231 == 0
+		PRINTFORMW %SAVESTR:TARGET%主动引导你的手推拿自己的胸部…
+		PRINTFORML %SAVESTR:TARGET%在调教结束之后依然哀求着%CALLNAME:MASTER%玩弄她的胸部。但一摸下去，她便昂首咬牙，爱液四射，高声娇喘起来了…
+		PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:231%】。
+		TALENT:231 = 1
+	ENDIF
+
+	;強化素質を全部取得した場合【性豪】
+	IF TALENT:230 && TALENT:231 && TALENT:232 && TALENT:233 && TALENT:272 == 0
+		PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:272%】。
+		TALENT:272 = 1
+		;【阴蒂钝感】【私处钝感】【肛门钝感】【乳房钝感】は消える
+		IF TALENT:101
+			PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:101%】。
+			TALENT:101 = 0
+		ENDIF
+		IF TALENT:103
+			PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:103%】。
+			TALENT:103 = 0
+		ENDIF
+		IF TALENT:105
+			PRINTFORM %SAVESTR:TARGET%失去了【%TALENTNAME:105%】。
+			TALENT:105 = 0
+		ENDIF
+		IF TALENT:107
+			PRINTFORM %SAVESTR:TARGET%失去了【%TALENTNAME:107%】。
+			TALENT:107 = 0
+		ENDIF
+	ENDIF
+ENDIF
+
+;---------------------------------------------------------
+;时常发情
+;---------------------------------------------------------
+;时常发情システムを使用している場合
+IF FLAG:75 <= 0
+	IF TALENT:271 == 0
+		;润滑の蓄積が700以上、と欲情の蓄積が2250以上
+		IF CFLAG:81 >= 700 && CFLAG:82 >= 2250
+			PRINTFORMW %SAVESTR:TARGET%最近总是面带红霞…
+			PRINTFORM %SAVESTR:TARGET%的
+			SIF TALENT:TARGET:122 || TALENT:TARGET:121
+				PRINT 龟头
+			SIF TALENT:TARGET:121
+				PRINT 和
+			SIF TALENT:TARGET:122 == 0
+				PRINT 私处
+			PRINTFORML 总是有透明的爱液滚滚涌出…
+			PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:271%】。
+			TALENT:271 = 1
+			;【不易湿】がなければ【容易湿】追加
+			IF TALENT:43 == 0 && TALENT:42 == 0
+				PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:42%】。
+				TALENT:42 = 1
+			;【不易湿】は消える
+			ELSEIF TALENT:43
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:43%】。
+				TALENT:43 = 0
+			ENDIF
+			;【压抑】か【抵抗】か【嫉妒】なら消える
+			IF TALENT:32 || TALENT:34 || TALENT:84
+				PRINTFORM %SAVESTR:TARGET%的
+				IF TALENT:32
+					PRINTFORM 【%TALENTNAME:32%】
+					TALENT:32 = 0
+				ENDIF
+				IF TALENT:34
+					PRINTFORM 【%TALENTNAME:34%】
+					TALENT:34 = 0
+				ENDIF
+				IF TALENT:84
+					PRINTFORM 【%TALENTNAME:32%】
+					TALENT:84 = 0
+				ENDIF
+				PRINTL 失去了。
+				PRINTL 否定点数减半。
+				JUEL:100 /= 2
+			ENDIF
+			;【否定快感】持ちの場合は消える
+			IF TALENT:71 == 1
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:71%】。
+				TALENT:71 = 0
+			ENDIF
+			;【看重贞操】持ちの場合は消える
+			IF TALENT:30 == 1
+				PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:30%】。
+				TALENT:30 = 0
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+			
+;---------------------------------------------------------
+;喜欢精液の习得
+;---------------------------------------------------------
+;喜欢精液を持たず、強制精飲絶頂の回数が規定値を超えた
+IF TFLAG:110 && TALENT:47 == 0 && SEIIN
+	PRINTFORMW %SAVESTR:TARGET%最近一见到你，就感到舌干唇燥…
+	PRINTFORML %SAVESTR:TARGET%在没有任何性刺激的情况下，也渴望着饮精液了。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:47%】。
+	TALENT:47 = 1
+	;反感污臭がなくなる
+	IF TALENT:62 == 1
+		PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:62%】。
+		TALENT:62 = 0
+	ENDIF
+	;精液中毒がLV3に上がる
+	IF ABL:32 < 3
+		PRINTFORMW %SAVESTR:TARGET%的精液中毒LV3了。
+		ABL:32 = 3
+	ENDIF
+;取得フラグのリセット
+	TFLAG:110 = 0
+ENDIF
+
+;---------------------------------------------------------
+;マイナス素質の消滅
+;---------------------------------------------------------
+;侍奉精神5以上で【绝不侍奉】があれば消滅
+IF ABL:16 >= 5 && TALENT:151
+	PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:151%】。
+	TALENT:151 = 0
+ENDIF
+;自慰中毒5以上で【从不自慰】があれば消滅
+IF ABL:31 >= 5 && TALENT:150
+	PRINTFORMW %SAVESTR:TARGET%失去了【%TALENTNAME:150%】。
+	TALENT:150 = 0
+ENDIF
+
+;---------------------------------------------------------
+;マスターの特殊能力
+;---------------------------------------------------------
+;堕とした人数が5人以上で、【谜之魅力】が付く
+IF FLAG:30 >= 5 && TALENT:MASTER:92 == 0
+	PRINTFORMW %NAME:MASTER%掌握了【%TALENTNAME:92%】。
+	TALENT:MASTER:92 = 1
+ENDIF
+
+;---------------------------------------------------------
+;妓女・倾城の修得
+;---------------------------------------------------------
+
+;妓女の条件
+IF TALENT:315 == 5 && EXP:74 >= 80 && MARK:3 == 0 && ABL:11 >= 1 && TALENT:180 == 0
+	;元妓女、卖淫经验80以上、反抗刻印无、欲望Lv1以上
+	PRINTFORMW %SAVESTR:TARGET%无法逃离作为妓女的生活方式……
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:180%】。
+	TALENT:180 = 1
+ELSEIF EXP:74 >= 100 && MARK:3 == 0 && ABL:11 >= 2 && ABL:12 >= 1 && TALENT:180 == 0
+	;卖淫经验100以上、反抗刻印无、欲望Lv2以上、技巧Lv1以上
+	PRINTFORMW %SAVESTR:TARGET%以出卖肉体为主要的生活方式……
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:180%】。
+	TALENT:180 = 1
+ENDIF
+
+;倾城の条件
+IF TALENT:315 == 5 && EXP:74 >= 160 && MARK:3 == 0 && TALENT:180 == 1 && TALENT:181 == 0
+	;元妓女、卖淫经验160以上、反抗刻印无、妓女修得
+	PRINTFORMW %SAVESTR:TARGET%热衷于从事分开双腿的工作……
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:181%】。
+	TALENT:181 = 1
+ELSEIF EXP:74 >= 200 && MARK:3 == 0 && TALENT:180 == 1 && TALENT:181 == 0
+	;卖淫经验200以上、反抗刻印无、妓女修得
+	PRINTFORMW %SAVESTR:TARGET%热衷于从事分开双腿的工作……
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:181%】。
+	TALENT:181 = 1
+ENDIF
+
+;---------------------------------------------------------
+;妄信の修得
+;---------------------------------------------------------
+
+;妄信の条件
+IF TALENT:85 && EXP:81 >= 5 && MARK:3 == 0 && ABL:10 >= 4 && TALENT:86 == 0
+	;愛、勲章経験5以上、反発刻印なし、従順Lv4以上
+	PRINTFORMW 爱会使人盲目的吗？我们也许不得而知。
+	PRINTFORMW 但%SAVESTR:TARGET%对你，却一定是盲目的……
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:86%】。
+	TALENT:86 = 1
+ELSEIF TALENT:76 && EXP:81 >= 10 && MARK:3 == 0 && ABL:10 >= 5 && TALENT:86 == 0
+	;淫乱、勲章経験10以上、反発刻印なし、従順Lv5以上
+	PRINTFORMW 放荡的人，很难谈得上有什么纪律意识。
+	PRINTFORMW 但通过出色的调教，淫乱的%SAVESTR:TARGET%已经对你言听计从了……
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:86%】。
+	TALENT:86 = 1
+ENDIF
+
+
+
+CALL CHECK_SPECIALSKIL_BODYSHIFT
+
+RETURN 0
+
+
+;---------------------------------------------------------
+;闘姫の修得
+;---------------------------------------------------------
+
+;闘姫の条件
+IF EXP:76 >= 60 && TALENT:188 == 0
+	;闘技勝利経験60以上
+	PRINTFORMW %SAVESTR:TARGET%在死斗场获得了超绝的人气……
+	PRINTFORMW %SAVESTR:TARGET%获得【%TALENTNAME:188%】了
+	TALENT:188 = 1
+ENDIF
+
+
+CALL CHECK_SPECIALSKIL_BODYSHIFT
+
+RETURN 0
+
+
+;---------------------------------------------------------
+;特殊素質の強制修得
+;---------------------------------------------------------
+@CHECK_SPECIALSKIL_BODYSHIFT
+;本人の意思にかかわらず強制的に肉体や精神が変容する
+;崩壊でも作用してしまう
+
+;同族妊娠できない
+IF EXP:62 >= 20 && TALENT:158 == 0
+	;異種妊娠経験20以上で取得
+	PRINTFORMW %SAVESTR:TARGET%生育了太多异种的孩子，已经无法为同族生育了。
+	PRINTFORMW %SAVESTR:TARGET%获得了【%TALENTNAME:158%】
+	TALENT:158 = 1
+ENDIF
+
+RETURN 0

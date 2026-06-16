@@ -1,0 +1,22 @@
+﻿
+;--------------------------------------------------
+;	固定名列表，由@CHARA_NAME_INIT初始化
+;--------------------------------------------------
+
+; 固定名列表
+#DIMS LIST_CHARA_NAME,5500
+
+; 固定洋名总数
+#DIM WEST_NAME_COUNT
+
+; 固定男性洋名总数
+#DIM WEST_MALE_NAME_COUNT
+
+; 固定和名总数
+#DIM JAPEN_NAME_COUNT
+
+; 固定男性和名总数
+#DIM JAPEN_MALE_NAME_COUNT
+
+; 固定中華名總數
+#DIM CHINA_NAME_COUNT

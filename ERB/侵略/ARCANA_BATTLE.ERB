@@ -1,0 +1,624 @@
+﻿;--------------------------------------------------
+@ARCANA_BATTLE
+#DIM TURN
+#DIM ATKER
+#DIM DEFER
+;--------------------------------------------------
+;圣灵ナイトと元勇者の戦闘
+;A・ATKERが元勇者
+;B・DEFERが圣灵ナイト
+
+IF FLAG:5 & 32
+	PRINTW * 一对一单挑！*
+	DRAWLINE
+ENDIF
+
+;対戦者代入
+ATKER = A
+DEFER = B
+
+;弾の補充
+CFLAG:ATKER:571 = 15
+CFLAG:DEFER:571 = 15
+
+;先制
+IF TALENT:ATKER:252 == 1
+	CALL DUEL_ATTACK, ATKER, 2, DEFER, 3
+ENDIF
+
+;先制圣灵
+IF TALENT:DEFER:252 == 1
+	CALL DUEL_ATTACK, DEFER, 2, ATKER, 2
+ENDIF
+
+FOR TURN, 0, 20
+	IF TURN > 15
+		SIF FLAG:5 & 32
+			PRINTFORML %SAVESTR:ATKER%逃跑了………
+		BASE:ATKER:1 -= RAND:30
+		BREAK
+	ENDIF
+	
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:ATKER%
+		PRINT HP
+		BARL BASE:ATKER:0,MAXBASE:ATKER:0,50
+		PRINT 气力
+		BARL BASE:ATKER:1,MAXBASE:ATKER:1,50
+		PRINTFORML 攻击{CFLAG:ATKER:11} 防御{CFLAG:ATKER:12}
+		
+		PRINTW VS
+		
+		PRINTFORML %SAVESTR:DEFER%
+		PRINT HP
+		BARL BASE:DEFER:0,MAXBASE:DEFER:0,50
+		PRINT 气力
+		BARL BASE:DEFER:1,MAXBASE:DEFER:1,50
+		PRINTFORML 攻击{CFLAG:DEFER:11} 防御{CFLAG:DEFER:12}
+		WAIT
+	ENDIF
+	
+	;先制（旧処理の場所）
+	
+	SIF FLAG:5 & 32
+		DRAWLINE
+	
+	;先攻後攻決定
+	A = ATKER
+	B = DEFER
+	X = RAND:6
+	Y = RAND:6
+	CALL SPEED_PLUS3
+	
+	IF X >= Y
+		;奴隷先攻
+		CALL DUEL_ATTACK, ATKER, 0, DEFER, 3
+		;圣灵後攻
+		SIF RESULT == 0
+			CALL DUEL_ATTACK, DEFER, 1, ATKER, 2
+		IF RESULT == 999
+			IF FLAG:5 & 32
+				PRINTL 战斗中断了
+				BREAK
+			ENDIF
+		ENDIF
+	ELSE
+		;圣灵先攻
+		CALL DUEL_ATTACK, DEFER, 0, ATKER, 2
+		;奴隷後攻
+		SIF RESULT == 0
+			CALL DUEL_ATTACK, ATKER, 1, DEFER, 3
+		IF RESULT == 999
+			IF FLAG:5 & 32
+				PRINTL 战斗中断了
+				BREAK
+			ENDIF
+		ENDIF
+	ENDIF
+	
+	A = ATKER
+	B = DEFER
+	
+	CALL DEATH_CHECK4
+	IF RESULT == 2
+		BREAK
+	ELSEIF RESULT == 1
+		BREAK
+	ENDIF	
+	BASE:ATKER:1 -= RAND:20
+	BASE:DEFER:1 -= RAND:20
+NEXT
+
+SIF CFLAG:DEFER:1 == 2
+	PRINTFORML %SAVESTR:ATKER%被圣灵骑士击败了………
+
+;装備の回復
+IF BASE:ATKER:1 * 100 / MAXBASE:ATKER:1 > 40
+	CALL WEAPON_RESTORE
+ELSEIF TALENT:ATKER:249 == 1
+	;铁壁
+	CALL WEAPON_RESTORE
+	CFLAG:ATKER:11 += CFLAG:ATKER:9
+	CFLAG:ATKER:12 += CFLAG:ATKER:9
+	BASE:ATKER:0 += CFLAG:ATKER:9 * 10
+ENDIF
+IF BASE:DEFER:1 * 100 / MAXBASE:DEFER:1 > 40
+	A = DEFER
+	CALL WEAPON_RESTORE
+	A = ATKER
+ELSEIF TALENT:DEFER:249 == 1
+	;铁壁
+	A = DEFER
+	CALL WEAPON_RESTORE
+	CFLAG:DEFER:11 += CFLAG:DEFER:9
+	CFLAG:DEFER:12 += CFLAG:DEFER:9
+	BASE:DEFER:0 += CFLAG:DEFER:9 * 10
+	A = ATKER
+ENDIF
+SIF CFLAG:DEFER:1 == 0
+	RETURN 2
+RETURN 0
+
+;------------------------------
+@SPEED_PLUS3
+;------------------------------
+;速度補正
+
+;奇袭
+SIF TALENT:A:243 == 1
+	X += 1
+SIF TALENT:B:243 == 1
+	Y += 1
+;恶魔翅膀
+SIF TALENT:A:245 == 1
+	X += 1
+SIF TALENT:B:245 == 1
+	Y += 1
+;俊足
+SIF TALENT:A:258 == 1
+	X += 1
+SIF TALENT:B:258 == 1
+	Y += 1
+;ホビットの加速ボーナス
+SIF TALENT:A:314 == 10
+	X += 1
+SIF TALENT:B:314 == 10
+	Y += 1
+;ドワーフの減速
+SIF TALENT:A:314 == 11
+	X -= 1
+SIF TALENT:B:314 == 11
+	Y -= 1
+
+
+;装備効果
+W:8 = 3
+CALL EQUIP_CHECK
+X += RESULT
+
+;装備効果
+W:8 = 12
+CALL EQUIP_CHECK
+X -= RESULT
+
+T:1 = A
+A = B
+;装備効果
+W:8 = 3
+CALL EQUIP_CHECK
+Y += RESULT
+W:8 = 12
+CALL EQUIP_CHECK
+Y -= RESULT
+B = A
+A = T:1
+
+RETURN 0
+
+
+
+;--------------------------------
+@ENEMY_ATTACK3, ARG:0, ARG:1, ARG:2
+#DIM DMG
+#DIM MDMG
+#DIM DEF
+;--------------------------------
+;圣灵ナイト側の攻撃
+;ARG:0 = 奴隷No
+;ARG:1 == 0 先手攻撃
+;ARG:1 == 1 後手攻撃
+;ARG:1 == 2 先制攻撃
+;ARG:2 = 圣灵ナイトNo
+;DMG = ダメージ
+;MDMG = 気力ダメージ
+;DEF = 奴隷の防御力
+
+;一応代入
+A = ARG:0
+B = ARG:2
+
+X:1 = 3
+CALL MAGIC
+SIF RESULT == 999
+	RETURN 999
+
+;セリフ
+IF FLAG:5 & 32
+	CALL ATTACK_KOUJO_B
+ENDIF
+
+;先手かつ奇袭なら防御値減少
+IF ARG:1 == 0 && TALENT:(ARG:2):243 == 1
+	SIF FLAG:5 & 32
+		PRINT 偷袭成功！！
+	CFLAG:(ARG:0):12 /= 2
+ENDIF
+
+;武器効果
+W:0 = CFLAG:(ARG:2):550
+;素手の場合剑を装備
+IF W:0 <= 0
+	W:0 = 40
+	CFLAG:(ARG:2):550 = W:0
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORML 圣灵骑士%SAVESTR:(ARG:2)%用
+	CALL PRINT_EQUIPTYPE_WEAPON
+	PRINTFORML 发动攻击！！
+ENDIF
+
+CALL EQUIP_DATABASE
+CALL EQUIP_POWERUP, ARG:2
+
+;ミス処理
+IF (RAND:100 - W:11) < 0
+	SIF FLAG:5 & 32
+			PRINTFORML 圣灵骑士的攻击落空了……
+	RETURN 0
+ENDIF
+
+;気力回復
+BASE:(ARG:2):1 += W:12
+SIF BASE:(ARG:2):1 > MAXBASE:(ARG:2):1
+	BASE:(ARG:2):1 = MAXBASE:(ARG:2):1
+
+IF CFLAG:(ARG:0):12 < CFLAG:(ARG:2):11
+	;DEF=相手の防御力
+	DEF = CFLAG:(ARG:0):12
+	
+	;防御値の減少
+	LOCAL = CFLAG:(ARG:0):12 / 3
+	LOCAL = LOCAL * W:14 / 100
+	CFLAG:(ARG:0):12 -= LOCAL
+	
+	;DMG=ダメージ
+	;MDMG=気力ダメージ
+	DMG = (CFLAG:(ARG:2):11 - DEF)*2
+	MDMG = DMG
+	
+	;ダメージ変動
+	IF CFLAG:(ARG:0):571 > 0
+		DMG = DMG * W:9 / 100
+	ELSEIF W:15 == 1
+		DMG /= 2
+	ELSEIF W:15 == 2
+		SIF FLAG:5 & 32
+				PRINTFORML 弹药用尽了，只能干瞪眼！
+		RETURN 0
+	ENDIF
+	MDMG = MDMG * W:16 / 100
+	
+	CFLAG:(ARG:2):571 -= W:10
+	
+	;連続攻撃処理
+	IF (RAND:100 - W:13) < 0
+		SIF FLAG:5 & 32
+				PRINTFORML 圣灵骑士发出了迅捷的2连击！！
+		DMG *= 2
+		CFLAG:(ARG:2):571 -= W:10
+	ENDIF
+	
+	;先手有利
+	SIF ARG:1 == 0
+		DMG += DMG / 5
+	;先制打撃
+	SIF ARG:1 == 2
+		DMG *= 2
+	
+	;追加効果
+	IF (W:6 & 1) && RAND:2
+		;毒
+		IF CFLAG:(ARG:2):503 & 16
+			SIF FLAG:5 & 32
+				PRINT 毒素不断侵蚀！！
+			DMG *= 2
+		ELSE
+			SIF FLAG:5 & 32
+				PRINT 毒素增加了！！
+			CFLAG:(ARG:2):503 += 16
+		ENDIF	
+	ENDIF
+	
+	;耐性処理
+	;対人では一律1.2倍
+	
+	IF W:6 & 2
+		;火炎
+		DMG += DMG / 5
+	ENDIF
+	
+	IF W:6 & 4
+		;冷気
+		DMG += DMG / 5
+	ENDIF
+	
+	IF W:6 & 8
+		;電撃
+		DMG += DMG / 5
+	ENDIF
+	
+	SIF FLAG:5 & 32
+		PRINTFORML 圣灵骑士%SAVESTR:(ARG:2)%的攻击使%SAVESTR:(ARG:0)%受到了{DMG}点伤害！
+	SIF TALENT:(ARG:0):251 == 0
+		CFLAG:(ARG:0):11 -= (CFLAG:(ARG:2):11 - DEF) / 100 + 1
+	SIF CFLAG:(ARG:0):11 < 1
+		CFLAG:(ARG:0):11 = 1
+	BASE:(ARG:0):0 -= DMG
+	BASE:(ARG:0):1 -= MDMG
+	EXP:(ARG:2):80 += CFLAG:(ARG:0):9
+	SIF FLAG:5 & 32
+		WAIT
+	RETURN 0
+ENDIF
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:(ARG:0)%拼命承受着圣灵骑士%SAVESTR:(ARG:2)%的攻击………
+T:1 = ARG:0
+A = ARG:2
+W:8 = 1
+CALL EQUIP_CHECK
+B = ARG:2
+A = ARG:0
+IF RESULT <= 0
+	CFLAG:(ARG:0):12 /= 3
+	CFLAG:(ARG:0):12 *= 2
+ELSE
+	CFLAG:(ARG:0):12 -= CFLAG:(ARG:2):11 + RESULT
+ENDIF
+SIF FLAG:5 & 32
+	WAIT
+RETURN 0
+
+
+
+;--------------------------------
+@MONSTER_ATTACK3, ARG:0, ARG:1, ARG:2
+#DIM DMG
+#DIM MDMG
+#DIM DEF
+;--------------------------------
+;魔王側の攻撃
+;ARG:0 = 奴隷No
+;ARG:1 == 0 先手攻撃
+;ARG:1 == 1 後手攻撃
+;ARG:1 == 2 先制攻撃
+;ARG:2 = 圣灵No
+;DMG = ダメージ
+;MDMG = 気力ダメージ
+;DEF = 勇者の防御力
+
+;一応代入
+A = ARG:0
+B = ARG:2
+
+X:1 = 4
+CALL MAGIC
+SIF RESULT == 999
+	RETURN 999
+
+;セリフ
+IF FLAG:5 & 32
+	CALL ATTACK_KOUJO, ARG:0
+ENDIF
+
+;先手かつ奇袭なら防御値減少
+IF ARG:1 == 0 && TALENT:(ARG:0):243 == 1
+	SIF FLAG:5 & 32
+		PRINT 偷袭成功！！
+	CFLAG:(ARG:2):12 /= 2
+ENDIF
+
+;武器効果
+W:0 = CFLAG:(ARG:0):550
+;素手の場合剑を装備
+IF W:0 <= 0
+	W:0 = 40
+	CFLAG:(ARG:0):550 = W:0
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORML 奴隶勇者%SAVESTR:(ARG:0)%用
+	CALL PRINT_EQUIPTYPE_WEAPON
+	PRINTFORML 发动攻击！！
+ENDIF
+
+CALL EQUIP_DATABASE
+CALL EQUIP_POWERUP, ARG:0
+
+;ミス処理
+IF (RAND:100 - W:11) < 0
+	SIF FLAG:5 & 32
+			PRINTFORML 奴隶勇者的攻击落空了……
+	RETURN 0
+ENDIF
+
+;気力回復
+BASE:(ARG:0):1 += W:12
+SIF BASE:(ARG:0):1 > MAXBASE:(ARG:0):1
+	BASE:(ARG:0):1 = MAXBASE:(ARG:0):1
+
+IF CFLAG:(ARG:2):12 < CFLAG:(ARG:0):11
+	;DEF=相手の防御力
+	DEF = CFLAG:(ARG:2):12
+	
+	;防御値の減少
+	LOCAL = CFLAG:(ARG:2):12 / 3
+	LOCAL = LOCAL * W:14 / 100
+	CFLAG:(ARG:2):12 -= LOCAL
+	
+	;DMG=ダメージ
+	;MDMG=気力ダメージ
+	DMG = (CFLAG:(ARG:0):11 - DEF)*2
+	MDMG = DMG
+	
+	;ダメージ変動
+	IF CFLAG:(ARG:2):571 > 0
+		DMG = DMG * W:9 / 100
+	ELSEIF W:15 == 1
+		DMG /= 2
+	ELSEIF W:15 == 2
+		SIF FLAG:5 & 32
+				PRINTFORML 弹药用尽了，只能干瞪眼！
+		RETURN 0
+	ENDIF
+	MDMG = MDMG * W:16 / 100
+	
+	CFLAG:(ARG:0):571 -= W:10
+	
+	;連続攻撃処理
+	IF (RAND:100 - W:13) < 0
+		SIF FLAG:5 & 32
+				PRINTFORML 奴隶勇者发出了迅捷的2连击！！
+		DMG *= 2
+		CFLAG:(ARG:0):571 -= W:10
+	ENDIF
+	
+	;先手有利
+	SIF ARG:1 == 0
+		DMG += DMG / 5
+	;先制打撃
+	SIF ARG:1 == 2
+		DMG *= 2
+	
+	;追加効果
+	IF (W:6 & 1) && RAND:2
+		;毒
+		IF CFLAG:(ARG:0):503 & 16
+			SIF FLAG:5 & 32
+				PRINT 毒素不断侵蚀！！
+			DMG *= 2
+		ELSE
+			SIF FLAG:5 & 32
+				PRINT 毒素增加了！！
+			CFLAG:(ARG:0):503 += 16
+		ENDIF	
+	ENDIF
+	
+	;耐性処理
+	;対人では一律1.2倍
+	
+	IF W:6 & 2
+		;火炎
+		DMG += DMG / 5
+	ENDIF
+	
+	IF W:6 & 4
+		;冷気
+		DMG += DMG / 5
+	ENDIF
+	
+	IF W:6 & 8
+		;電撃
+		DMG += DMG / 5
+	ENDIF
+	
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:(ARG:0)%的攻击令圣灵骑士%SAVESTR:(ARG:2)%受到了{DMG}点伤害！
+	SIF TALENT:(ARG:2):251 == 0
+		CFLAG:(ARG:2):11 -= (CFLAG:(ARG:0):11 - DEF)/100 + 1
+	SIF CFLAG:(ARG:2):11 < 1
+		CFLAG:(ARG:2):11 = 1
+	BASE:(ARG:2):0 -= DMG
+	BASE:(ARG:2):1 -= MDMG
+	EXP:(ARG:0):80 += CFLAG:(ARG:2):9
+	SIF FLAG:5 & 32
+		WAIT
+	RETURN 0
+ENDIF
+SIF FLAG:5 & 32
+	PRINTFORML 圣灵骑士%SAVESTR:(ARG:2)%拼命承受著奴隶勇者%SAVESTR:(ARG:0)%的攻击………
+
+
+
+;装備品効果
+W:8 = 1
+CALL EQUIP_CHECK
+IF RESULT <= 0
+	CFLAG:(ARG:2):12 /= 3
+	CFLAG:(ARG:2):12 *= 2
+ELSE
+	CFLAG:(ARG:2):12 -= CFLAG:(ARG:0):11 + RESULT
+ENDIF
+SIF FLAG:5 & 32
+	WAIT
+RETURN 0
+
+
+
+
+;--------------------------------------
+@DEATH_CHECK4
+;--------------------------------------
+
+;圣灵ナイト死亡判定
+IF BASE:B:0 <= 0
+	PRINTFORML %SAVESTR:B%徒劳地奋战着，力竭了。
+	CFLAG:B:1 = 0
+	RETURN 2
+ELSEIF BASE:B:0 <= 300
+	PRINTFORML %SAVESTR:B%感觉到生命垂危，投降求饶了。
+	CFLAG:B:1 = 0
+	RETURN 2
+ELSEIF BASE:B:1 <= 0
+	PRINTFORML %SAVESTR:B%失去了战意，丢掉武器投降了。
+	CFLAG:B:1 = 0
+	RETURN 2
+ENDIF
+
+;魔王側の生き残りを判定
+
+IF BASE:A:0 <= 0 && (FLAG:5 & 128)
+	PRINTFORML %SAVESTR:A%在圣灵骑士前力竭倒下了。
+	PRINTFORMW %SAVESTR:B%把她抱起来并带回了狂王的城堡。
+	CFLAG:A:1 = 9
+	RETURN 1
+ELSEIF BASE:A:0 <= 300 && (FLAG:5 & 128)
+	PRINTFORML %SAVESTR:A%感觉到生命垂危，投降求饶了。
+	PRINTFORMW %SAVESTR:B%把她绑起来并带回了狂王的城堡。
+	CFLAG:A:1 = 9
+	RETURN 1
+ELSEIF BASE:A:1 <= 0 && (FLAG:5 & 128)
+	PRINTFORML %SAVESTR:A%失去了战意，丢掉武器投降了。
+	PRINTFORMW %SAVESTR:B%把她绑起来并带回了狂王的城堡。
+	CFLAG:A:1 = 9
+	RETURN 1
+ENDIF
+
+IF BASE:A:0 <= 0
+	PRINTFORML %SAVESTR:A%在圣灵骑士前力竭倒下了。
+	CFLAG:A:1 = 0
+	RETURN 1
+ELSEIF BASE:A:0 <= 300
+	PRINTFORML %SAVESTR:A%感觉到生命垂危，投降求饶了。
+	PRINTFORMW %SAVESTR:B%怜悯着倒下的她，把她赶到了堡垒外。
+	CFLAG:A:1 = 0
+	RETURN 1
+ELSEIF BASE:A:1 <= 0
+	PRINTFORML %SAVESTR:A%失去了战意，丢掉武器投降了。
+	PRINTFORMW %SAVESTR:B%怜悯着倒下的她，把她赶到了堡垒外。
+	CFLAG:A:1 = 0
+	RETURN 1
+ENDIF
+
+RETURN 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,89 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;舔阴
+;爱抚系コマンド：調教者が調教対象のクリトリスを口で刺激
+;-------------------------------------------------
+@COM1
+
+;-------------------------------------------------
+;跳转到进阶指令
+;-------------------------------------------------
+LOCAL = 1
+CALL GET_ADV_COM,LOCAL
+SIF RESULT != LOCAL
+	JUMPFORM COM{RESULT}
+
+
+
+PRINTL 舔阴
+;SAVESTR:22 = 舔阴
+CALL TRAIN_MESSAGE_B
+
+;-------------------------------------------------
+;ソースの計算
+;-------------------------------------------------
+LOSEBASE:0 += 5
+LOSEBASE:1 += 50
+
+SOURCE:10 = 100
+SOURCE:12 = 220
+SOURCE:14 = 50
+
+;ABL:阴蒂感觉をみる
+IF ABL:0 == 0
+	SOURCE:0 = 40
+ELSEIF ABL:0 == 1
+	SOURCE:0 = 160
+ELSEIF ABL:0 == 2
+	SOURCE:0 = 700
+ELSEIF ABL:0 == 3
+	SOURCE:0 = 1500
+ELSEIF ABL:0 == 4
+	SOURCE:0 = 2400
+ELSE
+	SOURCE:0 = 3300
+ENDIF
+
+;調教者のTALENT:擅用舌头をみる
+IF TALENT:PLAYER:52 || TEQUIP:89
+	TIMES SOURCE:0 , 2.00
+	SOURCE:16 += SOURCE:0/20
+ENDIF
+
+;兽奸の場合はここで終了
+SIF TEQUIP:89
+	RETURN 1
+
+;-------------------------------------------------
+;汚れの処理
+;-------------------------------------------------
+;奴隷のＶ⇔調教者の口の汚れが移動
+STAIN:3 |= STAIN:PLAYER:0
+STAIN:PLAYER:0 |= STAIN:3
+
+;-------------------------------------------------
+;経験上昇
+;-------------------------------------------------
+;百合经验
+IF TALENT:122 == 0 && TALENT:PLAYER:122 == 0
+	PRINTS EXPNAME:40
+	PRINTL +3
+	EXP:40 += 3
+ENDIF
+
+;調教者の初吻記録
+IF CFLAG:PLAYER:16 == -1
+	CFLAG:PLAYER:16 =  301
+	CSTR:PLAYER:4 = %SAVESTR:TARGET%
+ENDIF
+
+;爱情经验
+E = 1
+IF CFLAG:2 >= 1000 && ASSIPLAY == 0
+	PRINTFORML %EXPNAME:23%+{E}
+	EXP:23 += E
+ENDIF
+E = 0
+
+RETURN 1

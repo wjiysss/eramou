@@ -1,0 +1,457 @@
+﻿;-----------------------------------------------------
+@MONSTER_SKILL, ARG:0, ARG:1, ARG:2
+#DIM DMG
+#DIM PALAM_DOWN
+;-----------------------------------------------------
+;怪物の特殊能力。ARG:0=対象 ARG:1=使用能力 ARG:2=使用者 LOCAL:0=使用者ID LOCAL:1=使用者レベル
+
+LOCAL:0 = E:(ARG:2)
+LOCAL:1 = E:(ARG:2 + 1) + CFLAG:0:9
+DMG = LOCAL:1
+
+;パラメータ変動系効果
+PALAM_DOWN = (DMG / 5) + 1
+
+;発動確率（2/3）
+SIF RAND:3 == 0
+	RETURN 0
+
+;強化補正
+DMG += DMG / 2
+
+;ダメージキャップ
+SIF DMG > 400
+	DMG = 400
+;パラメータ変動キャップ
+SIF PALAM_DOWN > 50
+	PALAM_DOWN = 50
+	
+;-----------------------------------------------------
+;怪物特殊一覧
+;-----------------------------------------------------
+;0  无
+;1  粘液捕获
+;2  落穴捕获
+;3  藤蔓捕获
+;4  铠破坏
+;5  透明
+;6  再生
+;7  拟态
+;8  迷惑
+;9  吐息
+;10 麻痹
+;11 诱惑
+;12 混乱
+;13 经验值吸取
+;14 破铠吐息
+;15 魔力吸取
+;16 射撃
+;17 地形能力
+;18 肉鎧
+
+IF ARG:1 == 1
+	;1 粘液捕获
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%的粘液四处飞散！（气力-{LOCAL:1}）
+	BASE:(ARG:0):1 -= LOCAL:1
+ELSEIF ARG:1 == 2
+	;2 落穴捕获
+	SIF FLAG:5 & 32
+		PRINTFORMW 对手掉下了%MONSTERNAME(LOCAL:0)%的落穴！（HP-{LOCAL:1}）
+	BASE:(ARG:0):0 -= LOCAL:1
+ELSEIF ARG:1 == 3
+	;3 藤蔓捕获
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%的藤蔓夺取了对手身体的自由！（攻击-{PALAM_DOWN}）
+	CFLAG:(ARG:0):11 -= PALAM_DOWN
+ELSEIF ARG:1 == 4
+	;4 铠破坏
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%破坏了对手的铠甲！（防御-{PALAM_DOWN}）
+	CFLAG:(ARG:0):12 -= PALAM_DOWN
+ELSEIF ARG:1 == 5
+	;5 透明
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%变为透明了……（防御+2）
+	E:(ARG:2 + 3) += 2
+ELSEIF ARG:1 == 6
+	;6 再生
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%加速再生着……（防御+3）
+	E:(ARG:2 + 3) += 3
+ELSEIF ARG:1 == 7
+	;7 拟态
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%巧妙地拟态着……（防御+5）
+	E:(ARG:2 + 3) += 5
+ELSEIF ARG:1 == 8
+	;8 迷惑
+	IF RAND:3 == 0
+		SIF FLAG:5 & 32
+			PRINTFORMW %SAVESTR:(ARG:0)%迷失了！
+		CFLAG:(ARG:0):509 = 1
+	ENDIF
+ELSEIF ARG:1 == 9
+	;9 吐息
+	LOCAL:2 = DMG * 3
+	LOCAL:2 /= 2
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%喷出了吐息！！（HP-{LOCAL:2}）
+	BASE:(ARG:0):0 -= LOCAL:2
+ELSEIF ARG:1 == 10
+	;10 麻痹
+	LOCAL:2 = PALAM_DOWN * 3
+	LOCAL:2 /= 2
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%喷出了麻痹气体！！（攻击-{LOCAL:2}）
+	CFLAG:(ARG:0):11 -= LOCAL:2
+ELSEIF ARG:1 == 11
+	;11 诱惑
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%诱惑着对手……（善恶值:-2 好感度+4）
+	CFLAG:(ARG:0):2 += 4
+	CALL karma, ARG:0, -2
+ELSEIF ARG:1 == 12
+	;12 混乱
+	LOCAL:2 = DMG * 3
+	LOCAL:2 /= 2
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%发出混乱电波！！（气力-{LOCAL:2}）
+	BASE:(ARG:0):1 -= LOCAL:2
+ELSEIF ARG:1 == 13
+	;13 经验值吸取
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%发动经验吸取！！（经验值-{DMG}）
+	EXP:(ARG:0):80 -= DMG
+;	IF EXP:(ARG:0):80 < 0
+;		CFLAG:(ARG:0):9 -= 1
+;		EXP:(ARG:0):80 = CFLAG:(ARG:0):9 * 10
+;		;ステータスも減少
+;		CFLAG:(ARG:0):11 -= 1
+;		CFLAG:(ARG:0):12 -= 1
+;		CFLAG:(ARG:0):13 -= 1
+;		CFLAG:(ARG:0):14 -= 1
+;		SIF FLAG:5 & 32
+;			PRINTFORMW 等级下降了……
+;	ENDIF
+	CALL CHARA_LV_CHECK,(ARG:0)
+ELSEIF ARG:1 == 14
+	;14 破铠吐息
+	LOCAL:2 = DMG * 3
+	LOCAL:2 /= 2
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%喷出了破坏铠甲的吐息！！（HP-{LOCAL:1 * 2} 防御-{PALAM_DOWN}）
+	BASE:(ARG:0):0 -= LOCAL:2
+	CFLAG:(ARG:0):12 -= PALAM_DOWN
+ELSEIF ARG:1 == 15
+	;15 魔力吸取
+	LOCAL:2 = DMG * 3
+	LOCAL:2 /= 2
+	SIF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%发动了魔力吸取！！（气力-{LOCAL:2} 防御+4）
+	BASE:(ARG:0):1 -= LOCAL:2
+	E:(ARG:2 + 3) += 4
+ELSEIF ARG:1 == 16
+	;16 射撃
+	IF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%用弓箭发动了攻击！！（HP-{DMG}）
+	ENDIF
+	BASE:(ARG:0):0 -= DMG
+ELSEIF ARG:1 == 17
+	;16 地形効果
+	CALL MONSTER_ROOM_SKILL, ARG:0, ARG:2
+ELSEIF ARG:1 == 18
+	;18 肉鎧
+	IF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%从身上的肉便器吸收着体力……（防御+2）
+	ENDIF
+	E:(ARG:2 + 3) += 2
+ENDIF
+
+RETURN 0
+
+;-----------------------------------------------------
+@MONSTER_ROOM_SKILL, ARG:0, ARG:2
+#DIM ROOM
+#DIM DMG
+#DIM PALAM_DOWN
+;-----------------------------------------------------
+;モンスターの地形適応能力。ARG:0=対象 ARG:2=使用者 LOCAL:0=使用者ID LOCAL:1=使用者レベル
+
+LOCAL:0 = E:(ARG:2)
+LOCAL:1 = E:(ARG:2 + 1) + CFLAG:0:9
+DMG = E:(ARG:2 + 1) + CFLAG:0:9
+ROOM = CFLAG:(ARG:0):501
+
+;強化補正
+LOCAL:1 *= 2
+
+IF ROOM == 500
+	;商店街
+	SIF FLAG:5 & 32
+		PRINTFORMW 商店街里的暴徒们前来相助！！（HP-{LOCAL:1} 攻击+1）
+	BASE:(ARG:0):0 -= LOCAL:1
+	E:(ARG:2 + 2) += 1
+ELSEIF ROOM == 501
+	;沼地
+	IF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%从毒沼里发动奇袭！（气力-{LOCAL:1} 攻击+2）
+	ENDIF
+	BASE:(ARG:0):1 -= LOCAL:1
+	E:(ARG:2 + 2) += 2
+ELSEIF ROOM == 502 && FLAG:83 > 0
+	;人間牧場
+	IF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%抓起一只肉便器来打人……（攻击-{LOCAL:1}）
+	ENDIF
+	CFLAG:(ARG:0):11 -= LOCAL:1
+ELSEIF ROOM == 503
+	;氷室
+	IF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%聚拢寒冰！（攻击+2 防御+2）
+	ENDIF
+	E:(ARG:2 + 2) += 2
+	E:(ARG:2 + 3) += 2
+ELSEIF ROOM == 504
+	;熱砂
+	IF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%聚拢火焰！！（攻击+10 防御-1）
+	ENDIF
+	E:(ARG:2 + 2) += 10
+	SIF E:(ARG:2 + 3) > 2
+		E:(ARG:2 + 3) -= 1
+ELSEIF ROOM == 505
+	;迷宮
+	IF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%躲进了迷宫里。（防御+5）
+	ENDIF
+	E:(ARG:2 + 3) += 5
+ELSEIF ROOM == 506 && FLAG:84 > 0
+	;博物館
+	LOCAL:2 = DMG * 3
+	LOCAL:2 /= 2
+	IF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%利用展示品攻击！！（气力-{LOCAL:2}）
+	ENDIF
+	BASE:(ARG:0):1 -= LOCAL:2
+ENDIF
+
+RETURN 0
+
+;-----------------------------------------------------
+@SLAVE_MONSTER_SKILL, ARG:0, ARG:1
+;-----------------------------------------------------
+#DIM LCOUNT
+#DIM SKILL, 100
+;ARG:0=対象 ARG:1=使用者
+;LOCAL:0=所持スキル数のカウント
+;LOCAL:1=使用するスキルの決定
+;LOCAL:2=使用するスキルの番号
+;LOCAL:3=レベル
+
+;念のため初期化
+LOCAL:0 = 0
+LOCAL:1 = 0
+LOCAL:2 = 0
+
+LOCAL:3 = CFLAG:(ARG:1):9
+
+LOCALS = %SAVESTR:(ARG:1)%
+
+;発動確率（2/3）
+SIF RAND:3 == 0
+	RETURN 0
+
+
+;取得しているスキルの数を数える。
+;SKILL:0～順に所持しているスキルのTalent番号が詰めて入る
+FOR LCOUNT, 401, 500
+	IF TALENT:(ARG:1):LCOUNT == 1
+		SKILL:(LOCAL:0) = LCOUNT
+		LOCAL:0++
+	ENDIF
+NEXT
+
+;2つ以上的スキルを持っていたなら、その中から随机で1つを使用
+IF LOCAL:0 == 1
+	LOCAL:1 = 0
+ELSEIF LOCAL:0 >= 1
+	LOCAL:1 = RAND:(LOCAL:0)
+ELSE
+	RETURN 0
+ENDIF
+
+;スキルのTalent番号をスキル番号に変換
+;怪物スキルは470番から
+LOCAL:2 = SKILL:(LOCAL:1) -470
+
+SIF LOCAL:2 < 0
+	RETURN 0
+
+;強化補正
+LOCAL:3 *= 3
+
+CALL USE_MONSTER_SKILL, ARG:0, LOCAL:2, ARG:1, LOCAL:3, 2, LOCALS
+
+RETURN 0
+
+;-----------------------------------------------------
+@USE_MONSTER_SKILL, ARG:0, ARG:1, ARG:2, DMG, ARG:4, ARGS:0
+;-----------------------------------------------------
+;スキルの使用。
+;ARG:0=対象 ARG:1=使用能力 ARG:2=使用者 DMG=レベル
+;ARG:4=使用者種別。1で怪物、2で精英
+;ARGS:0=使用者の名前
+#DIM DMG
+#DIM PALAM_DOWN
+;怪物特殊一覧
+;-----------------------------------------------------
+;0  无
+;1  粘液捕获
+;2  落穴捕獲
+;3  藤蔓捕获
+;4  破甲
+;5  透明
+;6  再生
+;7  拟态
+;8  迷失
+;9  吐息
+;10 麻痺毒气
+;11 诱惑
+;12 混乱
+;13 经验值吸取
+;14 破甲吐息
+;15 魔力吸取
+;16 射撃
+;17 地形能力
+;18 肉鎧
+
+LOCAL:0 = E:(ARG:2)
+DMG = E:(ARG:2 + 1) + CFLAG:0:9
+
+;パラメータ変動系効果
+PALAM_DOWN = (DMG / 3) + 1
+
+IF ARG:1 == 1
+	;1 粘液捕获
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%的粘液四处飞散！（气力-{DMG}）
+	BASE:(ARG:0):1 -= DMG
+ELSEIF ARG:1 == 2
+	;2 落穴捕獲
+	SIF FLAG:5 & 32
+		PRINTFORMW 对手掉下了%ARGS:0%的落穴！（HP-{DMG}）
+	BASE:(ARG:0):0 -= DMG
+ELSEIF ARG:1 == 3
+	;3 藤蔓捕获
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%的藤蔓夺取了对手身体的自由！（攻击-{PALAM_DOWN}）
+	CFLAG:(ARG:0):11 -= PALAM_DOWN
+ELSEIF ARG:1 == 4
+	;4 破甲
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%破坏了对手的铠甲！（防御-{PALAM_DOWN}）
+	CFLAG:(ARG:0):12 -= PALAM_DOWN
+ELSEIF ARG:1 == 5
+	;5 透明
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%变为透明了……（防御+2）
+	IF ARG:4 == 1
+		E:(ARG:2 + 3) += 2
+	ELSEIF ARG:4 == 2
+		CFLAG:(ARG:2):12 += 2
+	ENDIF
+ELSEIF ARG:1 == 6
+	;6 再生
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%加速再生着……（防御+3）
+	IF ARG:4 == 1
+		E:(ARG:2 + 3) += 3
+	ELSEIF ARG:4 == 2
+		CFLAG:(ARG:2):12 += 3
+	ENDIF
+ELSEIF ARG:1 == 7
+	;7 拟态
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%巧妙地拟态着……（防御+5）
+	IF ARG:4 == 1
+		E:(ARG:2 + 3) += 5
+	ELSEIF ARG:4 == 2
+		CFLAG:(ARG:2):12 += 5
+	ENDIF
+ELSEIF ARG:1 == 8
+	;8 迷失
+	IF RAND:3 == 0
+		SIF FLAG:5 & 32
+			PRINTFORMW %SAVESTR:(ARG:0)%迷失了！
+		CFLAG:(ARG:0):509 = 1
+	ENDIF
+ELSEIF ARG:1 == 9
+	;9 吐息
+	LOCAL:2 = DMG * 3
+	LOCAL:2 /= 2
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%喷出了吐息！！（HP-{LOCAL:2}）
+	BASE:(ARG:0):0 -= LOCAL:2
+ELSEIF ARG:1 == 10
+	;10 麻痺毒气
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%喷出了麻痹气体！！（攻击-{DMG}）
+	CFLAG:(ARG:0):11 -= DMG
+ELSEIF ARG:1 == 11
+	;11 诱惑
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%诱惑着对手……（善恶值-2 好感度+4）
+	CFLAG:(ARG:0):2 += 4
+	CALL karma, ARG:0, -2
+ELSEIF ARG:1 == 12
+	;12 混乱
+	LOCAL:2 = PALAM_DOWN * 3
+	LOCAL:2 /= 2
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%发出混乱电波！！（气力-{LOCAL:2}）
+	BASE:(ARG:0):1 -= LOCAL:2
+ELSEIF ARG:1 == 13
+	;13 经验值吸取
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%发动经验吸取！！（经验值-{DMG}）
+	EXP:(ARG:0):80 -= DMG
+	CALL CHARA_LV_CHECK,(ARG:0)
+ELSEIF ARG:1 == 14
+	;14 破甲吐息
+	LOCAL:2 = DMG * 3
+	LOCAL:2 /= 2
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%喷出了破坏铠甲的吐息！！（HP-{LOCAL:2} 防御-{PALAM_DOWN}）
+	BASE:(ARG:0):0 -= LOCAL:2
+	CFLAG:(ARG:0):12 -= PALAM_DOWN
+ELSEIF ARG:1 == 15
+	;15 魔力吸取
+	LOCAL:2 = DMG * 3
+	LOCAL:2 /= 2
+	SIF FLAG:5 & 32
+		PRINTFORMW %ARGS:0%发动了魔力吸取！！（气力-{LOCAL:2} 防御+4）
+	BASE:(ARG:0):1 -= LOCAL:2
+	IF ARG:4 == 1
+		E:(ARG:2 + 3) += 4
+	ELSEIF ARG:4 == 2
+		CFLAG:(ARG:2):12 += 4
+	ENDIF
+ELSEIF ARG:1 == 16
+	;16 射撃
+	IF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%用弓箭发动了攻击！！（HP-{DMG}）
+	ENDIF
+	BASE:(ARG:0):0 -= DMG
+ELSEIF ARG:1 == 17
+	;16 地形効果
+	CALL MONSTER_ROOM_SKILL, ARG:0, ARG:2
+ELSEIF ARG:1 == 18
+	;18 肉鎧
+	IF FLAG:5 & 32
+		PRINTFORMW %MONSTERNAME(LOCAL:0)%从身上的肉便器吸收着体力……（防御+2）
+	ENDIF
+	E:(ARG:2 + 3) += 2
+ENDIF
+
+RETURN 0

@@ -1,0 +1,413 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;売却と助手化のチェック
+;-------------------------------------------------
+@CHECK_SELLASSIABLE
+
+SIF TARGET < 0 || TARGET >= CHARANUM
+	RETURN 0
+
+;顺从+欲望が6LV以上であるか
+SIF ABL:10+ABL:11 < 6
+	RETURN 0
+;C感覚・V感覚・A感覚・B感覚のいずれかが最低3LVであり
+SIF ABL:0 < 3 && ABL:1 < 3 && ABL:2 < 3 && ABL:3 < 3
+	RETURN 0
+;【反抗心】か【刚强】を持っているなら顺从が4LV以上になっており
+SIF ABL:10 < 4 && (TALENT:11 || TALENT:12)
+	RETURN 0
+;【克制】【压抑】【抵抗】を持っているなら欲望が4LV以上になっており
+SIF ABL:11 < 4 && (TALENT:20 || TALENT:32 || TALENT:34)
+	RETURN 0
+;「〈技巧〉3LV以上で〈侍奉精神〉3LV以上」か「〈露出癖〉3LV以上で〈自慰中毒〉2LV以上」か「C・V・A・B感覚の合計が13LV以上」か「顺从か欲望がLV5」に達しているか
+IF (ABL:12 >= 3 && ABL:16 >= 3) || (ABL:17 >= 3 && ABL:31 >= 2) || ABL:21 >= 3 || (ABL:0+ABL:1+ABL:2+ABL:3 >= 13) || ABL:10 >= 5 || ABL:11 >= 5
+	IF CFLAG:0 <= 0
+		PRINTFORMW %SAVESTR:TARGET%可以卖掉了
+		CFLAG:0 = 1
+	ENDIF
+ELSE
+	RETURN 0
+ENDIF
+
+;「〈顺从〉〈欲望〉〈技巧〉〈阴蒂感觉〉〈百合气质〉がすべて3LV以上」か「〈顺从〉が5LV以上かつ〈欲望〉が4LV以上」か
+IF (ABL:10 >= 3 && ABL:11 >= 3 && ABL:12 >= 3 && ABL:0 >= 3 && ABL:22 >= 3) || (ABL:10 >= 5 && ABL:11 >= 4)
+	IF CFLAG:0 <= 1
+		PRINTFORMW %SAVESTR:TARGET%可以做调教助手了
+		CFLAG:0 = 2
+	ENDIF
+ENDIF
+;
+;-------------------------------------------------
+;奴隷売却の処理
+;-------------------------------------------------
+@CHARA_SALE
+#DIM PRICE_N
+#DIMS PRICE_S
+DRAWLINE
+PRINTV DAY+1
+PRINT 日
+IF TIME == 0
+	PRINTL  午前
+ELSE
+	PRINTL  午后
+ENDIF
+
+PRINTFORML 所持金：${MONEY}点
+DRAWLINE
+
+$INPUT_LOOP
+
+PRINTL 要卖掉谁呢？
+CUSTOMDRAWLINE ‥
+REPEAT CHARANUM
+	IF COUNT == 0
+		CONTINUE
+	;売れないキャラは排除
+	ELSEIF CFLAG:COUNT:0 < 1
+		CONTINUE
+	;臨死中のキャラは排除
+	ELSEIF  BASE:COUNT:0 < 1
+		CONTINUE
+	;魔王の影は排除
+	ELSEIF TALENT:COUNT:292
+		CONTINUE
+	ELSEIF CFLAG:COUNT:1 == 0
+		PRINTFORM [{COUNT}] %SAVESTR:COUNT, 16, LEFT% 
+		TARGET = COUNT
+		S = 0
+		CALL ESTIMATE_CHARA
+		PRICE_N = S
+		PRICE_S = 
+		WHILE PRICE_N > 0
+			IF PRICE_N < 1000
+				PRICE_S = {PRICE_N % 1000}%PRICE_S%
+			ELSE
+				PRICE_S = ,{PRICE_N % 1000 / 100}{PRICE_N % 100 / 10}{PRICE_N % 10}%PRICE_S%
+			ENDIF
+			PRICE_N /= 1000
+		WEND
+		IF S > 0
+			PRINTFORM [评价额:%PRICE_S, 13%点]
+		ELSE
+			PRINTFORM [不能卖掉]
+		ENDIF
+		IF ISASSI:COUNT == 1
+			PRINT (原助手)
+		ELSEIF CFLAG:COUNT:1 == 2
+			PRINT (可做助手)
+		ENDIF
+		SIF CFLAG:COUNT:700
+			PRINT [☆]
+		PRINTL  
+	ENDIF
+REND
+CUSTOMDRAWLINE ‥
+PRINTFORML [999] - 返回
+
+INPUT
+
+IF RESULT == 999
+	TARGET = FLAG:1
+	RETURN 999
+ELSEIF RESULT <= 0 || RESULT >= CHARANUM
+	GOTO INPUT_LOOP
+ELSEIF CFLAG:RESULT:0 < 1
+	GOTO INPUT_LOOP
+;臨死中のキャラは排除
+ELSEIF BASE:RESULT:0 < 1
+	GOTO INPUT_LOOP
+;営業中のキャラは排除
+ELSEIF  CFLAG:RESULT:12 && TIME == 1
+	PRINTL 奴隶市场，只开上午。下午是结算与交接的时间。
+	WAIT
+	GOTO INPUT_LOOP
+;排除收藏中的角色
+ELSEIF CFLAG:RESULT:700
+	PRINTFORMW %SAVESTR:RESULT%在你的收藏列表里，不能卖掉。
+	GOTO INPUT_LOOP
+;魔王の影は排除
+ELSEIF TALENT:RESULT:292
+	PRINTFORMW %SAVESTR:RESULT%只是影子，一旦与你分离便会烟消云散，因此无法卖掉。
+	GOTO INPUT_LOOP
+ENDIF
+
+;现在の調教対象の情報を取得
+SIF TARGET > 0
+	T = NO:TARGET
+
+TARGET = RESULT
+
+;売却処理
+S = 0
+CALL SALE_CHARA
+
+;長いお別れ
+SIF S > 0
+	CALL LONG_GOOD_BYE
+
+;売却した場合はキャラを削除
+IF S > 0
+	T = -1
+	CALL KILL_TARGET
+ENDIF
+
+;対象を戻す
+TARGET = -1
+REPEAT CHARANUM
+	SIF NO:COUNT == T
+		TARGET = COUNT
+REND
+
+
+
+RESTART
+;
+;-------------------------------------------------
+;现在の調教対象の削除
+;-------------------------------------------------
+@KILL_TARGET
+X = NO:TARGET + 199
+FLAG:X = 1
+
+CALL PARTY_CHAR_DEL, TARGET
+
+;キャラ削除
+DELCHARA TARGET
+
+;前回の助手・調教対象だった場合はフラグを空に
+SIF FLAG:1 == TARGET
+	FLAG:1 = -1
+SIF FLAG:2 == TARGET
+	FLAG:2 = -1
+
+;前回の助手・調教対象より前だった場合はフラグを減算
+SIF FLAG:1 > TARGET
+	FLAG:1 -= 1
+SIF FLAG:2 > TARGET
+	FLAG:2 -= 1
+
+;調教対象を空に
+TARGET = FLAG:1
+
+;助手を空に
+ASSI = FLAG:2
+
+CALL NAME_RESET
+;REPEAT CHARANUM
+	;IF COUNT >= 1
+		;A = COUNT
+		;CALL NAMING
+	;ENDIF 
+;REND
+;
+;-------------------------------------------------
+;長いお別れ
+;-------------------------------------------------
+@LONG_GOOD_BYE
+A = NO:TARGET
+
+REPEAT CHARANUM
+	SIF COUNT == 0
+		CONTINUE
+	;キャラのストレス値
+	U = 0
+	SIF A == (CFLAG:COUNT:21 % 100) && (CFLAG:COUNT:21 / 100) < 2
+		U += 40
+	SIF A == (CFLAG:COUNT:21 % 100)
+		U += 80
+	SIF A == (CFLAG:COUNT:22 % 100) && (CFLAG:COUNT:22 / 100) < 2
+		U += 40
+	SIF A == (CFLAG:COUNT:22 % 100)
+		U += 80
+	SIF A == (CFLAG:COUNT:23 % 100) && (CFLAG:COUNT:23 / 100) < 2
+		U += 40
+	SIF A == (CFLAG:COUNT:23 % 100)
+		U += 80
+	SIF A == (CFLAG:COUNT:24 % 100) && (CFLAG:COUNT:24 / 100) < 2
+		U += 40
+	SIF A == (CFLAG:COUNT:24 % 100)
+		U += 80
+	SIF A == (CFLAG:COUNT:25 % 100) && (CFLAG:COUNT:25 / 100) < 2
+		U += 40
+	SIF A == (CFLAG:COUNT:25 % 100)
+		U += 80
+	SIF RELATION:COUNT:A > 100
+		U += RELATION:COUNT:A - 100
+	IF U > 50
+		DRAWLINE
+		PRINTL 
+		PRINTFORML 那天，%SAVESTR:COUNT%被卖掉的%SAVESTR:TARGET%坐在马车上，
+		SIF TALENT:COUNT:45 == 0
+			PRINT 泪眼朦胧了。
+		PRINTFORML 視在脱离视野之前，
+		PRINTFORML 甚至在离开视野之后，也一直在目送着。
+		WAIT
+		;爱慕
+		SIF TALENT:COUNT:85
+			U -= 120
+		;淫乱
+		SIF TALENT:COUNT:76
+			U -= 60
+		;刚强
+		SIF TALENT:COUNT:12
+			U -= 20
+		;感情淡薄
+		SIF TALENT:COUNT:22
+			U -= 20
+		;软弱
+		SIF TALENT:COUNT:134
+			U += 20
+		;顺从
+		U -= ABL:COUNT:10 * 10
+		;反抗刻印
+		U += MARK:COUNT:3 * 30
+
+		;ストレス値の累積が100を超えた場合
+		IF U >= 100 && TALENT:COUNT:9 == 0
+		DRAWLINE
+			PRINTFORML %CALLNAME:COUNT%在目瞪口呆的表情中，
+			PRINTFORML %CALLNAME:COUNT%心里什么东西坏掉了……
+			PRINTFORML %CALLNAME:COUNT%的精神【%TALENTNAME:9%】了。
+			WAIT
+			IF TALENT:COUNT:85
+				PRINTFORML %CALLNAME:COUNT%的【%TALENTNAME:85%】失去了。
+				TALENT:COUNT:85 = 0
+			ENDIF
+			IF TALENT:COUNT:76
+				PRINTFORML %CALLNAME:COUNT%的【%TALENTNAME:76%】失去了。
+				TALENT:COUNT:76 = 0
+			ENDIF
+			TALENT:COUNT:9 = 1
+			WAIT
+		ENDIF
+	ENDIF
+REND
+;-------------------------------------------------
+;奴隷売却
+;-------------------------------------------------
+@SALE_CHARA
+
+;売却額
+S = 0
+CALL ESTIMATE_CHARA
+
+;評価表示
+SIF A:10 > 0
+	PRINTFORML %ABLNAME:10, 8, LEFT% LV{ABL:10, 2} ＋{A:10, 5}
+SIF A:11 > 0
+	PRINTFORML %ABLNAME:11, 8, LEFT% LV{ABL:11, 2} ＋{A:11, 5}
+SIF A:12 > 0
+	PRINTFORML %ABLNAME:12, 8, LEFT% LV{ABL:12, 2} ＋{A:12, 5}
+SIF A:13 > 0
+	PRINTFORML %ABLNAME:13, 8, LEFT% LV{ABL:13, 2} ＋{A:13, 5}
+SIF A:14 > 0
+	PRINTFORML %ABLNAME:14, 8, LEFT% LV{ABL:14, 2} ＋{A:14, 5}
+SIF A:15 > 0
+	PRINTFORML %ABLNAME:15, 8, LEFT% LV{ABL:15, 2} ＋{A:15, 5}
+SIF A:30 > 0
+	PRINTFORML %ABLNAME:30, 8, LEFT% LV{ABL:30, 2} ＋{A:30, 5}
+SIF A:31 > 0
+	PRINTFORML %ABLNAME:31, 8, LEFT% LV{ABL:31, 2} ＋{A:31, 5}
+SIF A:32 > 0
+	PRINTFORML %ABLNAME:32, 8, LEFT% LV{ABL:32, 2} ＋{A:32, 5}
+SIF A:33 > 0
+	PRINTFORML %ABLNAME:33, 8, LEFT% LV{ABL:33, 2} ＋{A:33, 5}
+SIF A:39 > 0
+	PRINTFORML %ABLNAME:39, 8, LEFT% LV{ABL:39, 2} ＋{A:39, 5}
+SIF A:37 > 0
+	PRINTFORML %ABLNAME:37, 8, LEFT% LV{ABL:37, 2} －{A:37, 5}
+SIF B:0 > 0
+	PRINTFORML %"阴核感觉封锁",12,LEFT% －{B:0, 5}
+SIF B:1 > 0
+	PRINTFORML %"私处感觉封锁",12,LEFT% －{B:1, 5}
+SIF B:2 > 0
+	PRINTFORML %"肛门感觉封锁",12,LEFT% －{B:2, 5}
+SIF B:3 > 0
+	PRINTFORML %"乳房感觉封锁",12,LEFT% －{B:3, 5}
+
+SIF A:0 != 100
+	PRINTFORML %ABLNAME:0, 8, LEFT% LV{ABL:0, 2} × {A:0/100}.{A:0%100/10}{A:0%10}
+SIF A:1 != 100
+	PRINTFORML %ABLNAME:1, 8, LEFT% LV{ABL:1, 2} × {A:1/100}.{A:1%100/10}{A:1%10}
+SIF A:2 != 100
+	PRINTFORML %ABLNAME:2, 8, LEFT% LV{ABL:2, 2} × {A:2/100}.{A:2%100/10}{A:2%10}
+SIF A:3 != 100
+	PRINTFORML %ABLNAME:3, 8, LEFT% LV{ABL:3, 2} × {A:3/100}.{A:3%100/10}{A:3%10}
+SIF A:16 != 100
+	PRINTFORML %ABLNAME:16, 8, LEFT% LV{ABL:16, 2} × {A:16/100}.{A:16%100/10}{A:16%10}
+SIF A:17 != 100
+	PRINTFORML %ABLNAME:17, 8, LEFT% LV{ABL:17, 2} × {A:17/100}.{A:17%100/10}{A:17%10}
+SIF A:20 != 100
+	PRINTFORML %ABLNAME:20, 8, LEFT% LV{ABL:20, 2} × {A:20/100}.{A:20%100/10}{A:20%10}
+SIF A:21 != 100
+	PRINTFORML %ABLNAME:21, 8, LEFT% LV{ABL:21, 2} × {A:21/100}.{A:21%100/10}{A:21%10}
+SIF A:22 != 100
+	PRINTFORML %ABLNAME:22, 8, LEFT% LV{ABL:22, 2} × {A:22/100}.{A:22%100/10}{A:22%10}
+SIF A:23 != 100
+	PRINTFORML %ABLNAME:23, 8, LEFT% LV{ABL:23, 2} × {A:23/100}.{A:23%100/10}{A:23%10}
+
+SIF E:74 != 100
+	PRINTFORML %EXPNAME:74, 8, LEFT%{EXP:74, 4} × {E:74/100}.{E:74%100/10}{E:74%10}
+SIF E:60 != 100
+	PRINTFORML %EXPNAME:60, 8, LEFT%{EXP:60, 4} × {E:60/100}.{E:60%100/10}{E:60%10}
+
+;素質による倍率表示
+REPEAT 300
+	SIF T:COUNT != 100
+		PRINTFORML %TALENTNAME:COUNT, 12, LEFT% × {T:COUNT/100}.{T:COUNT%100/10}{T:COUNT%10}
+REND
+
+SIF T:310 != 100
+	PRINTFORML %"稀有人物",12,LEFT% × {T:310/100}.%TOSTR(T:310%100,"00")%
+
+;SIF T:311 != 100
+	;PRINTFORML %"原勇者",12,LEFT% × {T:311/100}.%TOSTR(T:311%100,"00")%
+
+SIF O:0 != 100
+	PRINTFORML %"原助手",12,LEFT% × {O:0/100}.%TOSTR(O:0%100,"00")%
+
+PRINT 种族：
+PRINTFORML %GET_LOOK_INFO(TARGET,"种族"),12,LEFT% × {T:314/100}.%TOSTR(T:314%100,"00")%
+
+IF O:1 != 100
+	PRINTFORM 价钱谈判 × {O:1/100}.
+	SIF O:1 > 100 && O:1 < 110
+		PRINT 0
+	PRINTV TOSTR(O:1%100,"00")
+ENDIF
+
+;売却額表示
+PRINTFORML %SAVESTR:TARGET%能卖出{S}点的样子。
+PRINTFORML 把%SAVESTR:TARGET%卖掉吗？
+PRINTL  [0] - 好的
+PRINTL  [1] - 不要
+
+$INPUT_LOOP
+INPUT
+
+IF RESULT == 0
+	;売却時口上
+	TFLAG:13 = 6
+	CALL SELF_KOJO
+
+	PRINTFORMW %SAVESTR:TARGET%以{S}点卖掉了。
+	MONEY += S
+	EX_FLAG:4444 += S
+	IF TALENT:TARGET:220 != 1 && EX_TALENT:TARGET:1 != 1 
+	EX_FLAG:99 += 5
+	PRINTFORML 威望值增加
+	ELSE
+	EX_FLAG:99 -= 10
+	PRINTFORML 威望值减少
+	ENDIF
+	RETURN 1
+ELSEIF RESULT == 1
+	S = -1
+	RETURN 0
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+;
+;
+;

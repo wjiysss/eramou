@@ -1,0 +1,301 @@
+﻿
+;==================================================
+;	关系：获取角色A到角色B的关系
+;--------------------------------------------------
+;	L_A		登录角色A的序号
+;	L_B		登录角色B的序号，或-1=娼館客 -2=良犬 -3=魔物 -4=狂王
+;--------------------------------------------------
+@RELATION_GET(L_A, L_B)
+#DIM L_A
+#DIM L_B
+
+SIF L_B < 0
+	RETURN C_RELATION_SUB:L_A:ABS(L_B)
+
+IF CHARANUM != FINDELEMENT(C_RELATION:0:0, -1)
+	CALL RELATION_REBUILD
+ELSEIF C_RELATION:L_A:L_A != NID(L_A) || C_RELATION:L_B:L_B != NID(L_B)
+	CALL RELATION_REBUILD
+ENDIF
+
+RETURN C_RELATION:L_A:L_B
+
+
+;==================================================
+;	关系：设置角色A到角色B的关系
+;--------------------------------------------------
+;	L_A		登录角色A的序号
+;	L_B		登录角色B的序号，或-1=娼館客 -2=良犬 -3=魔物 -4=狂王
+;--------------------------------------------------
+@RELATION_SET(L_A, L_B, L_VALUE)
+#DIM L_A
+#DIM L_B
+#DIM L_VALUE
+
+IF L_B < 0
+	C_RELATION_SUB:L_A:ABS(L_B) = L_VALUE
+	RETURN
+ENDIF
+
+IF CHARANUM != FINDELEMENT(C_RELATION:0:0, -1)
+	CALL RELATION_REBUILD
+ELSEIF C_RELATION:L_A:L_A != NID(L_A) || C_RELATION:L_B:L_B != NID(L_B)
+	CALL RELATION_REBUILD
+ENDIF
+
+C_RELATION:L_A:L_B = L_VALUE
+
+
+;==================================================
+;	关系：L_A被重新命名（L_NID）对其进行修复
+;--------------------------------------------------
+@RELATION_RENAME_REBUILD(L_A)
+#DIM L_A
+#DIM L_B
+#DIM L_I
+
+SIF C_RELATION:L_A:L_A == NID(L_A)
+	RETURN
+
+FOR L_I, 0, CHARANUM
+	;存在一个角色的NID与C_RELATION:L_A:L_A相同
+	;L_A当前的行是其他角色的行
+	SIF L_I != L_A && C_RELATION:L_A:L_A == NID(L_I)
+		JUMP RELATION_REBUILD
+NEXT
+
+;L_A是新建的角色
+SIF L_A == CHARANUM - 1 && C_RELATION:0:L_A == -1
+	CVARSET C_RELATION, L_A, 0
+	
+SIF C_RELATION:L_A:0 == -1
+	C_RELATION:L_A:0 = 0
+
+CALL RELATION_REBUILD
+C_RELATION:L_A:L_A = NID(L_A)
+
+
+;==================================================
+;	关系：通过L_A检查RELATION表是否错位。
+;		  若有，则修复。
+;		  返回是否进行了修复
+;--------------------------------------------------
+@RELATION_CHECK_REBUILD(L_A)
+#DIM L_A
+IF CHARANUM != FINDELEMENT(C_RELATION:0:0, -1)
+	CALL RELATION_REBUILD
+ELSEIF C_RELATION:L_A:L_A != NID(L_A)
+	CALL RELATION_REBUILD
+ELSE
+	RETURN 0
+ENDIF
+
+RETURN 1
+
+
+;==================================================
+;	关系：RELATION表交换两个角色的数据，并检查行列错位
+;		（应该在SWAP两个角色之后执行）
+;--------------------------------------------------
+@RELATION_SWAP_REBUILD(L_A, L_B)
+#DIM L_A
+#DIM L_B
+#DIM L_I
+#DIM L_WIZ
+
+SIF L_A < 0 || L_B < 0
+	RETURN -1
+
+L_WIZ = 0
+
+FOR L_I, 0, CHARANUM
+	
+	SWAP C_RELATION:L_I:L_A, C_RELATION:L_I:L_B
+	
+	SIF L_I == L_A || L_I == L_B
+		CONTINUE
+	
+	L_WIZ = L_WIZ || C_RELATION:L_I:L_I != NID(L_I)
+
+NEXT
+
+
+SIF L_WIZ
+	JUMP RELATION_REBUILD
+
+VARSET C_RELATION:0:0, -1, CHARANUM
+	
+RETURN 0
+
+
+;==================================================
+;	关系：检查RELATION表是否由于角色删减排序
+;		  而产生行列错位。若有，则修复。
+;--------------------------------------------------
+@RELATION_REBUILD
+#DIM L_A
+#DIM L_B
+#DIM L_I
+#DIM L_END
+
+L_END = FINDELEMENT(C_RELATION:0:0, -1,CHARANUM)
+;灵魂转移需要注意！可能会导致边界-1标记丢失
+
+FOR L_A, 0, CHARANUM
+	
+	SIF C_RELATION:L_A:L_A == NID(L_A)
+		CONTINUE
+		
+	L_B = FINDELEMENT(C_RELATION:L_A:0, NID(L_A),L_A)
+	IF L_B < 0 && L_A == CHARANUM - 1 && C_RELATION:0:L_A == -1
+	;当前角色是后来添加在所有角色后的
+		;清除这一列
+		CVARSET C_RELATION, L_A, 0
+		;为这一列赋值
+		C_RELATION:L_A:L_A = NID(L_A)
+		
+	ELSEIF L_B < 0
+		FOR L_I, 0, CHARANUM
+			;在L_A插入新列
+			IF L_END > L_A
+				ARRAYSHIFT C_RELATION:L_I:0, 1, 0, L_A, L_END - L_A + 2
+			ELSE
+				ARRAYSHIFT C_RELATION:L_I:0, 1, 0, L_A
+			ENDIF
+		NEXT
+		;为新的L_A列赋值
+		C_RELATION:L_A:L_A = NID(L_A)
+		
+	ELSEIF L_END >= L_A
+		FOR L_I, 0, CHARANUM
+			;将L_A列复制到L_END列
+			C_RELATION:L_I:L_END = C_RELATION:L_I:L_A
+			;将L_B列复制到L_A列
+			C_RELATION:L_I:L_A = C_RELATION:L_I:L_B
+			;删除L_B列
+			ARRAYREMOVE C_RELATION:L_I:0, L_B, 1
+		NEXT
+		
+	ELSE
+		FOR L_I, 0, CHARANUM
+			;在L_A插入新列
+			ARRAYSHIFT C_RELATION:L_I:0, 1, 0, L_A
+			;将旧的L_B列复制到新的L_A列
+			C_RELATION:L_I:L_A = C_RELATION:L_I:(L_B+1)
+			;删除旧的L_B列
+			ARRAYREMOVE C_RELATION:L_I:0, L_B+1, 1
+		NEXT
+		
+	ENDIF
+	SIF C_RELATION:L_A:0 == -1
+		C_RELATION:L_A:0 = 0
+NEXT
+
+VARSET C_RELATION:0:0, -1, CHARANUM
+
+
+
+;==================================================
+;	不进行行列错位检查的函数，直接使用可能会出错
+;==================================================
+
+
+;--------------------------------------------------
+;	关系：获取角色关系（不检查）（L_A >= 0）
+;--------------------------------------------------
+@R_GET(L_A,L_B)
+#FUNCTION
+#DIM L_A
+#DIM L_B
+IF L_B >= 0
+	RETURNF C_RELATION:L_A:L_B
+ELSE
+	RETURNF C_RELATION_SUB:L_A:ABS(L_B)
+ENDIF
+
+
+;--------------------------------------------------
+;	关系：设置角色关系（不检查）
+;--------------------------------------------------
+@R_SET(L_A,L_B,L_VALUE)
+#DIM L_A
+#DIM L_B
+#DIM L_VALUE
+IF L_B >= 0
+	C_RELATION:L_A:L_B = L_VALUE
+ELSE
+	C_RELATION_SUB:L_A:ABS(L_B) = L_VALUE
+ENDIF
+
+
+;--------------------------------------------------
+;	检查L_A列是否错位。返回是否需要修复
+;--------------------------------------------------
+@R_CHECK(L_A = 0)
+#FUNCTION
+#DIM L_A
+
+IF L_A == 0
+	SIF CHARANUM != FINDELEMENT(C_RELATION:0:0, -1)
+		RETURNF 1
+ENDIF
+
+RETURNF C_RELATION:L_A:L_A != NID(L_A)
+
+
+;--------------------------------------------------
+;	将L_A参数转换为角色名字
+;	返回CALLNAME:L_A 或 -2=野狗 -3=怪物 -4=狂王
+;--------------------------------------------------
+@R_CHARA_TO_NAME(L_A)
+#FUNCTIONS
+#DIM L_A
+SELECTCASE L_A
+CASE IS >= 0
+	RETURNF CALLNAME:L_A
+CASE -2
+	LOCALS = 野狗
+CASE -3
+	LOCALS = 怪物
+CASE -4
+	LOCALS = 狂王
+CASEELSE
+	LOCALS = 不明
+	
+ENDSELECT
+RETURNF LOCALS
+
+
+
+
+@RELATION_DEBUGPRINT
+#DIM L_I
+#DIM L_J
+#DIM L_END
+
+L_END = FINDELEMENT(C_RELATION:0:0, -1,CHARANUM-1)
+SIF L_END < 0
+	L_END = CHARANUM - 1
+
+FOR L_I, 0, CHARANUM
+	SETCOLOR 100,255,255
+	PRINTFORM %@"{L_I}>",5,LEFT%
+	RESETCOLOR
+	FOR L_J, 0, L_END+1
+		IF C_RELATION:L_I:L_J == 0
+			SETCOLORBYNAME GRAY
+			PRINTFORM {C_RELATION:L_I:L_J,5,LEFT}
+			RESETCOLOR
+		ELSEIF C_RELATION:L_I:L_J == -1
+			SETCOLOR 255,100,100
+			PRINTFORM {C_RELATION:L_I:L_J,5,LEFT}
+			RESETBGCOLOR
+		ELSE
+			PRINTFORM {C_RELATION:L_I:L_J,5,LEFT}
+		ENDIF
+		
+	NEXT
+	PRINTL
+NEXT
+
+ PRINTW

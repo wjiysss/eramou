@@ -1,0 +1,348 @@
+﻿;断背气质のLvUP処理とその可否判定
+;eratohoA ver1,204のスクリプトをベースに処理を簡略化
+;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;断背气质のLvUP
+;-------------------------------------------------
+@ABLUP23
+;男人でないととダメ
+SIF TALENT:122 == 0
+	RETURN 0
+DRAWLINE
+;PRINTL 奴隶的ＢＬ气质提升了。
+;PRINTL ＢＬ气质越高，越容易在男同行为中获得快感。
+;CUSTOMDRAWLINE ‥
+;断背气质はLv5が上限
+;[开放][倒錯的][双性恋][疯狂]が付いている場合はLv10まで开放
+IF ABL:23 >= 5 && (TALENT:33 == 0 && TALENT:80 == 0 && TALENT:81 == 0 && TALENT:123 == 0)
+	PRINTW 需要特殊素质才能继续提升
+	RETURN 0
+ELSEIF ABL:23 >= 10
+	PRINTW 已达最高级
+	RETURN 0
+ENDIF
+
+;必要な欲情点数
+A = 0
+;必要な断背经验
+B = 0
+;必要な屈服点数
+C = 0
+;必要な肛门点数
+D = 0
+;必要な异常经验回数
+E = 0
+
+;条件別にＯＫかダメかを記録する
+;欲情＋屈服点数による可否（I=0:可、I&1:点数不足、I&2:経験不足、I&4:能力不足）
+I = 0
+;阴核点数による可否（I=0:可、I&1:点数不足、I&2:経験不足、I&4:能力不足）
+J = 0
+
+CALL DECIDE_ABLUP23
+
+;ＬＶ３から４、４から５に上げるときは异常经验必要
+SIF E > 0
+	PRINTFORML %EXPNAME:50%{E}以上(现在{EXP:50})且
+
+;欲情＋屈服点数で上げる場合
+PRINTFORM [0] - %PALAMNAME:5%点数×{JUEL:5}/{A} ……
+PRINTV GET_ABLUP_STATE(I)
+PRINTL 
+SIF C > 0
+	PRINTFORML 　　　%PALAMNAME:6%点数×{JUEL:6}/{C}
+;断背经验
+PRINTFORML 　　　%EXPNAME:41%　{EXP:41}/{B}
+
+;肛门点数で上げる場合
+IF D > 0
+	PRINTFORM [1] - %PALAMNAME:2%点数×{JUEL:2}/{D} ……
+	PRINTV GET_ABLUP_STATE(J)
+	PRINTL 
+	;断背经验
+	PRINTFORML 　　　%EXPNAME:41%　{EXP:41}/{B}
+ENDIF
+
+PRINTL [100] - 停止
+
+
+INPUT
+IF (RESULT < 0 || RESULT > 1) && RESULT != 100
+	RESTART
+ELSEIF I != 0 && RESULT == 0
+	PRINTL 未满足条件
+	RESTART
+ELSEIF J == 256 && RESULT == 1
+	RESTART
+ELSEIF J != 0 && RESULT == 1
+	PRINTL 未满足条件
+	RESTART
+ELSEIF RESULT == 100
+	RETURN 0
+ENDIF
+
+ABL:23 += 1
+
+IF RESULT == 0
+	JUEL:5 -= A
+	JUEL:6 -= C
+ELSEIF RESULT == 1
+	JUEL:2 -= D
+ENDIF
+
+PRINTFORML %ABLNAME:23%变为LV{ABL:23}。
+
+RETURN 0
+
+
+;-------------------------------------------------
+@CORE_ABLUP23
+;-------------------------------------------------
+ABL:23 ++
+
+IF I == 0
+	JUEL:5 -= A
+	JUEL:6 -= C
+ELSEIF J == 0
+	JUEL:2 -= D
+ENDIF
+
+
+;-------------------------------------------------
+;断背气质のLvUP可否判定
+;-------------------------------------------------
+@DECIDE_ABLUP23
+;男人でないとダメ
+SIF TALENT:122 == 0
+	RETURN 0
+;断背气质はLv5が上限
+;[开放][倒錯的][双性恋][疯狂]が付いている場合はLv10まで开放
+SIF ABL:23 >= 5 && (TALENT:33 == 0 && TALENT:80 == 0 && TALENT:81 == 0 && TALENT:123 == 0)
+	RETURN 0
+SIF ABL:23 >= 10
+	RETURN 0
+
+;判定変数を空に
+I = 0
+J = 0
+
+A = 0
+B = 0
+C = 0
+D = 0
+E = 0
+
+IF ABL:23 == 0
+	A = 200
+	B = 50
+	C = 0
+	D = 1000
+ELSEIF ABL:23 == 1
+	A = 1000
+	B = 150
+	C = 0
+	D = 5000
+ELSEIF ABL:23 == 2
+	A = 3000
+	B = 300
+	C = 1000
+	D = 0
+ELSEIF ABL:23 == 3
+	A = 8000
+	B = 500
+	C = 2000
+	D = 0
+ELSEIF ABL:23 == 4
+	A = 20000
+	B = 800
+	C = 5000
+	D = 0
+ELSEIF ABL:23 == 5
+	A = 40000
+	B = 1200
+	C = 10000
+	D = 0
+ELSEIF ABL:23 == 6
+	A = 80000
+	B = 1800
+	C = 13000
+	D = 0
+ELSEIF ABL:23 == 7
+	A = 150000
+	B = 2600
+	C = 18000
+	D = 0
+ELSEIF ABL:23 == 8
+	A = 200000
+	B = 3600
+	C = 30000
+	D = 0
+ELSEIF ABL:23 == 9
+	A = 300000
+	B = 5000
+	C = 50000
+	D = 0
+ENDIF
+
+;戒备森严
+IF TALENT:27
+	IF ABL:23 == 3
+		TIMES A , 1.50
+		TIMES B , 1.50
+		TIMES C , 1.50
+	ELSEIF ABL:23 == 4
+		TIMES A , 2.00
+		TIMES B , 2.00
+		TIMES C , 2.00
+	ELSEIF ABL:23 == 5
+		TIMES A , 2.50
+		TIMES B , 2.50
+		TIMES C , 2.50
+	ELSEIF ABL:23 >= 6
+		TIMES A , 3.00
+		TIMES B , 3.00
+		TIMES C , 3.00
+	ENDIF
+ENDIF
+
+;ＬＶ３以上に上げるときは异常经验必要（素質：[开放][倒錯的][双性恋][疯狂]なら無視できる）
+SIF ABL:23 >= 3 && (TALENT:33 == 0 && TALENT:80 == 0 && TALENT:81 == 0 && TALENT:123 == 0)
+	E = ABL:23 - 2
+
+;坦率
+IF TALENT:13
+	TIMES A , 0.95
+	TIMES B , 0.95
+	TIMES C , 0.95
+	TIMES D , 0.95
+ENDIF
+;冷漠
+IF TALENT:21
+	TIMES A , 1.20
+	TIMES B , 1.20
+	TIMES C , 1.20
+	TIMES D , 1.20
+ENDIF
+;好奇心
+IF TALENT:23
+	TIMES A , 0.95
+	TIMES B , 0.95
+	TIMES C , 0.95
+	TIMES D , 0.95
+ENDIF
+;保守的
+IF TALENT:24
+	TIMES A , 1.20
+	TIMES B , 1.20
+	TIMES C , 1.20
+	TIMES D , 1.20
+ENDIF
+
+;看重贞操
+IF TALENT:30
+	TIMES A , 1.20
+	TIMES B , 1.20
+	TIMES C , 1.20
+	TIMES D , 1.20
+;看轻贞操
+ELSEIF TALENT:31
+	TIMES A , 0.95
+	TIMES B , 0.95
+	TIMES C , 0.95
+	TIMES D , 0.95
+ENDIF
+
+;讨厌男人
+IF TALENT:82
+	TIMES A , 3.00
+	TIMES B , 3.00
+	TIMES C , 3.00
+	TIMES D , 3.00
+ENDIF
+;献身的
+IF TALENT:63
+	TIMES A , 0.95
+	TIMES B , 0.95
+	TIMES C , 0.95
+	TIMES D , 0.95
+ENDIF
+
+;接受快感
+IF TALENT:70
+	TIMES A , 0.95
+	TIMES B , 0.95
+	TIMES C , 0.95
+	TIMES D , 0.95
+;否定快感
+ELSEIF TALENT:71
+	TIMES A , 1.20
+	TIMES B , 1.20
+	TIMES C , 1.20
+	TIMES D , 1.20
+ENDIF
+
+;倒錯的
+IF TALENT:80
+	TIMES A , 0.80
+	TIMES B , 0.80
+	TIMES C , 0.80
+	TIMES D , 0.80
+ENDIF
+;双性恋
+IF TALENT:81
+	TIMES A , 0.50
+	TIMES B , 0.50
+	TIMES C , 0.50
+	TIMES D , 0.50
+ENDIF
+;疯狂
+IF TALENT:123
+	TIMES A , 0.50
+	TIMES B , 0.50
+	TIMES C , 0.50
+	TIMES D , 0.50
+ENDIF
+
+;最低でも１回・１個は必要
+SIF A < 1
+	A = 1
+SIF B < 1
+	B = 1
+
+;异常经验が不足
+IF EXP:50 < E
+	I |= 2
+	J |= 2
+ENDIF
+
+;欲情点数が不足
+SIF JUEL:5 < A
+	I |= 1
+;屈服点数が不足
+SIF JUEL:6 < C
+	I |= 1
+;断背经验が不足
+SIF EXP:41 < B
+	I |= 2
+
+;肛门感觉で上げる場合
+IF D > 0
+	;肛门点数が不足
+	SIF JUEL:2 < D
+		J |= 1
+	;断背经验が不足
+	SIF EXP:41 < B
+		J |= 2
+ELSE
+	J = 256
+ENDIF
+
+IF I == 0 || J == 0
+	RETURN 1
+ELSE
+	RETURN 0
+ENDIF
+;
+;
+;

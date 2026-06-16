@@ -1,0 +1,79 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;舔肛
+;爱抚系コマンド：調教者が調教対象のアナルを口で刺激
+;-------------------------------------------------
+@COM9
+
+PRINTL 舔肛
+;SAVESTR:22 = 舔肛
+CALL TRAIN_MESSAGE_B
+
+;舔肛
+
+;-------------------------------------------------
+;ソースの計算
+;-------------------------------------------------
+LOSEBASE:0 += 5
+LOSEBASE:1 += 50
+
+SOURCE:10 = 50
+SOURCE:12 = 300
+SOURCE:14 = 500
+
+;ABL:肛门感觉をみる
+IF ABL:3 == 0
+	SOURCE:2 = 5
+ELSEIF ABL:3 == 1
+	SOURCE:2 = 50
+ELSEIF ABL:3 == 2
+	SOURCE:2 = 200
+ELSEIF ABL:3 == 3
+	SOURCE:2 = 500
+ELSEIF ABL:3 == 4
+	SOURCE:2 = 1000
+ELSE
+	SOURCE:2 = 1800
+ENDIF
+
+;兽奸の場合はここで終了
+IF TEQUIP:89
+	EXP:1 += 1
+	PRINTL 肛门经验＋１
+	RETURN 1
+ENDIF
+
+;調教者のTALENT:擅用舌头をみる
+IF TALENT:PLAYER:52 || TEQUIP:89
+	TIMES SOURCE:2 , 2.00
+	SOURCE:16 += SOURCE:0/20
+ENDIF
+
+;-------------------------------------------------
+;汚れの処理
+;-------------------------------------------------
+;奴隷のＡ⇔調教者の口の汚れが移動
+STAIN:4 |= STAIN:PLAYER:0
+STAIN:PLAYER:0 |= STAIN:4
+
+;-------------------------------------------------
+;経験上昇
+;-------------------------------------------------
+;レズ・ホモ経験
+IF TALENT:122 == 0 && TALENT:PLAYER:122 == 0
+	PRINTS EXPNAME:40
+	PRINTL +3
+	EXP:40 += 3
+ENDIF
+
+EXP:1 += 1
+PRINTL 肛门经验＋１
+
+;初吻
+IF CFLAG:PLAYER:16 == -1
+	CFLAG:PLAYER:16 = 401
+	CSTR:PLAYER:4 = %SAVESTR:TARGET%
+ENDIF
+
+RETURN 1

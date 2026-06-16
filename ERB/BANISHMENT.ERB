@@ -1,0 +1,853 @@
+﻿;------------------------------------------
+@BANISHMENT
+#DIM LV
+#DIMS MATURO
+#DIM FAMILY,3
+;ZはTARGETを保存してるため使用禁止
+;------------------------------------------
+;追放系コマンド
+
+SIF A == 0
+	RETURN 0
+B = A
+
+FAMILY = CFLAG:A:605
+FAMILY:1 = FAMILY % 10
+CALL SEARCH_FAMILY, A
+FAMILY:2 = RESULT
+M = FAMILY:2
+
+PRINTW 要来点有意思的放逐吗？
+PRINTL 
+PRINTL [0] 就这样流放掉
+SIF TALENT:A:122
+	SETCOLOR (GETDEFCOLOR() - 0x444444)
+PRINTL [1] 施予男性化的诅咒
+SIF TALENT:A:122
+		RESETCOLOR
+PRINTL [2] 消去之前的记忆
+PRINTL [3] 变成小动物后放生
+PRINTL [4] 让她回到成为勇者前的生活
+PRINTL  
+PRINTL [100] 返回
+
+$INPUT_LOOP
+INPUT
+IF RESULT < 0
+	GOTO INPUT_LOOP
+ELSEIF RESULT >= 5 && RESULT != 100
+	GOTO INPUT_LOOP
+ENDIF
+
+SELECTCASE RESULT
+	CASE 1
+		IF TALENT:A:122
+			PRINTFORMW %SAVESTR:A%已经是男性了。换个手段吧。
+			GOTO INPUT_LOOP
+		ENDIF
+ENDSELECT
+
+IF RESULT == 100
+	TARGET = FLAG:1
+	RETURN 0
+ENDIF
+
+TARGET = A
+
+IF TALENT:TARGET:220 != 1 && EX_TALENT:TARGET:1 != 1 
+	EX_FLAG:99 += 2
+	PRINTFORML 威望值增加
+ELSE
+	EX_FLAG:99 -= 10
+	PRINTFORML 威望值减少
+ENDIF
+TFLAG:510 = RESULT
+
+CALL BANISHMENT_KOUJO
+
+IF TFLAG:510 == 0
+	PRINTFORML %SAVESTR:A%的力量被封印起来、
+	PRINTW 放逐到地下城的外面
+	IF TALENT:A:85
+		PRINTFORMW %SAVESTR:A%不知所措的被放逐了、嘴中还在重复着你的名字。
+		PRINTFORMW %SAVESTR:A%带着一副快要崩溃的悲伤表情，慢慢的消失在远方的森林中…………
+	ELSEIF TALENT:A:85 && TALENT:A:153
+		PRINTFORMW %SAVESTR:A%不知所措的被放逐了、嘴中还在重复着你的名字。
+		PRINTFORMW 还在怀孕期的%SAVESTR:A%一副快要崩溃的悲伤表情，慢慢的消失在远方的森林中…………
+	ELSEIF TALENT:A:153
+		PRINTFORMW 还在怀孕期的%SAVESTR:A%一脸茫然，慢慢的消失在远方的森林中…………
+	ENDIF
+	
+	;末路分岐
+	IF TALENT:A:244 || TALENT:A:245 || TALENT:A:246 || TALENT:A:247
+		;悪魔素質
+		PRINTFORMW %SAVESTR:A%被附近的村民捕获、空有恶魔般的外表，只能当观赏物在马戏团中渡过余生……
+		MATURO = 玩物
+	ELSEIF TALENT:A:204
+		;肉便器
+		PRINTFORML 早已沦为肉便器的%SAVESTR:A%如今啊、浓妆艳抹、到处派送写着个人联系方式和真名的宣传单、
+		PRINTFORMW 每天都在水晶球前，努力地扭动腰肢呢……
+		;動画の内容
+		IF TALENT:A:75 || TALENT:A:76 || TALENT:A:31
+			;淫乱?セックス狂?貞操無頓着
+			PRINTFORMW 因为%SAVESTR:A%“是个男的就行”的性爱准则，“公开滥交女”的名头在视频界已经变得非常响亮了呢……
+			MATURO = 淫娃荡妇
+		ELSEIF ABL:A:39 > 0 || TALENT:A:317 == 12
+			;獣姦中毒?かわいい動物が好き
+			PRINTFORMW 由于只拍摄兽奸视频，%SAVESTR:A%“只艹动物”的名头已经变得非常响亮了呢……
+			MATURO = 动物爱好者
+		ELSEIF TALENT:A:121 && TALENT:A:318 == 1
+			;ふたなり巨根
+			PRINTFORML %SAVESTR:A%作为扶她女优
+			PRINTFORMW 却总是喜欢在视频中炫耀自己巨大阴茎……不过这种行为也让她变得非常出名。
+			MATURO = 行行行，你JB大你先射
+		ELSEIF TALENT:A:121 && TALENT:A:318 == 2
+			;ふたなり短小包茎
+			PRINTFORML 扶她化的%SAVESTR:A%非常出名，
+			PRINTFORMW 因为总是在水晶球视频中露出自己的短小包茎还总是射的一塌糊涂。
+			MATURO = 六郎
+		ELSEIF TALENT:A:121
+			;その他のふたなり  中文存疑，原文究竟是滥交还是精力充沛不懂
+			PRINTFORML 身为扶他的%SAVESTR:A%喜欢只和女性交往，还总将性爱过程拍摄下来
+			PRINTFORMW 因为精力持久，那超长马拉松般的性爱视频饱受热议
+			MATURO = 雌性种马
+		ELSEIF ABL:A:22 > 0
+			;レズっ気
+			PRINTFORMW %SAVESTR:A%因为总是拍摄激烈的女同性爱视频变得非常有名
+			MATURO = 妖艳百合
+		ELSEIF TALENT:A:104 || TALENT:A:232
+			;V敏感?淫壺
+			PRINTFORMW 因为总是喜欢把1:1大小的巨龙阳具按摩棒塞进阴道，%SAVESTR:A%的水晶球视频在绅士群体中非常畅销……
+			MATURO = 阴道扩张女优
+		ELSEIF TALENT:A:106 || TALENT:A:233
+			;A敏感?淫肛
+			PRINTFORMW 由于喜欢使用巨型带拖网肛门按摩棒的变态行为，%SAVESTR:A%的水晶球视频在绅士群体中非常畅销……
+			MATURO = 肛门扩张女优
+		ELSEIF TALENT:A:102 || TALENT:A:230
+			;C敏感?淫核
+			PRINTFORMW 由于%SAVESTR:A%那极端肥大化的阴蒂，视频在绅士群体中一直很畅销……
+			MATURO = 阴蒂肥大女优
+		ELSEIF TALENT:A:108 || TALENT:A:231
+			;B敏感?淫乳
+			PRINTFORMW 因为%SAVESTR:A%那极端肥大化的乳头，视频在绅士群体中一直很畅销……
+			MATURO = 乳头开发女优
+		ELSEIF ABL:A:17 > 0
+			;露出癖
+			PRINTFORMW %SAVESTR:A%因为热衷于野外暴露下体的性爱视频而远近闻名……
+			MATURO = 野战
+		ELSEIF ABL:A:21 > 0
+			;マゾっ気
+			PRINTFORMW 因为嗜好被各种调教的被虐狂，%SAVESTR:A%在水晶球前的奴隶姿态成为了热议话题。
+			MATURO = 抖M女优
+		ELSEIF TALENT:A:60 || TALENT:A:74
+			;自慰しやすい?自慰狂い
+			PRINTFORMW 呐，你知道黑猩猩每天都要自慰八个小时，而且每次都会绝顶吗？嗯，%SAVESTR:A%在视频里也一样。
+			MATURO = 自慰女优
+		ELSEIF TALENT:A:317 == 13
+			;綺麗な装飾品が好き
+			PRINTFORML 由于%SAVESTR:A%热衷于在各种性器官上穿环的变态行为
+			PRINTFORMW 成为了知名的肉体改造发烧友
+			MATURO = 肉体改造发烧友
+		ELSEIF TALENT:A:57
+			;おもらし癖
+			PRINTFORMW %SAVESTR:A%因为热衷于在野外和各种没人的地方排便，水晶球视频广受各大漏尿癖爱好者的好评
+			MATURO = 野外放尿女优
+		ELSEIF TALENT:A:48
+			;近視
+			PRINTFORMW 因为%SAVESTR:A%在视频中总是带着眼镜的呆萌表情，身体却又极度淫荡的强烈反差而出名了。
+			MATURO = 眼镜女优
+		ELSEIF TALENT:A:314 == 1
+			;エルフ
+			PRINTFORMW %SAVESTR:A%作为“那个在视频里总是喜欢艹橡树的变态精灵”出名了
+			MATURO = 恋物癖女优
+		ELSEIF TALENT:A:0
+			;処女
+			PRINTFORMW 身为知名的尻穴便器，%SAVESTR:A%的小穴一直保持着默默无闻未经开发的状态，但是她那已经扩张到极限的肛门却截然相反，每天……都热闹的很呐……
+			MATURO = 尻穴便器女优
+		ELSE
+			PRINTFORMW %SAVESTR:A%因为在街上变态的痴女行为而出名
+			MATURO = 痴女女优
+		ENDIF
+		;見てくれてありがとう
+		IF TALENT:A:317 == 4 || TALENT:317 == 11
+			;故郷の恋人?憧れの人が好き
+			PRINTFORML 昔日的恋人费劲周折打听%SAVESTR:A%的消息，却只得到一个水晶球、
+			PRINTFORMW 看着%SAVESTR:A%已经面目全非的淫秽表演，他一边哭泣着一边自慰起来……
+		ELSEIF TALENT:A:315 == 1
+			;元学生
+			PRINTFORML 某个一直单恋着%SAVESTR:A%的同学看着手中的水晶球、
+			PRINTFORMW 视频里%SAVESTR:A%淫乱的姿态让他的心中充满了羞耻，却情不自禁的摸向了双腿之间……
+		ELSEIF TALENT:A:315 == 8
+			;元貴族
+			PRINTFORML 某个曾经憧憬着身为高级贵族%SAVESTR:A%的男性入手了一个水晶球、
+			PRINTFORMW 看着%SAVESTR:A%淫乱的姿态让他的心中充满了羞耻，却情不自禁的摸向了双腿之间……
+		ELSEIF TALENT:A:315 == 12
+			;元聖女
+			PRINTFORML 某个曾经憧憬着身为圣女%SAVESTR:A%的少年入手了一个水晶球、
+			PRINTFORMW 看着%SAVESTR:A%变态的行为让他的心中充满了羞耻，却情不自禁的摸向了双腿之间……
+		ELSEIF TALENT:A:315 == 15
+			;元商人
+			PRINTFORML 某个一直暗恋着商店看板娘%SAVESTR:A%的青年入手了一个水晶球、
+			PRINTFORMW 看着%SAVESTR:A%堕落淫乱的样子，忍不住一边哭泣一边自慰起来……
+		ELSEIF TALENT:A:315 == 18
+			;元パン屋
+			PRINTFORML 某个一直暗恋着面包店看板娘%SAVESTR:A%的青年入手了一个水晶球、
+			PRINTFORMW 看着%SAVESTR:A%堕落淫乱的样子，忍不住一边哭泣一边自慰起来……
+		ELSEIF TALENT:A:315 == 19
+			;元軍人
+			PRINTFORML 一群原本是%SAVESTR:A%部下的军人们集体入手了一整套水晶球、
+			PRINTFORMW 看着原本可信赖的上司和领袖%SAVESTR:A%变成淫贱牝犬的姿态，军营中传出了一阵粗重的喘息声……
+		ENDIF
+	
+	;深く依存系
+	ELSEIF TALENT:A:46
+		;薬物中毒
+		PRINTFORMW 之后，已经上瘾的%SAVESTR:A%屈服于欲望之下、变成了一个只要给她药物便会张开双腿的娼妓……
+		MATURO = 药物中毒的娼妇
+	ELSEIF TALENT:A:316 == 3 || TALENT:316 == 18
+		;啓示を受けて?夢に見たから
+		PRINTFORML 曾经的信仰被唾弃，%SAVESTR:A%开始寻找新的精神寄托
+		PRINTFORMW 终于，在新兴宗教信徒的淫乱性爱派对中、她似乎找到了归宿……
+		MATURO = 新兴宗教的信者
+	
+	;過去の業に引きずられた系
+	ELSEIF TALENT:A:317 == 4 || TALENT:317 == 11
+		;故郷の恋人?憧れの人が好き
+		PRINTFORML %SAVESTR:A%经历了漫长的旅途后终于回到了故乡、
+		PRINTFORMW 看着曾经的爱人和妻子相对微笑的场景，她又默默地消失在黑暗中……
+		MATURO = 下落不明
+	ELSEIF TALENT:A:316 == 7
+		;故郷を救うために勇者になったのに……
+		PRINTFORML 当初为了拯救大家的%SAVESTR:A%回到故乡、看着已经荒芜落败的村庄、
+		PRINTFORML 被已经成为奴隶的原村人捕获，成为大家公用的泄欲肉便器，
+		PRINTFORMW 还被迫挂着一块木牌，上面刻着“对不起”……
+		MATURO = 慰安用肉便器
+	ELSEIF TALENT:A:315 == 8
+		;元貴族
+		PRINTFORML 身为原贵族的%SAVESTR:A%回到家乡后得知、自己的家族早已没落
+		;姉がいるか
+		LOCAL = TALENT:A:320 % 1000000
+		LOCAL /= 100000
+		;妹がいるか
+		LOCAL:1 = TALENT:A:320 % 100000000
+		LOCAL:1 /= 10000000
+		IF LOCAL > 0 && LOCAL:1 > 0
+			;姉妹がいる
+			PRINTFORML %SAVESTR:A%原本身为美丽贵妇的姐妹们、如今只能在妓院卖淫为生
+		ELSEIF LOCAL > 0
+			;姉がいる
+			PRINTFORML %SAVESTR:A%原本身为美丽贵妇的姐姐、如今只能在妓院卖淫为生
+		ELSEIF LOCAL:1 > 0
+			;妹がいる
+			PRINTFORML %SAVESTR:A%原本身为美丽贵妇的妹妹、如今只能在妓院卖淫为生
+		ENDIF
+		PRINTFORMW 而成为妓女的%SAVESTR:A%如今、被当初自己所看不起的低等市民日夜奸淫着……
+		MATURO = 高级娼妇
+	ELSEIF TALENT:A:316 == 2
+		;お金が必要だったのに……
+		PRINTFORML 曾经身为勇者的%SAVESTR:A%当初为了冒险，欠下了一大笔债、
+		PRINTFORML 如今被债务人找上，为了还清债务舍弃了最后的尊严开始工作
+		PRINTFORMW 如今身为变态性癖的富豪的玩物，只要主人命令，连大便都要含笑吞下呢……
+		MATURO = 妓女
+	ELSEIF TALENT:A:317 == 8
+		;家族が好き
+		;姉がいるか
+		LOCAL = TALENT:A:320 % 1000000
+		LOCAL /= 100000
+		;兄がいるか
+		LOCAL:1 = TALENT:A:320 % 10000000
+		LOCAL:1 /= 1000000
+		;妹がいるか
+		LOCAL:2 = TALENT:A:320 % 100000000
+		LOCAL:2 /= 10000000
+		;弟がいるか
+		LOCAL:3 = TALENT:A:320 % 1000000000
+		LOCAL:3 /= 100000000
+		IF LOCAL > 0 && LOCAL:1 > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			;兄弟姉妹
+			PRINT 被自己兄弟姐妹喜爱的
+		ELSEIF  LOCAL > 0 && LOCAL:1 > 0 && LOCAL:2 > 0
+			PRINT 被哥哥和姐妹喜爱的
+		ELSEIF LOCAL > 0 && LOCAL:1 > 0 && LOCAL:3 > 0
+			PRINT 被哥哥和姐弟喜爱的
+		ELSEIF LOCAL > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 被姐妹和弟弟喜爱的
+		ELSEIF LOCAL:1 > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 被兄弟和妹妹喜爱的
+		ELSEIF  LOCAL > 0 && LOCAL:1 > 0
+			PRINT 被哥哥和姐姐宠爱的
+		ELSEIF  LOCAL > 0 && LOCAL:2 > 0
+			PRINT 被姐姐和妹妹喜爱的
+		ELSEIF LOCAL > 0 && LOCAL:3 > 0
+			PRINT 被姐姐和弟弟喜爱的
+		ELSEIF  LOCAL:1 > 0 && LOCAL:2 > 0
+			PRINT 被哥哥和妹妹喜爱的
+		ELSEIF LOCAL:1 > 0 && LOCAL:3 > 0
+			PRINT 被哥哥和弟弟喜爱的
+		ELSEIF LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 被妹妹和弟弟景仰的
+		ELSEIF  LOCAL > 0
+			PRINT 被姐姐宠爱的
+		ELSEIF  LOCAL:1 > 0
+			PRINT 被哥哥宠爱的
+		ELSEIF LOCAL:2
+			PRINT 被妹妹景仰的
+		ELSEIF LOCAL:3 > 0
+			PRINT 被弟弟景仰的
+		ELSE
+			PRINT 被父母宠爱的
+		ENDIF
+		PRINTFORML %SAVESTR:A%回到家乡，发现自己的家庭早已债台高筑，支离破碎
+		PRINTFORM %SAVESTR:A%的
+		IF LOCAL > 0 && LOCAL:1 > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			;兄弟姉妹
+			PRINT 兄弟姐妹
+		ELSEIF  LOCAL > 0 && LOCAL:1 > 0 && LOCAL:2 > 0
+			PRINT 哥哥和姐妹
+		ELSEIF LOCAL > 0 && LOCAL:1 > 0 && LOCAL:3 > 0
+			PRINT 哥哥和姐弟
+		ELSEIF LOCAL > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 姐妹和弟弟
+		ELSEIF LOCAL:1 > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 兄弟和妹妹
+		ELSEIF  LOCAL > 0 && LOCAL:1 > 0
+			PRINT 哥哥和姐姐
+		ELSEIF  LOCAL > 0 && LOCAL:2 > 0
+			PRINT 姐姐和妹妹
+		ELSEIF LOCAL > 0 && LOCAL:3 > 0
+			PRINT 姐姐和弟弟
+		ELSEIF  LOCAL:1 > 0 && LOCAL:2 > 0
+			PRINT 哥哥和妹妹
+		ELSEIF LOCAL:1 > 0 && LOCAL:3 > 0
+			PRINT 哥哥和弟弟
+		ELSEIF LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 妹妹和弟弟
+		ELSEIF  LOCAL > 0
+			PRINT 姐姐
+		ELSEIF  LOCAL:1 > 0
+			PRINT 哥哥
+		ELSEIF LOCAL:2
+			PRINT 妹妹
+		ELSEIF LOCAL:3 > 0
+			PRINT 弟弟
+		ELSE
+			PRINT 父亲和母亲
+		ENDIF
+		PRINT 为了偿还欠债，出演了一部
+		IF LOCAL > 0 && LOCAL:1 > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			;兄弟姉妹
+			PRINT 主题是近亲乱伦的
+		ELSEIF  LOCAL > 0 && LOCAL:1 > 0 && LOCAL:2 > 0
+			PRINT 主题是近亲乱伦的
+		ELSEIF LOCAL > 0 && LOCAL:1 > 0 && LOCAL:3 > 0
+			PRINT 主题是近亲乱伦的
+		ELSEIF LOCAL > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 主题是近亲乱伦的
+		ELSEIF LOCAL:1 > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 主题是近亲乱伦的
+		ELSEIF  LOCAL > 0 && LOCAL:1 > 0
+			PRINT 主题是兄妹乱伦的
+		ELSEIF  LOCAL > 0 && LOCAL:2 > 0
+			PRINT 主题是姐妹百合的
+		ELSEIF LOCAL > 0 && LOCAL:3 > 0
+			PRINT 主题是姐弟乱伦的
+		ELSEIF  LOCAL:1 > 0 && LOCAL:2 > 0
+			PRINT 主题是兄妹乱伦的
+		ELSEIF LOCAL:1 > 0 && LOCAL:3 > 0
+			PRINT 主题是兄弟搞基的
+		ELSEIF LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 主题是兄妹乱伦的
+		ELSEIF  LOCAL > 0
+			PRINT 主题是恋物癖的
+		ELSEIF  LOCAL:1 > 0
+			PRINT 百合的
+		ELSEIF LOCAL:2
+			PRINT 主题是抖M被狠狠调教的
+		ELSEIF LOCAL:3 > 0
+			PRINT 百合的
+		ELSE
+			PRINT 主题是滥交夫妇的
+		ENDIF
+		PRINTL 水晶球色情视频，
+		PRINTFORM %SAVESTR:A%自己也加入了进去、
+		IF LOCAL > 0 && LOCAL:1 > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			;兄弟姉妹
+			PRINT 和兄弟姐妹们一起，激烈的交媾着……
+		ELSEIF  LOCAL > 0 && LOCAL:1 > 0 && LOCAL:2 > 0
+			PRINT 和姐妹们一同趴在哥哥的面前，摇晃着饥渴的臀部，乞求着哥哥的大肉棒……
+		ELSEIF LOCAL > 0 && LOCAL:1 > 0 && LOCAL:3 > 0
+			PRINT 在哥哥和姐姐面前含弄着弟弟的肉棒……
+		ELSEIF LOCAL > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 和姐妹们一起侵犯青涩的弟弟……
+		ELSEIF LOCAL:1 > 0 && LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 在弟弟妹妹的注视下和哥哥一起高潮……
+		ELSEIF  LOCAL > 0 && LOCAL:1 > 0
+			PRINT 和姐姐一起趴在哥哥的面前，摇晃着饥渴的臀部，乞求着哥哥的大肉棒……
+		ELSEIF  LOCAL > 0 && LOCAL:2 > 0
+			PRINT 和姐妹一起高潮……
+		ELSEIF LOCAL > 0 && LOCAL:3 > 0
+			PRINT 和姐姐一起侵犯青涩的弟弟……
+		ELSEIF  LOCAL:1 > 0 && LOCAL:2 > 0
+			PRINT 和妹妹一起趴在哥哥的面前，摇晃着饥渴的臀部，乞求着哥哥的大肉棒……
+		ELSEIF LOCAL:1 > 0 && LOCAL:3 > 0
+			PRINT 被兄弟分别从前后一起插入……
+		ELSEIF LOCAL:2 > 0 && LOCAL:3 > 0
+			PRINT 和妹妹一起侵犯青涩的弟弟……
+		ELSEIF  LOCAL > 0
+			PRINT 和姐姐交缠着……
+		ELSEIF  LOCAL:1 > 0
+			PRINT 被哥哥激烈的侵犯……
+		ELSEIF LOCAL:2
+			PRINT 和妹妹交缠着……
+		ELSEIF LOCAL:3 > 0
+			PRINT 侵犯青涩的弟弟……
+		ELSE
+			PRINT 和母亲一起趴在父亲的面前，摇晃着饥渴的臀部，乞求着父亲的大肉棒……
+		ENDIF
+		PRINTW 感觉自己所有关于家庭的美好回忆都崩坏了……
+		MATURO = 乱伦女忧
+		
+	;性癖のせいで変態痴女に系
+	ELSEIF ABL:A:39 > 0
+		;獣姦中毒
+		PRINTFORMW 没多久，%SAVESTR:A%在草丛中和流浪野狗交尾的身姿被人发现……
+		MATURO = 变态兽奸女
+	ELSEIF ABL:A:32 > 0
+		;精液中毒
+		PRINTFORML 没多久，某处公共厕所里五花八门的涂鸦中，混杂着出现了%SAVESTR:A%的名字和联系方式。
+		PRINTFORMW 「好想喝乳白色的“果汁”。等你联络哟？?」
+		MATURO = 精液便器
+	ELSEIF ABL:A:17 > 0
+		;露出癖
+		PRINTFORMW 一段时间后，有人发现了%SAVESTR:A%趁着夜色在街道上全裸自慰的身影，成为了这条街上有名的痴女
+		MATURO = 露出狂
+	ELSEIF ABL:A:21 > 0
+		;マゾっ気
+		PRINTFORMW 一段时间后，%SAVESTR:A%以大众情妇的身份出现在盗贼团中、被当成受虐母猪一样对待依然乐此不疲……
+		MATURO = 口交母猪
+	ELSEIF TALENT:A:60 || TALENT:A:74
+		;自慰しやすい?自慰狂い
+		PRINTFORML 之后，表面上恢复正常工作的%SAVESTR:A%、暗地里早已沦为手淫的宫能奴隶
+		PRINTFORMW 薪水全部花在宫能小说和猥亵的性玩具上、每天都在卖力的搓弄着下体……
+		MATURO = 自慰狂
+	
+	;変わった体質
+	ELSEIF TALENT:A:121 && TALENT:A:318 == 2
+		;ふたなり短小包茎
+		PRINTFORML 身为扶她的%SAVESTR:A%因为自己的短小包茎无法满足女性、
+		PRINTFORMW 只能靠看水晶球里的色情影片来发泄因为扶她化而产生的，对女性肉体的饥渴……
+		MATURO = 扶她色情狂
+	ELSEIF TALENT:A:121
+		;その他のふたなり
+		PRINTFORML 扶她化的%SAVESTR:A%、每天收工后、都会光顾街道上的便宜妓院
+		PRINTFORMW 发泄着因为扶她化而产生的，对女性肉体的饥渴……
+		MATURO = 扶她嫖客
+	ELSEIF TALENT:A:273
+		;処女封印
+		PRINTFORML 无法支付解除私处封印的高昂费用，%SAVESTR:A%只好成为了专门提供肛交服务的妓女
+		PRINTFORMW 肛交的嫖资非常低廉，%SAVESTR:A%在妓院的盘剥下苦苦挣扎日益沦陷……
+		MATURO = 肮脏的屁眼交易
+	
+	;夢を叶えた系
+	ELSEIF TALENT:A:317 == 3
+		;歌が好き
+		PRINTFORML 喜欢唱歌的%SAVESTR:A%、决定以歌手的身份工作养活自己
+		PRINTFORMW 可是没人喜欢%SAVESTR:A%的歌、最近已经沦为便宜画家的裸体模特……
+		MATURO = 不入流的歌手
+	ELSEIF TALENT:A:317 == 6
+		;踊りが好き
+		PRINTFORML 喜欢跳舞的%SAVESTR:A%、决定以舞者的身份工作养活自己
+		PRINTFORMW 可是没人喜欢%SAVESTR:A%的舞蹈、跳舞时的服装越来越少，最近只剩一根丝带挂在身上了……
+		MATURO = 不入流的舞者
+	ELSEIF TALENT:A:317 == 7
+		;絵が好き
+		PRINTFORML 喜欢绘画的%SAVESTR:A%、决定靠卖自己的裸体画挣钱养活自己
+		PRINTFORMW 可是没人喜欢%SAVESTR:A%的作品、最近画作的主题已经逐渐变成男女的交媾……
+		MATURO = 不入流的画家
+	ELSEIF TALENT:A:317 == 18
+		;小説が好き
+		PRINTFORML 喜欢小说的%SAVESTR:A%、决定以官能小説家的身份工作养活自己
+		PRINTFORMW 可是没人喜欢%SAVESTR:A%的文风、最近小说描写的细节越来越变态……
+		MATURO = 不入流的小説家
+		
+	;どこにも転ばず仕方なく系
+	ELSEIF TALENT:A:315 == 5
+		;元娼婦
+		PRINTFORMW %SAVESTR:A%又回到了过去妓女的生活中，站在街头招揽生意……
+		MATURO = 妓女
+	ELSEIF TALENT:A:315 == 7
+		;元物乞い
+		PRINTFORMW %SAVESTR:A%又回到了过去乞丐的生活中，蹲在街角乞讨……
+		MATURO = 乞丐
+	ELSEIF TALENT:A:315 == 9
+		;元貧民
+		PRINTFORMW %SAVESTR:A%又回到了过去贫民的生活中，继续居住在破烂的草棚子里……
+		MATURO = 贫民
+	ELSE
+		PRINTFORMW 此后%SAVESTR:A%的行踪也逐渐消失了……
+		MATURO = 下落不明
+	ENDIF
+	
+	PRINTL  
+	PRINTL 得到了象征勇者之力的勋章
+	PRINTW 勋章经验+1
+	EXP:0:81 += 1
+
+ELSEIF TFLAG:510 == 1
+	PRINTFORMW %SAVESTR:A%所有的力量都在烙印被打上的那一瞬间被封印了、女性的肉体被咒语改变成为了男性，不可逆转。
+	PRINTFORMW 被%NAME:MASTER%男性化的%SAVESTR:A%体力耗尽，被放逐了。
+	PRINTW 放逐的过程中也渐渐忘记了自己曾是女性的事实、决定今后将作为男性继续活下去……
+	PRINTL  
+	PRINTL 得到了象征勇者之力的勋章
+	PRINTW 勋章经验+1
+	EXP:0:81 += 1
+	MATURO = 一个爷们站起来了
+	
+ELSEIF TFLAG:510 == 2
+	PRINTFORMW %SAVESTR:A%所有的力量都在烙印被打上的那一瞬间被封印了、迄今为止所有的人生记忆也被全部抹去。
+	PRINTFORMW 被%NAME:MASTER%抹去记忆的%SAVESTR:A%茫然失措、被放逐了
+	PRINTW 她还在彷徨的回想着自己是谁…
+	PRINTL  
+	PRINTL 得到了象征勇者之力的勋章
+	PRINTW 勋章经验+1
+	EXP:0:81 += 1
+	MATURO = 记忆碎片
+	
+ELSEIF TFLAG:510 == 3
+	PRINTFORMW %SAVESTR:A%所有的力量都在被%NAME:MASTER%打上烙印的那一瞬间封印了、
+	PRINTFORMW 加上%SAVESTR:A%所有关于“自己曾是人类”的记忆都被封锁。
+	PRINTFORMW 随后%NAME:MASTER%将她变成了
+		IF RAND:8 == 0
+				;ポニー的な
+				PRINT 一匹馬
+				MATURO = My little Pony！
+		ELSEIF RAND:8 == 1
+				;ごすずん！
+				PRINT 一条狗
+				MATURO = 汪？
+		ELSEIF RAND:8 == 2
+				;フライングまうまう
+				PRINT 一只小鸟
+				MATURO = 吱？
+		ELSEIF RAND:8 == 3
+				;お…おま…
+				PRINT 一只兔子
+				MATURO = 颤抖的双耳
+		ELSEIF RAND:8 == 4
+				;あぁ迷える子羊ってそういう…
+				PRINT 一只羊
+				MATURO = 羊……
+		ELSEIF RAND:8 == 5
+				;こゃーん
+				PRINT 一只狐狸
+				MATURO = 狐狸
+		ELSE
+				;ぬっぬっぬ
+				PRINT 一只猫
+				MATURO = 喵~
+		ENDIF
+	PRINTW 的样子。
+	PRINTFORMW %NAME:MASTER%将已经变成小动物的%SAVESTR:A%放逐了。
+	PRINTFORMW 她以后不会记得自己曾经是人类了……
+	PRINTL  
+	PRINTL 得到了象征勇者之力的勋章
+	PRINTW 勋章经验+1
+	EXP:0:81 += 1
+ELSEIF TFLAG:510 == 4
+	PRINTFORMW %SAVESTR:A%所有的力量都在被%NAME:MASTER%打上烙印的那一瞬间封印了、
+	PRINTFORMW 被放逐回成为勇者前的生活
+	
+	MATURO = 
+	SELECTCASE TALENT:(A):成为勇者前的生活
+	CASE 0
+		;不明
+		PRINTFORMW 之后，%SAVESTR:A%的下落不明……
+		MATURO = 下落不明
+	CASE 1
+		;学生
+		IF TALENT:A:204
+			;肉便器
+			PRINTFORM 已经沦为肉便器的%SAVESTR:A%成为学校里有名的荡妇。
+			MATURO += "淫娃"
+		ENDIF
+		IF TALENT:A:48
+			;近視
+			PRINTFORM 朴素的眼镜看上去颇有学霸的潜力。
+			MATURO += "眼鏡娘"
+		ENDIF
+		IF TALENT:A:180
+			;娼婦
+			PRINTFORM 放学后，靠援交挣钱养活自己。
+			MATURO += "卖淫"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%以学生的身份，尽情“享受”着生活。
+		MATURO += "学生"
+	CASE 2
+		;修道女
+		IF ABL:A:13 > 0 || TALENT:A:52
+			;奉仕技術1以上、または舌使い
+			PRINTFORM %SAVESTR:A%十分享受被舔弄阴茎时少年神官那愉悦和苦闷并存的神情。
+			MATURO += "沦为口交母猪的"
+		ENDIF
+		IF ABL:A:3 > 0 || TALENT:A:106
+			;A感覚1以上、またはA敏感
+			PRINTFORM %SAVESTR:A%因为无法抗拒尻穴性交的背德感、偷偷地进行着尻穴买春的行为。
+			MATURO += "尻穴买春的"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%仍在主持着神殿的日常工作，请多多关照哦。
+		MATURO += "修女"
+	CASE 3
+		;農家
+		IF TALENT:A:13
+			;素直
+			PRINTFORM %SAVESTR:A%坦然面对自己的过去，嫁给了农夫、每日下地辛勤耕作。
+			MATURO += "种田的"
+		ENDIF
+		IF EXP:A:56 >= 5
+			;獣姦経験5以上
+			PRINTFORM 似乎%SAVESTR:A%无法忘却那些交尾的经验、他们家农耕用的家畜似乎都很活跃呢……
+			MATURO += "兽奸的"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%成为了一名农妇，过着平凡的生活。
+		MATURO += "农妇"
+	CASE 4
+		;漁師
+		IF TALENT:A:13
+			;素直
+			PRINTFORM %SAVESTR:A%坦然面对自己的过去，努力工作，修补渔网的工作越来越得心应手。
+			MATURO += "工作上手的"
+		ENDIF
+		IF EXP:A:74 >= 5
+			;売春経験5以上
+			PRINTFORM 偶尔有商船停泊%SAVESTR:A%所在的渔村时，她也会张开双腿挣点外快。
+			MATURO += "卖淫的"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%成为了一名渔夫，过着平凡的生活。
+		MATURO += "渔妇"
+	CASE 5
+		;娼婦
+		IF ABL:A:21 > 0
+			;マゾっ気1以上
+			PRINTFORM 身为抖M的%SAVESTR:A%手活不错，在店里很受欢迎。
+			MATURO += "手交猪猡"
+		ENDIF
+		IF ABL:A:17 > 0 || TALENT:A:28
+			;露出癖1以上、または目立ちたがり
+			PRINTFORM %SAVESTR:A%喜欢在公开场合卖淫做爱取乐、反而要向围观群众收票钱……
+			MATURO += "露出狂"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%又回到了之前的妓女生涯。
+		MATURO += "妓女"
+	CASE 6
+		;盗人
+		IF ABL:A:22 > 0 || TALENT:A:81 || TALENT:A:82
+			;レズっ気1以上、または両刀、または男嫌い
+			PRINTFORM %SAVESTR:A%热衷于专门诱拐女性卖淫犯罪。只是每一位受害人都被她先上过……
+			MATURO += "诱拐人口的"
+		ENDIF
+		PRINTFORML 于是，%SAVESTR:A%再次沦为社会底层的犯罪份子。
+		MATURO += "盗贼"
+	CASE 7
+		;物乞い
+		IF TALENT:A:180
+			;娼婦
+			PRINTFORM 不久后传来消息，%SAVESTR:A%已经沦为最底层的站街女，付多付少都给上。
+			MATURO += "低贱的"
+		ENDIF
+		PRINTFORML %SAVESTR:A%再次成为社会底层的廉价娼妇。
+		MATURO += "乞丐妓女"
+	CASE 8
+		;貴族
+		MATURO = 贵族的
+		PRINTFORM 身为原贵族的%SAVESTR:A%回到家族，过着和之前一样的生活，
+		IF ABL:A:11 > 0 || TALENT:A:102 || TALENT:A:60
+			;欲望1以上、またはC敏感、または自慰しやすい
+			PRINTFORM 但%SAVESTR:A%无法压抑甜美的欲望，经常躲在房间里不可抑制的疯狂手淫。
+			MATURO += "手淫中毒的"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%又回到了贵族社交圈之中。
+		MATURO += "千金小姐"
+	CASE 9
+		;貧民
+		IF EXP:A:70 >= 5
+			;被写経験5以上
+			PRINTFORM 因为曾经拍摄的水晶球视频流出，%SAVESTR:A%回到贫民区后，邻居的男性都蜂拥而至……
+			MATURO += "前女优"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%回到了贫民的生活中。
+		MATURO += "贫民"
+	CASE 10
+		;墓守
+		IF ABL:A:17 > 0 || TALENT:A:28
+			;露出癖1以上、または目立ちたがり
+			PRINTFORM %SAVESTR:A%十分享受哪些躲在周围阴暗处偷窥的淫秽目光，毕竟“全裸的守墓人”听上去就很刺激啊……
+			MATURO += "露出狂"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%继续她守墓人的生涯。
+		MATURO += "守墓人"
+	CASE 11
+		;巫女
+		IF ABL:A:3 > 0 || TALENT:A:106
+			;A感覚1以上、またはA敏感
+			PRINTFORM 回到神殿的%SAVESTR:A%难以抵抗自己的欲望，偷偷进行着肛交卖淫的事业，明知这是肮脏的背德交易、却依旧乐此不疲……
+			MATURO += "肛交卖淫的"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%开始继续着神殿的日常工作了。
+		MATURO += "巫女"
+	CASE 12
+		;聖女
+		IF ABL:A:13 > 0 || TALENT:A:52
+			;奉仕技術1以上、または舌使い
+			PRINTFORM 回到神殿的%SAVESTR:A%很是享受自己的日常生活，尤其是舔弄那些少年神官的肉棒时，他们脸上苦闷和愉悦混杂的表情。
+			MATURO += "沦为口交母猪的"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%开始继续着神殿的日常工作了。
+		MATURO += "聖女"
+	CASE 13
+		;予言者
+		IF ABL:A:13 > 0 || TALENT:A:52
+			;奉仕技術1以上、または舌使い
+			PRINTFORM 回到神殿的%SAVESTR:A%很是享受自己的日常生活，尤其是舔弄那些少年神官的肉棒时，他们脸上苦闷和愉悦混杂的表情。
+			MATURO += "沦为口交母猪的"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%开始继续着神殿的日常工作了。
+		MATURO += "予言者"
+	CASE 14
+		;占い師
+		IF ABL:A:11 > 0 || TALENT:A:36
+			;欲望1以上、または恥薄い
+			PRINTFORM 被放逐的%SAVESTR:A%回到故地，继续她的占卜事业，并在其中加入了性骚扰的元素，时常让前来占卜的顾客面红耳赤……
+			MATURO += "性骚扰"
+		ENDIF
+		PRINTFORML 于是，街头巷尾都流传着关于“变态色情占卜师”%SAVESTR:A%的故事……
+		MATURO += "占卜师"
+	CASE 15
+		;商人
+		IF TALENT:A:204
+			;肉便器
+			PRINTFORM 身为肉便器的%SAVESTR:A%回到家乡继续经营之前的商店，只是商店似乎多了不少让男性顾客趋之若鹜的可疑“副业”。
+			MATURO += "沦为肉便器的"
+		ENDIF
+		PRINTFORML “今天，你进去了么？”凡是路过%SAVESTR:A%商店的男客人都会露出会心的笑容……
+		MATURO += "看板娘"
+	CASE 16
+		;薬草取り
+		IF ABL:A:17 > 0 || TALENT:A:28
+			;露出癖1以上、または目立ちたがり
+			PRINTFORM 回到曾经居住的村庄后，%SAVESTR:A%喜欢独自一人时在森林中脱光衣服，享受着森林浴带来的奇妙感觉……
+			MATURO += "裸体"
+		ENDIF
+		PRINTFORML 看来%SAVESTR:A%打算在那个寂静的村庄中渡过余生。
+		MATURO += "村娘"
+	CASE 17
+		;隠者
+		IF ABL:A:17 > 0 || TALENT:A:28
+			;露出癖1以上、または目立ちたがり
+			PRINTFORM 虽然%SAVESTR:A%依旧不常露面，但是市面上她主演的水晶球视频却偷偷发售了……
+			MATURO += "神秘的"
+		ENDIF
+		PRINTFORML 总之，%SAVESTR:A%又回到了之前的隐居生活。
+		MATURO += "隐居者"
+	CASE 18
+		;パン屋
+		MATURO = 面包店的
+		IF TALENT:A:204
+			;肉便器
+			PRINTFORM 身为肉便器的%SAVESTR:A%回到家乡继续经营之前的面包店，只是店里似乎多了不少让男性顾客趋之若鹜的可疑“副业”
+			MATURO += "沦为肉便器的"
+		ENDIF
+		PRINTFORML “太可疑了，为什么顾客都去%SAVESTR:A%的店里买面包？！”竞争对手偷偷的讨论着。
+		MATURO += "看板娘"
+	CASE 19
+		;軍人
+		IF EXP:A:70 >= 5
+			;被写経験5以上
+			PRINTFORM 然而在军队内部，%SAVESTR:A%的水晶球视频已经流传甚广、军营中已经开始出现奇怪的流言……
+			MATURO += "恥辱的"
+		ENDIF
+		PRINTFORML 归队的%SAVESTR:A%从军之路看来并不会很顺利呐。
+		MATURO += "女将校"
+	CASE 20
+		;奴隷
+		IF TALENT:A:143 || TALENT:A:13
+			;ショタコンまたは素直
+			PRINTFORM 几经倒卖的%SAVESTR:A%像商品一样被转手给了某位性格温柔的少年主人，新主人似乎很重视她。
+			MATURO += "少年专用的"
+		ENDIF
+		PRINTFORML 被放逐的%SAVESTR:A%又回到了之前的奴隶生涯。
+		MATURO += "奴隶"
+	CASE 21
+		;主婦
+		IF EXP:A:56 >= 5
+			;獣姦経験5以上
+			PRINTFORM %SAVESTR:A%最近新买了一只宠物犬。只是每次%SAVESTR:A%看着狗狗的眼神中总是充满了情欲。
+			MATURO += "爱好兽奸的"
+		ENDIF
+		PRINTFORML 面对自己过往，毫不知情的丈夫，%SAVESTR:A%又回到了之前平静的主妇生活。
+		MATURO += "主妇"
+	CASEELSE
+		PRINTFORMW 在此之后，%SAVESTR:A%下落不明了……
+		MATURO = 下落不明
+	ENDSELECT
+	
+	PRINTFORMW ——下场：%MATURO%
+	
+ENDIF
+
+SIF FAMILY:2 >= 0
+	CSTR:(FAMILY:2):5 = %MATURO%%SAVESTR:A%
+TSTR:30 = %MATURO%%SAVESTR:A%
+CALL VIDEO_MATURO
+	
+A = TARGET
+
+;武器解除
+W:0 = CFLAG:A:550
+CALL EQUIP_GET
+CFLAG:A:550 = -1
+;指輪解除
+W:0 = CFLAG:A:551
+CALL EQUIP_GET
+CFLAG:A:551 = -1
+;指輪解除
+W:0 = CFLAG:A:552
+CALL EQUIP_GET
+CFLAG:A:552 = -1
+
+LV = CFLAG:A:9
+
+X = NO:A + 199
+FLAG:X = 1
+
+;前回の助手?調教対象だった場合はフラグを空に
+SIF FLAG:1 == TARGET
+	FLAG:1 = -1
+SIF FLAG:2 == TARGET
+	FLAG:2 = -1
+
+;前回の助手?調教対象より前だった場合はフラグを減算
+SIF FLAG:1 > TARGET
+	FLAG:1 -= 1
+SIF FLAG:2 > TARGET
+	FLAG:2 -= 1
+
+TARGET = FLAG:1
+ASSI = FLAG:2
+
+CALL PARTY_CHAR_DEL, A
+
+DELCHARA A
+
+CALL NAME_RESET
+
+
+FLAG:80 += 1
+
+LV += 1
+LV *= 50
+
+EXP:0:80 += LV
+PRINTFORMW 《你抽取了被封印的勇者之力尽为己用，获得了{LV}经验值》
+
+TARGET = -1
+RETURN 0

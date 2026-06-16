@@ -1,0 +1,103 @@
+﻿;--------------------------------------------------
+;MOD开关
+;汇总之后从CONFIG.ERB调用，进行开关选择
+;占用EX_FLAG:9000
+;	 0ビット(&    1):魔界银行
+;	 1ビット(&    2):铁石心肠（后代可处刑、可迎击）
+;	 2ビット(&    4):打工
+;	 3ビット(&    8):
+;	 4ビット(&   16):
+;	 5ビット(&   32):
+;	 6ビット(&   64):
+;	 7ビット(&  128):
+;	 8ビット(&  256):
+;	 9ビット(&  512):
+;	10ビット(& 1024):
+;	11ビット(& 2048):
+;	12ビット(& 4096):
+;	13ビット(& 8192):
+;	14ビット(&16384):
+;	15ビット(&32768):
+;--------------------------------------------------
+@MODLIST
+;--------------------------------------------------
+SETCOLOR GETBIT(EX_FLAG:9000,0) ?  0xffffff # 0x646464
+PRINTFORML [0]魔界银行	　　 现在：\@ GETBIT(EX_FLAG:9000,0) ? ON # OFF \@
+SETCOLOR GETBIT(EX_FLAG:9000,1) ?  0xffffff # 0x646464
+PRINTFORML [1]铁石心肠（后代可处刑、可迎击）现在：\@ GETBIT(EX_FLAG:9000,1) ? ON # OFF \@
+SETCOLOR GETBIT(EX_FLAG:9000,2) ?  0xffffff # 0x646464
+PRINTFORML [2]打工系统	　　 现在：\@ GETBIT(EX_FLAG:9000,2) ? ON # OFF \@
+;SETCOLOR GETBIT(EX_FLAG:9000,4) ?  0xffffff # 0x646464
+;PRINTFORML [3]	　　	　　 现在：\@ GETBIT(EX_FLAG:9000,3) ? ON # OFF \@
+;SETCOLOR GETBIT(EX_FLAG:9000,5) ?  0xffffff # 0x646464
+;PRINTFORML [4]	　　	　　 现在：\@ GETBIT(EX_FLAG:9000,4) ? ON # OFF \@
+RESETCOLOR
+DRAWLINE
+PRINTL [100] 返回
+
+INPUT
+SIF RESULT == 100
+	RETURN 0
+IF RESULT >= 0
+	INVERTBIT EX_FLAG:9000,RESULT
+	;为了银行不倒闭的处理 2017.02.08
+	IF RESULT == 0 && EX_FLAG:9003 && GETBIT(EX_FLAG:9000,0)
+		MONEY += EX_FLAG:9003
+		EX_FLAG:4444 += EX_FLAG:9003
+	ELSEIF RESULT == 0 && EX_FLAG:9003 && !GETBIT(EX_FLAG:9000,0)
+		MONEY -= EX_FLAG:9003
+		EX_FLAG:4444 -= EX_FLAG:9003
+	;将卖春积极性归入打工系统
+	ELSEIF RESULT == 2 && GETBIT(EX_FLAG:9000,3)
+		FOR LOCAL, 0, CHARANUM
+			EX_CFLAG:LOCAL:400 = CFLAG:LOCAL:120
+		NEXT
+	ELSEIF RESULT == 2 && !GETBIT(EX_FLAG:9000,3)
+		FOR LOCAL, 0, CHARANUM
+			CFLAG:LOCAL:120 = EX_CFLAG:LOCAL:400 
+		NEXT	
+	ENDIF	
+ENDIF
+RESTART
+
+
+
+;--------------------------------------------------
+@CONFIG_MODLIST
+;--------------------------------------------------
+SETCOLOR GETBIT(EX_FLAG:9000,0) ?  0xffffff # 0x646464
+PRINT [银行]　
+SETCOLOR GETBIT(EX_FLAG:9000,1) ?  0xffffff # 0x646464
+PRINT [铁心]　
+SETCOLOR GETBIT(EX_FLAG:9000,2) ?  0xffffff # 0x646464
+PRINT [打工]	　
+;SETCOLOR GETBIT(EX_FLAG:9000,4) ?  0xffffff # 0x646464
+;PRINT []	　
+;SETCOLOR GETBIT(EX_FLAG:9000,5) ?  0xffffff # 0x646464
+;PRINT []	　
+RESETCOLOR
+PRINTL
+
+
+;--------------------------------------------------
+;MOD在各个位置的调用列，暂时只有银行，且仅在MaouNet
+;所以仅做了MaouNet的函数，建议每种列表分列调用函数
+;--------------------------------------------------
+@MAOUNET_MODPRINT
+;--------------------------------------------------
+
+;魔界银行按钮
+SIF	GETBIT(EX_FLAG:9000,0)
+	PRINTFORML [5] 连接到魔界银行(目前存款{FLAG:9001})
+
+
+;--------------------------------------------------
+@MAOUNET_MODSCRIPT
+;--------------------------------------------------
+
+;魔界银行执行
+SIF RESULT == 5	&& GETBIT(EX_FLAG:9000,0)
+	CALL MAKAI_BANK
+	
+	
+	

@@ -1,0 +1,523 @@
+﻿;ダンジョン情報
+;有志の「」からいただきました
+;だいぶ改造してます
+;----------------------------------------------
+@DUNGEON_INFO
+;----------------------------------------------
+
+IF FLAG:502 == 1
+	CALL DUNGEON_INFO_MAP
+	RETURN 0
+ENDIF 
+
+;コマンド入力の表示
+DRAWLINE
+$INPUT_LOOP
+REPEAT 9
+	SETCOLORBYNAME RoyalBlue
+	;陷阱A
+	X = COUNT + 300
+	Y = FLAG:X
+	IF Y <= 0
+		PRINTFORM [{COUNT}] 第{COUNT + 1}阶层　陷阱：无
+	ELSEIF ITEM:Y > 0
+		PRINTFORM [{COUNT}] 第{COUNT + 1}阶层　陷阱：%ITEMNAME:Y%({ITEM:Y})
+	ELSE
+		PRINTFORM [{COUNT}] 第{COUNT + 1}阶层　陷阱：无
+		FLAG:X = -1
+	ENDIF
+	
+	;陷阱B
+	X = COUNT + 310
+	Y = FLAG:X
+	IF Y <= 0
+		PRINTFORM ：无
+	ELSEIF ITEM:Y > 0
+		PRINTFORM ：%ITEMNAME:Y%({ITEM:Y})
+	ELSE
+		PRINTFORM ：无
+		FLAG:X = -1
+	ENDIF
+	
+	;陷阱C
+	X = COUNT + 320
+	Y = FLAG:X
+	IF Y <= 0
+		PRINTFORML ：无
+	ELSEIF ITEM:Y > 0
+		PRINTFORML ：%ITEMNAME:Y%({ITEM:Y})
+	ELSE
+		PRINTFORML ：无
+		FLAG:X = -1
+	ENDIF
+	
+	RESETCOLOR
+	
+	;设施
+	X = COUNT + 350
+	Y = FLAG:X
+	IF Y <= 0
+		PRINTFORM 　设施：通路
+	ELSEIF Y >= 500 && Y <= 506
+		PRINTFORM 　设施：%ITEMNAME:Y%
+	ELSE
+		PRINTFORM 　设施：通路
+		FLAG:X = 0
+	ENDIF
+	
+	;指輪
+	X = COUNT + 340
+	Y = FLAG:X
+	IF Y <= 0
+		PRINTFORML 　宝箱：无
+	ELSEIF ITEM:Y > 0
+		PRINTFORML 　宝箱：%ITEMNAME:Y%({ITEM:Y})
+	ELSE
+		PRINTFORML 　宝箱：无
+		FLAG:X = -1
+	ENDIF
+REND
+
+	PRINTFORML [9] 部下状态总览
+	PRINTFORML [10]1～3层 [11]4～6层 [12]7～9层 的部下
+
+DRAWLINE
+PRINTL [100] - 返回
+
+INPUT
+IF RESULT < 0
+	GOTO INPUT_LOOP
+ELSEIF RESULT >= 13 && RESULT != 100
+	GOTO INPUT_LOOP
+ENDIF
+
+;部下の表示
+IF RESULT >= 9 && RESULT <= 12
+
+	PRINTL ******************
+	PRINTL 地下城内的部下
+	PRINTL ******************
+
+	Z = 0
+	R = 100
+	IF RESULT >= 10
+			R = 30
+		IF RESULT == 11
+			Z = 30
+		ELSEIF RESULT == 12
+			Z = 60
+		ENDIF
+	ENDIF
+		REPEAT 100
+		SIF Z >= 100 || R <= 0
+			BREAK
+		Y = Z % 10
+		IF Y == 0
+			X = Z / 10
+			X += 1
+			DRAWLINE
+			IF X != 10
+				PRINTFORML 第{X}阶层
+			ELSEIF X == 10
+				PRINTFORML 近卫兵
+			ENDIF
+			CALL ENEMY_EXIST
+		ENDIF
+		A = Z + 100
+		B = ITEM:A
+		IF B > 0
+			PRINTV B
+			PRINT 只
+			PRINTS ITEMNAME:A
+			PRINTL  
+		ENDIF
+		Z += 1
+		R -= 1
+
+	REND
+	
+	DRAWLINE
+	WAIT
+
+	GOTO INPUT_LOOP
+ENDIF
+
+SIF RESULT == 100
+	RETURN 0
+
+X = RESULT
+
+PRINTFORML 进行第{X + 1}阶层的设定
+PRINTL 《请选择要设置的陷阱和宝物》
+
+Y = 0
+REPEAT 29
+	Z = COUNT + 60
+	IF Y >= 2 && ITEM:Z > 0
+		PRINTFORML [{Z}] %ITEMNAME:Z%（{ITEM:Z}）
+		Y = 0
+	ELSEIF ITEM:Z > 0
+		PRINTFORM [{Z}] %ITEMNAME:Z%（{ITEM:Z}）
+		Y += 1
+	ENDIF
+REND
+REPEAT 21
+	Z = COUNT + 300
+	IF Y >= 2 && ITEM:Z > 0
+		PRINTFORML [{Z}] %ITEMNAME:Z%（{ITEM:Z}）
+		Y = 0
+	ELSEIF ITEM:Z > 0
+		PRINTFORM [{Z}] %ITEMNAME:Z%（{ITEM:Z}）
+		Y += 1
+	ENDIF
+REND
+PRINTL  
+DRAWLINE
+PRINTL [0] - 解除陷阱 [1] - 取下宝物 [2] - 进行设施的设定
+PRINTL [998] - 停止 [999] - 结束地下城的设定
+
+$INPUT_LOOP_2
+INPUT
+IF RESULT < 0
+	GOTO INPUT_LOOP_2
+ELSEIF RESULT >= 321 && RESULT != 998 && RESULT != 999
+	GOTO INPUT_LOOP_2
+ENDIF
+
+IF RESULT == 0
+	Y = X + 300
+	FLAG:Y = -1
+	Y = X + 310
+	FLAG:Y = -1
+	Y = X + 320
+	FLAG:Y = -1
+	GOTO INPUT_LOOP
+ELSEIF RESULT == 1
+	Y = X + 340
+	FLAG:Y = -1
+	GOTO INPUT_LOOP
+ELSEIF RESULT == 2
+	CALL ROOM_SETUP
+	GOTO INPUT_LOOP
+ELSEIF RESULT == 998
+	GOTO INPUT_LOOP
+ELSEIF RESULT == 999
+	RETURN 0
+ENDIF
+Z = RESULT
+IF Z < 100
+	$INPUT_LOOP_3
+	PRINTL [0]A  [1]B  [2]C  [3]全部
+	INPUT
+	IF RESULT < 0
+		GOTO INPUT_LOOP_3
+	ELSEIF RESULT >= 4
+		GOTO INPUT_LOOP_3
+	ELSEIF RESULT == 3
+		Y = X + 300
+		FLAG:Y = Z
+		Y = X + 310
+		FLAG:Y = Z
+		Y = X + 320
+		FLAG:Y = Z
+		GOTO INPUT_LOOP
+	ENDIF
+	Y = X + 300
+	Y += RESULT * 10
+ELSEIF Z > 300
+	Y = X + 340
+ENDIF
+FLAG:Y = Z
+GOTO INPUT_LOOP
+
+
+
+
+;-----------------------------------
+@ENEMY_EXIST
+;-----------------------------------
+REPEAT CHARANUM
+	SETCOLOR 255,255,0
+	IF CFLAG:COUNT:501 == X && COUNT != MASTER 
+		IF CFLAG:COUNT:1 == 2
+			PRINTFORM %SAVESTR:COUNT%[侵攻中]
+			IF CFLAG:COUNT:507 == 1
+				PRINTL *逃走中*
+			ELSE
+				PRINTL  
+			ENDIF
+		ELSEIF CFLAG:COUNT:1 == 3
+			PRINTFORM %SAVESTR:COUNT%[迎击中]
+			IF CFLAG:COUNT:507 == 1
+				PRINTL *逃走中*
+			ELSE
+				PRINTL  
+			ENDIF
+		ENDIF
+		
+	ENDIF
+	SIF X == 10 && COUNT != MASTER && EX_TALENT:COUNT:1
+		PRINTFORML %SAVESTR:COUNT%[护卫中]
+	RESETCOLOR
+REND
+
+RETURN 0
+
+
+;--------------------------------------
+@ROOM_SETUP
+;--------------------------------------
+
+$INPUT_LOOP_4
+
+PRINTFORML 第{X + 1}阶层
+PRINTL [0] 通路
+Y = 0 
+REPEAT 7
+	Z = COUNT + 500
+	PRINTFORM [{Z}] %ITEMNAME:Z%  
+	Y += 1
+	IF Y >= 3
+		PRINTL  
+		Y = 0
+	ENDIF
+REND
+PRINTL [999] 停止
+PRINTL 改造为通路免费。改造为其它设施则需要改装费10000p
+
+INPUT
+
+IF RESULT == 0
+	Y = X + 350
+	FLAG:Y = 0
+ELSEIF RESULT == 999
+	RETURN 0
+ELSEIF RESULT >= 500 && RESULT <= 507
+	IF MONEY < 10000
+		PRINTL *资金不足！！*
+		RETURN 0
+	ENDIF
+	MONEY -= 10000
+	EX_FLAG:4444 -= 10000
+	Y = X + 350
+	FLAG:Y = RESULT
+ELSE
+	GOTO INPUT_LOOP_4
+ENDIF
+RETURN 0
+
+
+;-------------------------------------------------
+@DUNGEON_INFO_MAP
+;-------------------------------------------------
+
+$INPUT_LOOP_MAP
+
+DRAWLINE
+PRINTFORML [0] 部下的配置
+PRINTFORML [1] 显示地图
+PRINTFORML [2] 部下状态总览
+PRINTFORML [3]1～3Lv [4]4～6Lv [5]7～9Lv 的部下
+
+DRAWLINE
+PRINTL [100] - 返回
+
+INPUT
+IF RESULT < 0
+	GOTO INPUT_LOOP_MAP
+ELSEIF RESULT >= 6 && RESULT != 100
+	GOTO INPUT_LOOP_MAP
+ENDIF
+
+IF RESULT == 1
+	CALL GEO_OUTPUT_2
+	GOTO INPUT_LOOP_MAP
+ELSEIF RESULT >= 2 && RESULT <= 5
+	;部下の表示
+	
+	PRINTL ******************
+	PRINTL 　　　魔王军
+	PRINTL ******************
+
+	Z = 0
+	R = 100
+	IF RESULT >= 3
+			R = 30
+		IF RESULT == 4
+			Z = 30
+		ELSEIF RESULT == 5
+			Z = 60
+		ENDIF
+	ENDIF
+		REPEAT 100
+		SIF Z >= 100 || R <= 0
+			BREAK
+		Y = Z % 10
+		IF Y == 0
+			X = Z / 10
+			X += 1
+			DRAWLINE
+			IF X != 10
+				PRINTFORML 第{X}阶层
+			ELSEIF X == 10
+				PRINTFORML 近卫兵
+			ENDIF
+			CALL ENEMY_EXIST
+		ENDIF
+		A = Z + 100
+		B = ITEM:A
+		IF B > 0
+			PRINTV B
+			PRINT 只
+			PRINTS ITEMNAME:A
+			PRINTL  
+		ENDIF
+		Z += 1
+		R -= 1
+
+	REND
+	
+	DRAWLINE
+	WAIT
+
+	GOTO INPUT_LOOP_MAP
+ENDIF
+
+SIF RESULT == 100
+	RETURN 0
+
+
+;許容量チェック
+CALL MON_LIMIT
+SIF RESULT == 0
+	GOTO INPUT_LOOP_MAP
+
+$INPUT_LOOP_MONSET
+
+PRINTL *放置怪物*
+PRINTL 请设定怪物的等级
+PRINTL [1] [2] [3] [4] [5] [6] [7] [8] [9] [10]
+PRINTL [0] 停止 [100] 自动
+INPUT
+
+IF RESULT == 0
+	GOTO INPUT_LOOP_MAP
+ELSEIF RESULT == 100
+	CALL MON_SET_OMAKASE
+	PRINTW *随机放置了怪物*
+	GOTO INPUT_LOOP_MAP
+ELSEIF RESULT < 0 || RESULT >= 11
+	GOTO INPUT_LOOP_MONSET
+ENDIF
+
+LOCAL:2 = RESULT
+
+PRINTL 请设定怪物的X坐标
+PRINTL [01] [02] [03] [04] [05] [06] [07] [08] [09] [10]
+PRINTL [11] [12] [13] [14] [15] [16] [17] [18] [19] [20]
+PRINTL [21] [22] [23] [24] [25] [26] [27] [28] [29] [30]
+PRINTL [31] [32]
+PRINTL [0] 停止
+INPUT
+
+
+IF RESULT == 0
+	GOTO INPUT_LOOP_MAP
+ELSEIF RESULT < 0 || RESULT >= 33
+	GOTO INPUT_LOOP_MONSET
+ENDIF
+
+LOCAL:3 = RESULT
+
+PRINTL 请设定怪物的Y坐标
+PRINTL [01] [02] [03] [04] [05] [06] [07] [08] [09] [10]
+PRINTL [11] [12] [13] [14] [15] [16] [17] [18] [19] [20]
+PRINTL [21] [22] [23] [24] [25] [26] [27] [28] [29] [30]
+PRINTL [31] [32]
+PRINTL [0] 停止
+INPUT
+
+IF RESULT == 0
+	GOTO INPUT_LOOP_MAP
+ELSEIF RESULT < 0 || RESULT >= 33
+	GOTO INPUT_LOOP_MONSET
+ENDIF
+
+LOCAL:4 = RESULT
+
+IF LOCAL:3 == 16 && LOCAL:4 == 16
+	PRINTW 无法在此放置
+	GOTO INPUT_LOOP_MONSET
+ENDIF
+
+SETFONT "ＭＳ ゴシック"
+
+;マップを出力
+FOR LOCAL:1,0,32
+	FOR LOCAL:0,0,32
+		IF LOCAL:0 == LOCAL:3 && LOCAL:1 == LOCAL:4
+			PRINT ★
+			PRINT ,
+		ELSE
+			P:0 = LOCAL:0
+			P:1 = LOCAL:1
+			CALL CHIP_DRAW
+		ENDIF
+	NEXT
+	PRINTL 
+NEXT
+
+SETFONT
+
+PRINTW 确定放置在★的所在？
+PRINTL [0] 好的  [1] 不要
+INPUT
+SIF RESULT != 0
+	GOTO INPUT_LOOP_MAP
+
+DB:(LOCAL:4):(LOCAL:3) = LOCAL:2
+
+PRINTW *放置了怪物*
+
+
+GOTO INPUT_LOOP_MAP
+
+;-----------------------------------
+@MON_SET_OMAKASE
+;-----------------------------------
+;怪物ランダム配置
+;めんどくさい你に
+
+;ループカウンタ
+LOCAL:0 = 0
+
+$INPUT_LOOP_MONSET_OMAKASE
+
+SIF LOCAL:0 > 100
+	RETURN 0
+
+;許容量チェック
+CALL MON_LIMIT
+SIF RESULT == 0
+	RETURN 0
+
+
+LOCAL:2 = RAND:10
+LOCAL:3 = RAND:32
+LOCAL:4 = RAND:32
+
+IF LOCAL:3 == 16 && LOCAL:4 == 16
+	GOTO INPUT_LOOP_MONSET_OMAKASE
+ENDIF
+DB:(LOCAL:4):(LOCAL:3) = LOCAL:2
+
+LOCAL:0 += 1
+GOTO INPUT_LOOP_MONSET_OMAKASE
+
+
+
+
+
+
+RETURN 0
+

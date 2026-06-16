@@ -1,0 +1,110 @@
+﻿;名前変更
+
+;-----------------------------------------------
+@SHOW_BUTTON_NAME_EDIT(NUM, ARG, RESET = 0)
+#DIM NUM
+#DIM RESET
+;-----------------------------------------------
+;キャラの能力表示において[名前を変更][名前を戻す]ボタンを表示する
+;引数NUMはボタンの数値、ARGは対象キャラの番号
+;引数RESETが0以外なら[戻す]時の処理になる
+
+LOCAL = CHECK_ABLE_TO_NAME_EDIT(ARG)
+IF LOCAL == 2
+	; 侵攻中の勇者ならボタン自体を表示しない
+	RETURN 0
+ELSEIF LOCAL == 1
+	; 魔王改名
+	;RETURN 0
+ELSEIF LOCAL != 0
+	; 奴隷で実行不可なら灰色にする
+	SETCOLOR 0x646464
+ENDIF
+
+IF RESET
+	PRINTFORM [{NUM}] 还原名字　
+ELSE
+	PRINTFORM [{NUM}] 改名　
+ENDIF
+RESETCOLOR
+
+;-----------------------------------------------
+@CHECK_ABLE_TO_NAME_EDIT(ARG)
+#FUNCTION
+;-----------------------------------------------
+;ARG番のキャラに対して、名前を変更できるかの判断を行い、結果に対応する値を返す式中関数
+
+IF ARG == 0
+	; 你の名前は変えられない
+	RETURNF 1
+ELSEIF CFLAG:ARG:1 == 2
+	; 侵攻中の勇者だ
+	RETURNF 2
+ELSEIF CFLAG:ARG:1 ==7
+	; 苗床だ
+	RETURNF 3
+ELSEIF CFLAG:ARG:1 != 0 && CFLAG:ARG:1 != 3
+	; 調教中でも迎撃中でもない
+	RETURNF 4
+ENDIF
+RETURNF 0
+
+;-----------------------------------------------
+@CHARA_INFO_NAME_EDIT(ARG,RESET = 0)
+#DIM RESET
+;-----------------------------------------------
+;キャラの能力表示において[名前を変える][戻す]のボタンが押されるとここに来る
+;引数RESETが0以外なら[戻す]時の処理になる
+
+;先に[名前を変更]出来るかチェックして、ダメなら値に対応する処理をしてリターン0
+LOCAL = CHECK_ABLE_TO_NAME_EDIT(ARG)
+IF LOCAL != 0 && LOCAL != 1
+	IF LOCAL == 1
+	ELSEIF LOCAL == 2
+		;侵攻中の勇者ではボタンが表示されないが、それでも入力すればここに来る。
+		RETURN 2
+	ELSEIF LOCAL == 3
+		PRINTW 苗床不可改变名字
+	ELSEIF LOCAL == 4
+		PRINTW 角色处于不能变更名字的状态
+	ENDIF
+	RETURN 0
+ENDIF
+
+;可能なら処理に移る
+
+IF RESET
+	CALL CHARA_NAME_RESET(ARG)
+	PRINTFORMW %CALLNAME:ARG%恢复了原来的名字……
+
+	;一人称設定
+	IF CFLAG:ARG:450 >= 99
+		CALL RANDOM_SELF_CALL, ARG
+	ENDIF
+	RETURN 0
+ENDIF
+
+;[変える]
+$INPUT_LOOP
+PRINTFORML %CALLNAME:ARG%的新名字是？
+INPUTS
+LOCALS '= RESULTS
+SELECTCASE STRLENS(LOCALS)
+CASE IS > 16
+	PRINTFORMW 名字太长，请使用全角八字以下的名字。
+	GOTO INPUT_LOOP
+CASE IS > 0
+	PRINTFORMW %CALLNAME:ARG%今后被称呼为%LOCALS%。
+	CALLNAME:ARG '= LOCALS
+	SAVESTR:ARG '= LOCALS
+CASEELSE
+	PRINTFORMW %CALLNAME:ARG%的名字没有变更。
+ENDSELECT
+
+;一人称設定
+IF CFLAG:ARG:450 >= 99
+	CALL RANDOM_SELF_CALL, ARG
+ENDIF
+
+RETURN 0
+

@@ -1,0 +1,1433 @@
+﻿
+;--------------------------------------------------
+@DUNGEON_PARTY_BATTLE, ARG:0
+#DIM MONID
+#DIM TURN
+#DIM ATK_TURN
+#DIM ATKER,2
+#DIM MAX_LEN = 10, 10, 10
+#DIM SUCCESS
+#DIM QUEST_FLAG
+;--------------------------------------------------
+;ARG:0 = リーダー
+;Aが行動キャラNo Cが敵NPC隊列記憶
+;MONID = 怪物のID
+;TURN  = 戦闘ターン
+;ATKER = 行動中の勇者（Aも使用しますがそのうち順次引数に入れ変えます）
+
+;行動完了の場合飛ばす
+SIF CFLAG:(ARG:0):530 == 1
+	RETURN 0
+
+;対戦相手選択
+
+IF FLAG:502 == 1
+	;2Dフィールド用処理。ほぼ廃止
+	REPEAT 4
+		LOCAL = (M:2 - 1) * 10 + 100 + RAND:5
+		;8階以上で強敵の抽選
+		IF M:2 >= 8 && RAND:10 == 0
+			MONID = 191 + RAND:3
+			SIF ITEM:MONID > 0
+				LOCAL = MONID
+		ENDIF
+		CALL MONSTER_DATA, LOCAL, COUNT, ARG:0, -1
+	REND
+ELSEIF CFLAG:(ARG:0):1 == 12
+	;イベントダンジョン
+	REPEAT 4
+		CALL CAMPAIGN_MONSTER_LIST,CFLAG:(ARG:0):501
+		LOCAL = RESULT
+		CALL MONSTER_DATA, LOCAL, COUNT, ARG:0, -1
+	REND
+ELSE
+	REPEAT 4
+		LOCAL = (CFLAG:(ARG:0):501 - 1) * 10 + 100 + RAND:5
+		;8階以上で強敵の抽選
+		IF CFLAG:(ARG:0):501 >= 8 && RAND:10 == 0
+			MONID = 191 + RAND:3
+			SIF ITEM:MONID > 0
+				LOCAL = MONID
+		ENDIF
+		CALL MONSTER_DATA, LOCAL, COUNT, ARG:0, -1
+	REND
+ENDIF
+
+;スケルトンチェック！
+LOCAL:1 = 0
+FOR LOCAL,0,300,100
+	SIF E:LOCAL == 190
+		LOCAL:1++
+NEXT
+
+IF LOCAL:1 >= 3
+	;スケルトン3人衆は戦闘スキップ
+	IF FLAG:5 & 32
+		PRINTL *沿路向前……*
+		DRAWLINE
+	ENDIF
+	RETURN 0
+ELSEIF FLAG:5 & 32
+	PRINTL *发生战斗！*
+	DRAWLINE
+ENDIF
+
+;勝利フラグ
+SUCCESS = 0
+CALL QUEST_BATTLE_SET,ARG:0
+SIF RESULT == 1
+	RETURN 0
+QUEST_FLAG = RESULT
+
+;戦闘の流れについて
+;リーダー→仲間A→仲間B→リーダー→…のループで1回ずつ攻撃を行います
+;なので、メンバーがリーダーのみや二人だとたくさん攻撃します
+;6ターン攻撃を行います
+;攻撃者が一人前に出て、攻撃を行い相手の攻撃を受けます
+;誰か一人でも堕ちた場合、戦闘が中断されます
+
+;弾の補充
+CFLAG:(ARG:0):571 = 4
+ATKER = CFLAG:(ARG:0):531
+SIF ATKER > 0
+	CFLAG:ATKER:571 = 4
+ATKER = CFLAG:(ARG:0):532
+SIF ATKER > 0
+	CFLAG:ATKER:571 = 4
+
+;先制
+FOR TURN, 0, 3
+	IF TURN == 0
+		ATKER = ARG:0
+	ELSEIF TURN == 1
+		ATKER = CFLAG:(ARG:0):531
+	ELSEIF TURN == 2
+		ATKER = CFLAG:(ARG:0):532
+	ELSE
+		BREAK
+	ENDIF
+	
+	SIF ATKER <= 0
+		CONTINUE
+	
+	IF TALENT:ATKER:252 == 1 && CFLAG:ATKER:503 & 32
+		;先制不可
+		SIF FLAG:5 & 32
+			PRINTL 因为障碍物的阻挡未能先发制人……
+	ELSEIF  TALENT:ATKER:252 == 1
+		Z = 0
+		CALL ENEMY_ATTACK, ATKER, 2
+	ENDIF
+NEXT
+
+;攻撃順。ランダム
+ATK_TURN = RAND:3
+FOR TURN, 0, 99
+	;ターン数超過の場合
+	;強制的に戦闘が中断される
+	
+	;その他リーダーの性格によっては
+	;ターン数が変わる
+	
+	IF (TALENT:(ARG:0):11 || TALENT:(ARG:0):15 || TALENT:(ARG:0):34) && TURN == 6 
+		;反抗的・プライド高い・抵抗なリーダー
+		;追加でもう1ターン戦う
+		
+		PRINTFORMW *勇者继续发动猛烈的攻击*
+		
+	ELSEIF	(TALENT:(ARG:0):10 || TALENT:(ARG:0):14 || TALENT:(ARG:0):26) && RAND:5 == 0
+		;臆病・大人しい・悲観的なリーダー
+		;ランダムで戦闘を切り上げて逃げ出す
+		;経験値は得られない
+		
+		IF FLAG:5 & 32
+			PRINTFORML 气馁的%SAVESTR:(ARG:0)%逃跑了……
+		ENDIF
+		
+		;勇者パーティーの疲労
+		;より疲れる
+		BASE:(ARG:0):1 -= RAND:40
+		
+		ATKER = CFLAG:(ARG:0):531
+		SIF ATKER > 0
+			BASE:ATKER:1 -= RAND:40
+		ATKER = CFLAG:(ARG:0):532
+		SIF ATKER > 0
+			BASE:ATKER:1 -= RAND:40
+		;ランダムで逃走失敗する
+		IF RAND:3 == 0
+			PRINTFORML *逃跑失败*
+			PRINTFORMW %SAVESTR:(ARG:0)%没能逃跑！
+		ELSE
+			BREAK
+		ENDIF
+		
+	ELSEIF TURN > 5
+		LOCAL = CFLAG:0:9 + RAND:10 + 1
+		IF FLAG:5 & 32
+			PRINTFORML %SAVESTR:(ARG:0)%逃跑了………
+			PRINTFORML 你与勇者得到了{LOCAL}点经验值
+		ENDIF
+		;勇者パーティーの疲労
+		BASE:(ARG:0):1 -= RAND:30
+		EXP:(ARG:0):80 += LOCAL
+		ATKER = CFLAG:(ARG:0):531
+		IF ATKER > 0
+			BASE:ATKER:1 -= RAND:30
+			EXP:ATKER:80 += LOCAL
+		ENDIF
+		ATKER = CFLAG:(ARG:0):532
+		IF ATKER > 0
+			BASE:ATKER:1 -= RAND:30
+			EXP:ATKER:80 += LOCAL
+		ENDIF
+		EXP:0:80 += LOCAL
+		;ランダムで逃走失敗する
+		IF RAND:3 == 0
+			PRINTFORML *逃跑失败*
+			PRINTFORMW %SAVESTR:(ARG:0)%没能逃跑！
+		ELSE
+			BREAK
+		ENDIF
+	ENDIF
+	
+	;パラメータ表示
+	IF FLAG:5 & 32
+		DRAWLINE
+		PRINTFORML 第{TURN+1}回合
+		DRAWLINE
+		ATKER = CFLAG:(ARG:0):531
+		ATKER:1 = CFLAG:(ARG:0):532
+		
+		;名前の文字数、レベル、攻撃、防御の最大桁数を取得
+		;3人のステータス表示の幅を決定する
+		MAX_LEN = MAX(STRLENS(SAVESTR:(ARG:0)), MAX_LEN);名前
+		MAX_LEN = MAX(STRLENS(TOSTR(CFLAG:(ARG:0):11))+3, MAX_LEN);攻撃に"攻 "の3文字
+		MAX_LEN = MAX(STRLENS(TOSTR(CFLAG:(ARG:0):12))+3, MAX_LEN);防御に"防 "の3文字
+		
+		MAX_LEN:1 = MAX(STRLENS(SAVESTR:ATKER), MAX_LEN);名前
+		MAX_LEN:1 = MAX(STRLENS(TOSTR(CFLAG:ATKER:11))+3, MAX_LEN);攻撃に"攻 "の3文字
+		MAX_LEN:1 = MAX(STRLENS(TOSTR(CFLAG:ATKER:12))+3, MAX_LEN);防御に"防 "の3文字
+		
+		MAX_LEN:2 = MAX(STRLENS(SAVESTR:(ATKER:1)), MAX_LEN);名前
+		MAX_LEN:2 = MAX(STRLENS(TOSTR(CFLAG:(ATKER:1):11))+3, MAX_LEN);攻撃に"攻 "の3文字
+		MAX_LEN:2 = MAX(STRLENS(TOSTR(CFLAG:(ATKER:1):12))+3, MAX_LEN);防御に"防 "の3文字
+		
+		SETFONT "ＭＳ ゴシック";等幅フォントに
+		
+		;名前表示
+		SETCOLORBYNAME DarkSeaGreen
+		PRINTFORM  %SAVESTR:(ARG:0),MAX_LEN,LEFT%
+		SIF ATKER > 0
+			PRINTFORM  | %SAVESTR:ATKER,MAX_LEN:1,LEFT%
+		SIF ATKER:1 > 0
+			PRINTFORM  | %SAVESTR:(ATKER:1),MAX_LEN:2,LEFT%
+		PRINTL  
+		
+		;HP表示
+		;"HP"の2文字分長さを引く
+		SETCOLORBYNAME DeepSkyBlue
+		PRINT  HP
+		BAR BASE:(ARG:0):0, MAXBASE:(ARG:0):0, (MAX_LEN - 4)
+		IF ATKER > 0
+			PRINT  | HP
+			BAR BASE:ATKER:0, MAXBASE:ATKER:0, (MAX_LEN:1 - 4)
+		ENDIF
+		IF ATKER:1 > 0
+			PRINT  | HP
+			BAR BASE:(ATKER:1):0, MAXBASE:(ATKER:1):0, (MAX_LEN:2 - 4)
+		ENDIF
+		PRINTL 
+		
+		;気力表示
+		;"気"の2文字分長さを引く
+		;SETCOLORBYNAME DeepSkyBlue;色変えたい時はここ
+		PRINT  气
+		BAR BASE:(ARG:0):1, MAXBASE:(ARG:0):1, (MAX_LEN - 4)
+		IF ATKER > 0
+			PRINT  | 气
+			BAR BASE:ATKER:1, MAXBASE:ATKER:1, (MAX_LEN:1 - 4)
+		ENDIF
+		IF ATKER:1 > 0
+			PRINT  | 气
+			BAR BASE:(ATKER:1):1, MAXBASE:(ATKER:1):1, (MAX_LEN:2 - 4)
+		ENDIF
+		PRINTL 
+		
+		;攻撃力表示
+		;"攻 "の3文字を引く
+		SETCOLORBYNAME LightGreen
+		PRINTFORM  攻 {CFLAG:(ARG:0):11,(MAX_LEN-3),LEFT}
+		SIF ATKER > 0
+			PRINTFORM  | 攻 {CFLAG:ATKER:11,((MAX_LEN:1)-3),LEFT}
+		SIF ATKER:1 > 0
+			PRINTFORM  | 攻 {CFLAG:(ATKER:1):11,((MAX_LEN:2)-3),LEFT}
+		PRINTL  
+		
+		;防御力表示
+		;"防 "の3文字を引く
+		;SETCOLORBYNAME LightGreen;色変えたい時はここ
+		PRINTFORM  防 {CFLAG:(ARG:0):12,(MAX_LEN-3),LEFT}
+		SIF ATKER > 0
+			PRINTFORM  | 防 {CFLAG:ATKER:12,((MAX_LEN:1)-3),LEFT}
+		SIF ATKER:1 > 0
+			PRINTFORM  | 防 {CFLAG:(ATKER:1):12,((MAX_LEN:2)-3),LEFT}
+		PRINTL  
+		
+		RESETCOLOR
+		SETFONT
+		
+		DRAWLINE
+		
+		PRINTW VS
+		
+		DRAWLINE
+		CALL MONSTER_LIST
+		DRAWLINE
+		WAIT
+	ENDIF
+	
+	;攻撃を行い、また怪物の反撃を受けるキャラを選定
+	CALL SELECT_ATKER, ARG:0, TURN
+	
+	ATKER = RESULT
+	A = RESULT
+	
+	;消耗品を使用するかチェック
+	CALL USE_EX_ITEM,"战斗中"
+	
+	;支配している怪物の攻撃
+	CALL SLAVE_MONSTER_ATTACK
+	
+	;先制(旧処理)があった場所目印
+	;仕様変更によりオミット
+	
+	;先攻後攻決定
+	CALL SPEED_PLUS
+	
+	IF RESULT > 0
+		;勇者が先攻
+		CALL ENEMY_ATTACK, ATKER, 0
+		SIF RESULT != 999
+			;強制中断以外、全滅しても攻撃を行う
+			CALL MONSTER_ATTACK, ATKER, TURN
+		IF RESULT == 999
+			IF FLAG:5 & 32
+				PRINTL 战斗中断了
+			ENDIF
+			BREAK
+		ENDIF
+	ELSE
+		;怪物が先攻
+		CALL MONSTER_ATTACK, ATKER, TURN
+		SIF RESULT == 0
+			;敗北も中断も無い場合、勇者の後攻
+			CALL ENEMY_ATTACK, ATKER, 1
+		IF RESULT == 999
+			IF FLAG:5 & 32
+				PRINTL 战斗中断了
+			ENDIF
+			BREAK
+		ENDIF
+	ENDIF
+	
+	;攻撃を行った勇者が堕ちたか判定
+	CALL DEATH_CHECK, ATKER
+	IF RESULT == 2
+		SIF FLAG:5 & 1
+			CALL RYOUZYOKU
+		BREAK
+	ELSEIF RESULT == 1
+		;勝利セリフ
+		DRAWLINE
+		CALL VICTORY_KOUJO
+		;戦利品
+		CALL VICTORY_GET,ATKER
+		;間違いが起こる
+		CALL VICTORY_RYOUZYOKU
+		SUCCESS = 1
+		BREAK
+	ENDIF
+	ATK_TURN += 1
+NEXT
+
+SIF QUEST_FLAG == 2 && SUCCESS == 1
+	CALL RESULT_QUEST,ARG:0,"成功"
+SIF QUEST_FLAG == 2 && SUCCESS == 0
+	CALL RESULT_QUEST,ARG:0,"失败"
+
+SIF CFLAG:(ARG:0):1 == 2 && FLAG:5 & 32
+	PRINTFORML %SAVESTR:(ARG:0)%再次对地下城进行攻略
+
+;装備の回復
+A = ARG:0
+IF BASE:(ARG:0):1 * 100 / MAXBASE:(ARG:0):1 > 40
+	CALL WEAPON_RESTORE
+ELSEIF TALENT:(ARG:0):249 == 1
+	;铁壁
+	CALL WEAPON_RESTORE
+	CFLAG:(ARG:0):11 += CFLAG:(ARG:0):9
+	CFLAG:(ARG:0):12 += CFLAG:(ARG:0):9
+	BASE:(ARG:0):0 += CFLAG:(ARG:0):9 * 10
+ENDIF
+
+;仲間A装備回復
+ATKER = CFLAG:(ARG:0):531
+IF ATKER > 0
+	A = ATKER
+	IF BASE:ATKER:1 * 100 / MAXBASE:ATKER:1 > 40
+		CALL WEAPON_RESTORE
+	ELSEIF TALENT:ATKER:249 == 1
+		;铁壁
+		CALL WEAPON_RESTORE
+		CFLAG:ATKER:11 += CFLAG:ATKER:9
+		CFLAG:ATKER:12 += CFLAG:ATKER:9
+		BASE:ATKER:0 += CFLAG:ATKER:9 * 10
+	ENDIF
+ENDIF
+
+;仲間B装備回復
+ATKER = CFLAG:(ARG:0):532
+IF ATKER > 0
+	A = ATKER
+	IF BASE:ATKER:1 * 100 / MAXBASE:ATKER:1 > 40
+		CALL WEAPON_RESTORE
+	ELSEIF TALENT:ATKER:249 == 1
+		;铁壁
+		CALL WEAPON_RESTORE
+		CFLAG:ATKER:11 += CFLAG:ATKER:9
+		CFLAG:ATKER:12 += CFLAG:ATKER:9
+		BASE:ATKER:0 += CFLAG:ATKER:9 * 10
+	ENDIF
+ENDIF
+
+RETURN 0
+
+
+;-----------------------------
+@MONSTER_LIST
+#DIM ID
+#DIM LV
+#DIM ATK
+#DIM DEF
+#DIM NUM
+#DIM BOSS
+;-----------------------------
+B = 0
+REPEAT 3
+	ID = E:B
+	LV = E:(B+1)
+	ATK = E:(B+2)
+	DEF = E:(B+3)
+	NUM = E:(B+99)
+	BOSS = E:(B+8)
+	
+	IF BOSS == 1 && NUM > 0
+		LOCALS =『%ITEMNAME:ID%的boss』
+		PRINTFORML %LOCALS,26,LEFT% LV{LV} {ATK}/{DEF}
+	ELSEIF NUM <= 0
+		PRINTFORML %ITEMNAME:ID%的尸体
+	ELSE
+		LOCALS = {NUM,2,RIGHT}只%MONSTERNAME(ID)%
+		PRINTFORML  %LOCALS,26,LEFT% LV{LV} {ATK}/{DEF}
+	ENDIF
+	B += 100
+REND
+RETURN 0
+
+;------------------------------
+@SELECT_ATKER, ARG:0, ARG:1
+#DIM MEMBER
+;------------------------------
+;攻撃する勇者を選びます
+;ARG:0  = リーダー
+;ARG:1  = ターン
+;MEMBER = パーティー人数
+
+MEMBER = 1
+ARG:1 += 1
+
+;仲間A,B確認
+LOCAL = CFLAG:(ARG:0):531
+SIF LOCAL > 0
+	MEMBER += 1
+LOCAL = CFLAG:(ARG:0):532
+SIF LOCAL > 0
+	MEMBER += 1
+
+;余りを求める
+LOCAL = ARG:1 % MEMBER
+
+;何番目か分かったので対応する勇者を返却
+IF LOCAL == 0
+	RETURN ARG:0
+ELSEIF LOCAL == 1
+	;仲間Aが空欄の場合も考えて順番に見る
+	LOCAL:1 = CFLAG:(ARG:0):531
+	SIF LOCAL:1 > 0
+		RETURN LOCAL:1
+	LOCAL:1 = CFLAG:(ARG:0):532
+	SIF LOCAL:1 > 0
+		RETURN LOCAL:1
+ELSEIF LOCAL == 2
+	LOCAL:1 = CFLAG:(ARG:0):532
+	SIF LOCAL:1 > 0
+		RETURN LOCAL:1
+ENDIF
+
+;念のためいなかったらリーダーが返る
+RETURN ARG:0
+
+;------------------------------
+@SPEED_PLUS
+;------------------------------
+#DIM SPEED_X
+#DIM SPEED_Y
+SPEED_X = RAND:6
+SPEED_Y = RAND:6
+;速度補正
+REPEAT 3
+	SPEED_Y += E:(COUNT * 100 + 4)
+REND
+;奇袭
+SIF TALENT:A:243 == 1
+	SPEED_X += 1
+;恶魔翅膀
+SIF TALENT:A:245 == 1
+	SPEED_X += 1
+;迅速
+SIF TALENT:A:258 == 1
+	SPEED_X += 1
+;霍比特族の加速ボーナス
+SIF TALENT:A:314 == 10
+	SPEED_X += 1
+;矮人族の減速
+SIF TALENT:A:314 == 11
+	SPEED_X -= 1
+;史莱姆の減速
+SIF TALENT:A:319 == 2
+	SPEED_X -= 2
+;触手の減速
+SIF TALENT:A:319 == 5
+	SPEED_X -= 1
+;妖精の加速ボーナス
+SIF TALENT:A:319 == 6
+	SPEED_X += 1
+;巨人の減速
+SIF TALENT:A:319 == 7
+	SPEED_X -= 1
+;兽类の加速ボーナス（迅速と合わせ+2）
+SIF TALENT:A:137 == 1
+	SPEED_X += 1
+;馬の加速ボーナス（迅速、FURRYと合わせ+3）
+SIF TALENT:A:319 == 12
+	SPEED_X += 1
+
+;装備効果
+W:8 = 3
+CALL EQUIP_CHECK
+SPEED_X += RESULT
+
+;装備効果
+W:8 = 12
+CALL EQUIP_CHECK
+SPEED_X -= RESULT
+RETURN SPEED_X - SPEED_Y
+
+;--------------------------------
+@ENEMY_ATTACK, ARG:0, ARG:1
+#DIM DMG
+#DIM DEF
+#DIM PLAY_TYPE
+#DIM GET_EXP
+;--------------------------------
+;勇者側の攻撃
+;ARG:0 = 勇者No
+;ARG:1 == 0 先手攻撃
+;ARG:1 == 1 後手攻撃
+;ARG:1 == 2 先制攻撃
+;DMG = ダメージ
+;DEF = 怪物の防御力
+
+;一応代入
+A = ARG:0
+TARGET = ARG:0
+
+;肉便器用
+CALL SELECT_BENKI_MENU(TARGET, "戦闘")
+PLAY_TYPE = RESULT
+
+PLAYER = 0
+;アナルワーム自動調教
+IF TALENT:肛门虫
+	CALL BEFORE_AUTOTRAIN
+	CALL COM13_AUTO
+	CALL SOURCE_CHECK_AUTO
+ENDIF
+
+;防御側の防御力を算出
+B = 0
+X = 0
+REPEAT 3
+	B += 99
+	IF E:B > 0
+		C = B - 99
+		BREAK
+	ENDIF
+	B += 1
+REND
+
+;全滅時
+IF B >= 400
+	IF FLAG:5 & 32
+		PRINTL 负责防御的怪物全灭了………
+		WAIT
+	ENDIF
+	RETURN 1
+ENDIF
+
+B = C
+CALL MAGIC,1
+C = B
+SIF RESULT == 999
+	RETURN 999
+
+B = C + 3
+DEF = E:B
+;ボスチェック
+LOCAL:0 = E:(C + 8)
+SIF LOCAL:0 == 1
+	DEF = RAND:(DEF * 30) 
+
+;仕様変更にてオミット
+;DEF += CFLAG:0:9
+
+B = C + 99
+X = DEF * E:B
+
+;DEF=個体防御力
+;X=群れの防御力
+
+;戦闘前発動スキル
+CALL SKILL_EXTRA_BONUS,ARG:0
+
+
+;攻撃による被害
+
+;セリフ
+IF FLAG:5 & 32
+	CALL ATTACK_KOUJO, ARG:0
+ENDIF
+
+;装備品効果
+W:8 = 1
+CALL EQUIP_CHECK
+
+;DMG=ダメージ
+DMG = CFLAG:(ARG:0):11
+
+SIF RESULT > 0
+	DMG *= (RESULT + 1)
+
+;武器効果
+W:0 = CFLAG:(ARG:0):550
+;素手の場合剑を装備
+IF W:0 <= 0
+	W:0 = 40
+	CFLAG:(ARG:0):550 = W:0
+ENDIF
+
+IF FLAG:5 & 32
+	IF TALENT:(ARG:0):肉便器 && TALENT:(ARG:0):281
+		PRINTFORM 作为肉便器的%SAVESTR:(ARG:0)%对
+		CALL NAME_BENKI_MENU,PLAY_TYPE
+		PRINTFORML 进行了诱惑！！
+	ELSE
+		PRINTFORM 勇者%SAVESTR:(ARG:0)%使用
+		CALL PRINT_EQUIPTYPE_WEAPON
+		PRINTFORML 攻击！！
+	ENDIF
+ENDIF
+
+CALL EQUIP_DATABASE
+CALL EQUIP_POWERUP, ARG:0
+
+;ミス処理
+IF (RAND:100 - W:11) < 0
+	IF FLAG:5 & 32
+		IF TALENT:(ARG:0):肉便器 && TALENT:(ARG:0):281
+			PRINTFORML 肉便器遭到了痛骂
+		ELSE
+			PRINTFORML 勇者的攻击落空了……
+		ENDIF
+	ENDIF
+	RETURN 0
+ENDIF
+
+;気力回復
+BASE:(ARG:0):1 += W:12
+SIF BASE:(ARG:0):1 > MAXBASE:(ARG:0):1
+	BASE:(ARG:0):1 = MAXBASE:(ARG:0):1
+
+;ダメージ変動
+IF CFLAG:(ARG:0):571 > 0
+	DMG = DMG * W:9 / 100
+ELSEIF W:15 == 1
+	DMG /= 2
+ELSEIF W:15 == 2
+	IF FLAG:5 & 32
+		IF TALENT:(ARG:0):肉便器 && TALENT:(ARG:0):281
+			PRINTFORML 套子用完了、什么都没发生！
+		ELSE
+			PRINTFORML 弹药用尽、只能干瞪眼！
+		ENDIF
+	ENDIF
+	RETURN 0
+ENDIF
+
+CFLAG:(ARG:0):571 -= W:10
+
+;畏怖・隷属処理
+IF CFLAG:ARG:130 == E:C && CFLAG:ARG:131 > 5
+	PRINTFORML %SAVESTR:(ARG:0)%受凌辱回忆的影响、似乎失去了反抗的意志……
+	DMG /= 10
+ELSEIF CFLAG:ARG:130 == E:C && CFLAG:ARG:131 >= 0
+	PRINTFORML %SAVESTR:(ARG:0)%受凌辱回忆的影响、似乎恐慌不已……
+	DMG *= 6 - CFLAG:ARG:131
+	DMG /= 10
+ENDIF
+
+
+;連続攻撃処理
+IF (RAND:100 - W:13) < 0
+	IF FLAG:5 & 32
+		IF TALENT:(ARG:0):肉便器 && TALENT:(ARG:0):281
+			PRINTFORML 马上再来一次！
+		ELSE
+			PRINTFORML 勇者发出了迅捷的2连击！！
+		ENDIF
+	ENDIF
+	DMG *= 2
+	CFLAG:(ARG:0):571 -= W:10
+ENDIF
+
+CALL ATTACK_CHARA_EXTRA_DMG, (ARG:0), DMG, (ARG:1)
+DMG = RESULT
+
+;DEF=敵残り防御力
+DEF = X - DMG
+
+;先手かつ奇袭の場合、奇袭成功
+IF ARG:1 == 0 && TALENT:(ARG:0):243 == 1
+	IF FLAG:5 & 32
+		IF TALENT:(ARG:0):肉便器 && TALENT:(ARG:0):281
+			PRINT 似乎有点效果……
+		ELSE
+			PRINT 偷袭成功！！
+		ENDIF
+	ENDIF
+	DEF -= CFLAG:(ARG:0):9
+ENDIF
+
+;追加効果
+IF (W:6 & 1) && RAND:2
+	;毒
+	B = C + 9
+	IF E:B & 1
+		IF FLAG:5 & 32
+			IF TALENT:(ARG:0):肉便器 && TALENT:(ARG:0):281
+				PRINT 对手似乎着迷了…
+			ELSE
+				PRINT 毒素不断侵蚀！！
+			ENDIF
+		ENDIF
+		DEF -= DMG
+	ELSE
+		IF FLAG:5 & 32
+			IF TALENT:(ARG:0):肉便器 && TALENT:(ARG:0):281
+				PRINT 成功诱惑了对手！
+			ELSE
+				PRINT 毒素增加了！！
+			ENDIF
+		ENDIF
+		E:B += 1
+	ENDIF
+ENDIF
+
+;耐性処理
+;耐性が無い場合1.5倍ダメージ
+;耐性がある場合0.8倍ダメージ
+
+B = C + 10
+IF W:6 & 2
+	;火炎
+	IF E:B & 1
+		DEF -= DMG / 2
+	ELSE
+		DEF += DMG / 5
+	ENDIF
+ENDIF
+
+IF W:6 & 4
+	;冷気
+	IF E:B & 2
+		DEF -= DMG / 2
+	ELSE
+		DEF += DMG / 5
+	ENDIF
+ENDIF
+
+IF W:6 & 8
+	;電撃
+	IF E:B & 4
+		DEF -= DMG / 2
+	ELSE
+		DEF += DMG / 5
+	ENDIF
+ENDIF
+
+B = E:C
+;B=敵識別番号
+
+IF DEF <= 0
+	IF LOCAL:0 == 0
+		SIF FLAG:5 & 32
+			PRINTFORML 勇者的攻击令
+			CALL MONSTER_NAME,B,0
+			PRINTFORML	全灭了………
+	ELSEIF LOCAL:0 == 1
+		SIF FLAG:5 & 32
+			PRINTFORML 勇者的攻击打倒了『%ITEMNAME:B%的boss』………
+	ENDIF
+	GET_EXP = E:(C + 1) + CFLAG:0:9
+	;经验值計算
+	GET_EXP *= E:(C + 99)
+	GET_EXP *= 3
+	;死亡怪物計算
+	FLAG:63 += E:(C + 99)
+	EXP:(ARG:0):80 += GET_EXP
+	CALL GET_EXP_BENKI_MENU(ARG:0,PLAY_TYPE)
+	X = E:C
+	ITEM:X -= E:(C + 99)
+	SIF ITEM:X < 0
+		ITEM:X = 0
+	E:(C + 99) = 0
+	
+	SIF FLAG:5 & 32
+		WAIT
+	RETURN 1
+ENDIF
+
+DEF = CFLAG:(ARG:0):11 / E:(C + 3)
+;仕様変更にて、防御修正はステータス計算の方へ
+;X += CFLAG:0:9
+DEF = CFLAG:(ARG:0):11 / X
+B = E:C
+;死亡怪物計算
+	FLAG:63 += DEF
+IF FLAG:5 & 32 && LOCAL:0 == 0
+	IF DEF > 0
+		PRINTFORML 勇者的攻击将
+		CALL MONSTER_NAME,(E:C),0
+		IF TALENT:(ARG:0):肉便器 && TALENT:(ARG:0):281
+			PRINTFORML 的{DEF}只感到十分满足………
+		ELSE
+			PRINTFORML 的{DEF}只破坏掉了………
+		ENDIF
+	ELSEIF DEF < 1 && RAND:50 > 0
+		IF Z == 1 && TALENT:(ARG:0):243 == 1
+			PRINT …但是，
+		ENDIF
+		PRINTFORML 勇者因为对
+		CALL MONSTER_NAME,(E:C),0
+		PRINTFORML 的恐惧动弹不得………
+	ELSE
+		IF Z == 1 && TALENT:(ARG:0):243 == 1
+			PRINT …但是，
+		ENDIF
+		PRINTFORML 勇者因为对
+		CALL MONSTER_NAME,(E:C),0
+		PRINTFORML	的恐惧失禁了………
+	ENDIF
+ELSEIF FLAG:5 & 32 && LOCAL:0 == 1
+	PRINTFORML BOSS忍受着勇者的攻击……
+ENDIF
+
+;経験値取得
+GET_EXP = E:(C + 1) + CFLAG:0:9
+;モンスター死亡数倍する
+GET_EXP *= DEF
+;補正
+GET_EXP *= 3
+EXP:(ARG:0):80 += GET_EXP
+CALL GET_EXP_BENKI_MENU(ARG:0,PLAY_TYPE)
+SIF LOCAL:0 == 0
+	E:(C + 99) -= DEF
+SIF LOCAL:0 == 0
+	ITEM:(E:C) -= DEF
+SIF ITEM:(E:C) < 0
+	ITEM:(E:C) = 0
+SIF FLAG:5 & 32
+	WAIT
+RETURN 0
+
+
+;--------------------------------
+@SLAVE_MONSTER_ATTACK
+;--------------------------------
+;配下怪物側の攻撃
+
+;配下がいるかどうか
+IF CFLAG:A:570 < 100
+	RETURN 0
+ELSEIF E:300 < 100
+	RETURN 0
+ENDIF
+
+;防御側の防御力を算出
+B = 0
+X = 0
+REPEAT 3
+	B += 99
+	IF E:B > 0
+		C = B - 99
+		BREAK
+	ENDIF
+	B += 1
+REND
+
+;全滅時
+IF B >= 400
+	IF FLAG:5 & 32
+		PRINTL 负责防御的怪物全灭了………
+		WAIT
+	ENDIF
+	RETURN 1
+ENDIF
+
+B = C + 3
+Y = E:B
+;ボスチェック
+LOCAL:0 = E:(C + 8)
+SIF LOCAL:0 == 1
+	Y = RAND:(Y * 30) 
+;Y += CFLAG:0:9
+B = C + 99
+Z = Y * E:B
+
+
+;怪物側の攻撃力を算出
+X = CFLAG:A:9 * (E:302 + 1)
+
+;魔法補正
+SIF E:306 != 0
+	X *= 2
+
+
+Y = E:300
+;攻撃による被害
+SIF FLAG:5 & 32
+	PRINTFORML 成为勇者属下的%ITEMNAME:Y%发动了攻击！！
+
+
+Z -= X
+
+B = E:C
+IF Z <= 0
+	IF LOCAL:0 == 0
+		SIF FLAG:5 & 32
+			PRINTFORML 勇者属下的攻击使%ITEMNAME:B%全灭了………
+	ELSEIF LOCAL:0 == 1
+		SIF FLAG:5 & 32
+			PRINTFORML 勇者属下的攻击打倒了『%ITEMNAME:B%的boss』………
+	ENDIF
+	B = C + 1
+	X = E:B
+	B = C + 99
+	;经验值計算
+	X *= E:B
+	;死亡怪物計算
+	FLAG:63 += E:B
+	EXP:A:80 += X
+	X = E:C
+	ITEM:X -= E:B
+	SIF ITEM:X < 0
+		ITEM:X = 0
+	E:B = 0
+	WAIT
+	RETURN 1
+ENDIF
+
+B = C + 3
+X = E:B
+;X += CFLAG:0:9
+Y = Z / X
+B = E:C
+;死亡怪物計算
+FLAG:63 += Y
+IF FLAG:5 & 32 && LOCAL:0 == 0
+	IF Y > 0
+		PRINTFORML 勇者属下的攻击破坏了%ITEMNAME:B%中的{Y}只………
+	ELSE
+		PRINTFORML 勇者属下因为对%ITEMNAME:B%的恐惧动弹不得………
+	ENDIF
+ELSEIF FLAG:5 & 32 && LOCAL:0 == 1
+	PRINTFORML BOSS忍受着勇者属下的攻击……
+ENDIF
+B = C + 1
+X = E:B
+X *= Y
+EXP:A:80 += X
+B = C + 99
+SIF LOCAL:0 == 0
+	E:B -= Y
+X = E:C
+SIF LOCAL:0 == 0
+	ITEM:X -= Y
+SIF ITEM:X < 0
+	ITEM:X = 0
+SIF FLAG:5 & 32
+	WAIT
+RETURN 0
+;--------------------------------
+@MONSTER_ATTACK, ARG:0, ARG:1
+#DIM MONID
+#DIM MEMBER
+#DIM MONNUM
+#DIM DMG
+#DIM MONNAME
+#DIM HIT
+;--------------------------------
+;怪物側の攻撃
+;ARG:0 = 被攻撃者
+;ARG:1 = ターン
+;MONID = 怪物ID
+;MEMBER = 生存怪物
+;MONNUM = 怪物数
+;DMG = ダメージ
+;MONNAME = 怪物番号。主に名前に使用
+;HIT = 命中減衰
+
+;生存怪物数を求める
+MEMBER = 0
+FOR MONID, 0, 300
+	MONID += 99
+	SIF E:MONID > 0
+		MEMBER += 1
+NEXT
+
+;全滅時
+IF MEMBER <= 0
+	SIF FLAG:5 & 32
+		PRINTL 负责防御的怪物全灭了………
+	RETURN 1
+ENDIF
+
+;ターン数から攻撃怪物を求める
+LOCAL = ARG:1 % MEMBER
+FOR MONID, 0, 300
+	MONID += 99
+	IF E:MONID > 0
+		;怪物が存在しつつ、攻撃順が回ってきたらブレイク
+		SIF LOCAL <= 0
+			BREAK
+		LOCAL -= 1
+	ENDIF
+NEXT
+
+;IDを先頭に
+MONID -= 100
+
+B = MONID
+CALL MAGIC,2
+SIF RESULT == 999
+	RETURN 999
+
+
+Y = E:(MONID + 5)
+CALL MONSTER_SKILL, ARG:0, Y, MONID
+SIF RESULT == 999
+	RETURN 999
+
+MONNUM = E:(MONID + 99)
+;ボスチェック
+;ボスは15人分の力を持つんだ
+LOCAL:0 = E:(MONID + 8)
+SIF LOCAL:0 == 1
+	MONNUM *= 15
+
+;ダンジョンレベル補正
+;以前はダメージを強化していたが
+;ステータス生成時に反映させるように
+;MONNUM += CFLAG:0:9
+
+DMG = MONNUM * E:(MONID + 2)
+
+MONNAME = E:MONID
+;攻撃による被害
+IF FLAG:5 & 32 && LOCAL:0 == 0
+	CALL MONSTER_NAME,MONNAME,0
+	PRINTFORML 发动了攻击！！
+ELSEIF FLAG:5 & 32 && LOCAL:0 == 1
+	PRINTFORML 『%ITEMNAME:MONNAME%的Boss』发动了攻击！！
+ENDIF
+
+;畏怖・隷属処理
+IF CFLAG:(ARG:0):130 == MONNAME && CFLAG:(ARG:0):131 > 5
+	PRINTFORML %SAVESTR:(ARG:0)%受凌辱回忆的影响、防御变慢了……
+	DMG *= 2
+ELSEIF CFLAG:(ARG:0):130 == MONNAME && CFLAG:(ARG:0):131 >= 0
+	PRINTFORML %SAVESTR:(ARG:0)%受凌辱回忆的影响、反应变慢了……
+	DMG *= 6 + CFLAG:ARG:131
+	DMG /= 5
+ENDIF
+
+;ダメージ処理
+CALL DEFENCE_CHARA_EXTRA_DMG,(ARG:0), DMG
+DMG = RESULT
+
+IF DMG > 0
+	;防御値を超えるダメージ
+	SIF FLAG:5 & 32
+		PRINTFORML 怪物的攻击使勇者受到了{DMG}伤害！
+	;気力減
+	BASE:(ARG:0):1 -= DMG
+	RETURN 0
+ENDIF
+
+;ダメージが無かった場合
+SIF FLAG:5 & 32
+	PRINTFORML 勇者拼死忍耐着怪物的攻击………
+
+RETURN 0
+
+;--------------------------------------
+@ATTACK_CHARA_EXTRA_DMG,ARG:0,DMG, ARG:1
+#DIM DMG
+;--------------------------------------
+;キャラの、装備によらない与ダメージ補正です
+
+;先手有利
+SIF ARG:1 == 0
+	DMG += DMG / 5
+;先制打撃
+SIF ARG:1 == 2
+	DMG *= 2
+
+;攻撃減少デバフ
+IF CFLAG:(ARG:0):681 > 50
+	;最大50%低下
+	DMG /= 2
+	;10%程度低下
+	CFLAG:(ARG:0):681 -= (CFLAG:(ARG:0):681 / 10) + 1
+ELSEIF CFLAG:(ARG:0):681 > 0
+	;最大50%低下
+	DMG *= 100 - CFLAG:(ARG:0):681
+	DMG /= 100
+	;10%程度低下
+	CFLAG:(ARG:0):681 -= (CFLAG:(ARG:0):681 / 10) + 1
+ENDIF
+
+
+RETURN DMG
+
+;--------------------------------------
+@DEFENCE_CHARA_EXTRA_DMG,ARG:0,DMG
+#DIM DMG
+#DIM HIT
+;--------------------------------------
+;キャラの、装備によらない被ダメージ補正です
+
+;ミス処理
+HIT = 0
+;忍術による回避補正
+SIF TALENT:(ARG:0):251 == 1
+	HIT += 15
+;透明化による回避補正
+SIF GETBIT(CFLAG:(ARG:0):503,7)
+	HIT += 15
+;英雄による回避補正
+SIF GETBIT(CFLAG:(ARG:0):503,8)
+	HIT += 5
+;回避力キャップ
+SIF HIT > 60
+	HIT = 60
+IF (RAND:100 - HIT) < 0
+	SIF FLAG:5 & 32
+			PRINTFORML 勇者轻巧地闪开了。
+	RETURN 0
+ENDIF
+
+;防御減少デバフ
+IF CFLAG:(ARG:0):680 > 50
+	;最大50%ダメージ上昇
+	DMG += DMG / 2
+	;10%程度低下
+	CFLAG:(ARG:0):680 -= (CFLAG:(ARG:0):680 / 10) + 1
+ELSEIF CFLAG:(ARG:0):681 > 0
+	;数値%上昇
+	DMG *= 100 + CFLAG:(ARG:0):680
+	DMG /= 100
+	;10%程度低下
+	CFLAG:(ARG:0):680 -= (CFLAG:(ARG:0):680 / 10) + 1
+ENDIF
+
+;防御値による直接軽減
+DMG -= CFLAG:(ARG:0):12
+
+;防御力は2/3に減少していく
+CFLAG:(ARG:0):12 /= 3
+CFLAG:(ARG:0):12 *= 2
+
+IF DMG > 0
+	;ダメージまで一気に処理する
+	
+	;ダメージ量によって攻撃力も減少していく
+	CFLAG:(ARG:0):11 -= (DMG / 100) + 1
+	;攻撃力は最低でも1
+	SIF CFLAG:(ARG:0):11 < 0
+		CFLAG:(ARG:0):11 = 1
+	BASE:(ARG:0):0 -= DMG
+ENDIF
+
+RETURN DMG
+
+;--------------------------------------
+@DEATH_CHECK, ARG:0
+#DIM ALIVE
+;--------------------------------------
+;ALIVE = 生き残り数
+
+;プレイヤー死亡判定
+IF BASE:(ARG:0):0 <= 0
+	PRINTFORML %SAVESTR:(ARG:0)%最终在潮湿的地下城中用尽了最后的气力。
+	CFLAG:(ARG:0):1 = 0
+	RETURN 2
+ELSEIF BASE:(ARG:0):0 <= 300
+	PRINTFORML %SAVESTR:(ARG:0)%感觉到生命垂危，投降求饶了。
+	CFLAG:(ARG:0):1 = 0
+	RETURN 2
+ELSEIF BASE:(ARG:0):1 <= 0
+	PRINTFORML %SAVESTR:(ARG:0)%失去了战斗的意志，丢掉武器投降了。
+	CFLAG:(ARG:0):1 = 0
+	RETURN 2
+ENDIF
+
+;怪物側の生き残りを算出
+B = 0
+ALIVE = 0
+REPEAT 3
+	B += 99
+	IF E:B > 0
+		ALIVE = 1
+		BREAK
+	ENDIF
+	B -= 99
+	Z = CFLAG:(ARG:0):570
+	;装備効果(支配)
+	W:8 = 9
+	CALL EQUIP_CHECK
+	IF RESULT > 0 && Z < E:B
+		CFLAG:(ARG:0):570 = E:B
+		PRINTFORMW %SAVESTR:(ARG:0)%捕捉了濒死的怪物，并支配了其精神。
+	ENDIF
+	B += 100
+REND
+
+;全滅時
+IF ALIVE == 0
+	PRINTL 负责防御的怪物全灭了………
+	RETURN 1
+ENDIF
+
+RETURN 0
+
+
+;------------------------------
+@VICTORY_GET,ARG:0
+;------------------------------
+;戦利品を獲得する。死体漁り
+;実行すると善恶值が下がる
+
+;现在の善恶值値によっては思いとどまる
+
+LOCAL:0 = 0
+
+IF CFLAG:(ARG:0):151 > 150
+	LOCAL:0 += RAND:125
+ELSEIF CFLAG:(ARG:0):151 > 100
+	LOCAL:0 += RAND:75
+ELSEIF CFLAG:(ARG:0):151 > 50
+	LOCAL:0 += RAND:35
+ELSEIF CFLAG:(ARG:0):151 > 0
+	LOCAL:0 += RAND:25
+ELSE
+	LOCAL:0 += RAND:15
+ENDIF
+
+;プライド低い場合、やりたくなる
+SIF TALENT:(ARG:0):17
+	LOCAL:0 -= 1
+;好奇心の場合、やりたくなる
+SIF TALENT:(ARG:0):23
+	LOCAL:0 -= 1
+;プライド低い場合、やりたくなる
+SIF TALENT:(ARG:0):17
+	LOCAL:0 -= 1
+;恥薄い場合、やりたくなる
+SIF TALENT:(ARG:0):36
+	LOCAL:0 -= 1
+;盗賊の場合、やりたくなる
+SIF TALENT:(ARG:0):203
+	LOCAL:0 -= 1
+
+;プライド高い場合、思いとどまる
+SIF TALENT:(ARG:0):15
+	LOCAL:0 += 1
+;自制心の場合、思いとどまる
+SIF TALENT:(ARG:0):20
+	LOCAL:0 += 1
+;一線越えない場合、思いとどまる
+SIF TALENT:(ARG:0):27
+	LOCAL:0 += 1
+;恥じらいの場合、思いとどまる
+SIF TALENT:(ARG:0):35
+	LOCAL:0 += 1
+
+
+SIF LOCAL:0 > 5
+	RETURN 0
+
+SIF FLAG:5 & 32
+	PRINTFORMW %SAVESTR:(ARG:0)%勇者开始搜刮战利品（善良值:-5）
+
+CALL KARMA, (ARG:0), -5
+
+CALL ADD_EX_ITEM, -1, (ARG:0), 0
+
+;なにも見つからなかったらしい。代わりに金品を得る
+SIF RESULT == 0
+	CALL GET_JUNK_ITEM,ARG:0
+
+RETURN 1
+
+;------------------------------
+@SKILL_EXTRA_BONUS,ARG:0
+;------------------------------
+
+SIF CFLAG:(ARG:0):9 < 100
+	RETURN 0
+
+IF TALENT:(ARG:0):240 && RAND:100 < 60
+	;戦術
+	LOCAL = 10
+	PRINTFORM [战术斗志！ 攻击力+{LOCAL}％！
+	CFLAG:(ARG:0):11 *= 100 + LOCAL
+	CFLAG:(ARG:0):11 /= 100
+	LOCAL = CFLAG:(ARG:0):9 / 5 + 10
+	PRINTFORM  防御力+{LOCAL}！]
+	CFLAG:(ARG:0):12 += LOCAL
+ENDIF
+
+IF TALENT:(ARG:0):241 && RAND:100 < 40
+	;魔術
+	LOCAL = 10
+	PRINTFORM [魔术冥想！ 气力回復{LOCAL}％！]
+	;気力回復
+	LOCAL:1 = MAXBASE:(ARG:0):1 * LOCAL
+	BASE:(ARG:0):1 += LOCAL:1 / 100
+	SIF BASE:(ARG:0):1 > MAXBASE:(ARG:0):1
+		BASE:(ARG:0):1 = MAXBASE:(ARG:0):1
+ENDIF
+
+IF TALENT:(ARG:0):242 && RAND:100 < 40
+	;法術
+	LOCAL = 8
+	PRINTFORM [法术再生！ HP回复{LOCAL}％！]
+	;HP回復
+	LOCAL:1 = MAXBASE:(ARG:0):0 * LOCAL
+	BASE:(ARG:0):0 += LOCAL:1 / 100
+	SIF BASE:(ARG:0):0 > MAXBASE:(ARG:0):0
+		BASE:(ARG:0):0 = MAXBASE:(ARG:0):0
+ENDIF
+
+IF TALENT:(ARG:0):243 && RAND:100 < 20
+	;奇襲
+	LOCAL = 60
+	PRINTFORM [奇袭必杀！ 攻击力+{LOCAL}％]
+	CFLAG:(ARG:0):11 *= 100 + LOCAL
+	CFLAG:(ARG:0):11 /= 100
+ENDIF
+
+IF TALENT:(ARG:0):249 && RAND:100 < 60
+	;鉄壁
+	LOCAL = CFLAG:(ARG:0):9 / 10 + 20
+	PRINTFORM [铁壁防御！ 防御力+{LOCAL}！]
+	CFLAG:(ARG:0):12 += LOCAL
+ENDIF
+
+IF TALENT:(ARG:0):250 && RAND:100 < 20
+	;呪術
+	LOCAL = CFLAG:(ARG:0):9 / 3 + 60
+	PRINTFORM [咒术结界！ 防御力+{LOCAL}！]
+	CFLAG:(ARG:0):12 += LOCAL
+ENDIF
+
+IF TALENT:(ARG:0):251 && RAND:100 < 60
+	;忍術
+	LOCAL = CFLAG:(ARG:0):9 / 10 + 20
+	LOCAL:1 = RAND:5
+	IF TALENT:(ARG:0):275
+		;火の能力者
+		LOCAL:1 = 0
+	ELSEIF TALENT:(ARG:0):276
+		;氷の能力者
+		LOCAL:1 = 1
+	ELSEIF TALENT:(ARG:0):277
+		;雷の能力者
+		LOCAL:1 = 2
+	ELSEIF TALENT:(ARG:0):278
+		;光の能力者
+		LOCAL:1 = 3
+	ELSEIF TALENT:(ARG:0):279
+		;闇の能力者
+		LOCAL:1 = 4
+	ENDIF
+	
+	IF LOCAL:1 == 0
+		;火の能力者
+		PRINTFORM [忍术火遁！ 攻击力+{LOCAL}！]
+		CFLAG:(ARG:0):11 += LOCAL
+	ELSEIF LOCAL:1 == 1
+		;氷の能力者
+		PRINTFORM [忍术冰遁！ 防御力+{LOCAL}！]
+		CFLAG:(ARG:0):12 += LOCAL
+	ELSEIF LOCAL:1 == 2
+		;雷の能力者
+		PRINTFORM [忍术雷遁！ 攻击力+{LOCAL}！]
+		CFLAG:(ARG:0):11 += LOCAL
+	ELSEIF LOCAL:1 == 3
+		;光の能力者
+		PRINTFORM [忍术光遁！ 防御力+{LOCAL}！]
+		CFLAG:(ARG:0):12 += LOCAL
+	ELSEIF LOCAL:1 == 4
+		;闇の能力者
+		PRINTFORM [忍术暗遁！ 攻击力+{LOCAL}！]
+		CFLAG:(ARG:0):11 += LOCAL
+	ENDIF
+ENDIF
+
+IF TALENT:(ARG:0):252 && RAND:100 < 60
+	;先制
+	LOCAL = 20
+	PRINTFORM [先制打击！ 攻击力+{LOCAL}％！]
+	CFLAG:(ARG:0):11 *= 100 + LOCAL
+	CFLAG:(ARG:0):11 /= 100
+ENDIF
+
+RETURN 0
+
+
+
+
+

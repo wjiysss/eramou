@@ -1,0 +1,1468 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+
+;-------------------------------------------------
+;調教時に録画したビデオの売却
+;-------------------------------------------------
+@SELL_VIDEO
+#DIM SCORE
+#DIM UP_SCORE
+#DIM MANIAC
+#DIM VIEW
+#DIM VIDEO_COUNT
+#DIM MENU
+#DIM VIDEO_ASSI
+#DIM EQUIP_MENU
+#DIM PLAY_CBVA,10
+#DIM PLAY_MENU,10
+#DIM PLAY_ACTION,10
+#DIM PLAY_EXTRA,20
+#DIM BONUS_ABL
+
+
+SIF TARGET < 0 || TARGET > CHARANUM
+	RETURN 0
+
+;撮影中のまま売却まで来た場合はテープの数を減らす
+;テープの減数は撮影後処理のため
+SIF TEQUIP:53
+	ITEM:28 -= 1
+
+;録画終了の分のカウントを削る
+CFLAG:491 -= 1
+
+;有効なビデオを録画してなければここで終了
+SIF CFLAG:491 <= 0
+	RETURN 0
+
+DRAWLINE
+
+;ビデオ価格
+SCORE = 0
+;商売人によるビデオ価格加算
+Q = 0
+
+;ビデオ内容分析用フラグ
+;行われている調教
+MENU = 0
+;助手プレイかどうか
+VIDEO_ASSI = 0
+;その調教で有利になる能力
+BONUS_ABL = 0
+;撮影進行時の状況。bit値の立て方はFLAG:22に準拠
+EQUIP_MENU = 0
+;加算額
+UP_SCORE = 0
+;一緒にビデオ鑑賞する相手
+H = 0
+R = 0
+
+;「部位」
+;PLAY_CBVPLAY_CBVA:0 = 阴蒂类
+;PLAY_CBVPLAY_CBVA:1 = 乳房类
+;PLAY_CBVPLAY_CBVA:2 = 私处类
+;PLAY_CBVPLAY_CBVA:3 = 肛门类
+;「内容」
+;PLAY_MENU:1 = 愛撫
+;PLAY_MENU:2 = 器具
+;PLAY_MENU:3 = 性交
+;「傾向」
+;PLAY_ACTION:1 = 奉仕
+;PLAY_ACTION:2 = 加虐
+;PLAY_ACTION:3 = 被虐
+;PLAY_ACTION:4 = 自慰
+;「特殊」
+;PLAY_EXTRA:1 = 润滑液
+;PLAY_EXTRA:2 = 薬物
+;PLAY_EXTRA:3 = 緊縛
+;PLAY_EXTRA:4 = 搾乳
+;PLAY_EXTRA:5 = 利尿剂
+;PLAY_EXTRA:6 = 乱交
+;PLAY_EXTRA:7 = 野外露出
+;PLAY_EXTRA:8 = 触手
+;PLAY_EXTRA:9 = 百合
+;PLAY_EXTRA:10 = 扶她
+;PLAY_EXTRA:11 = 獣姦
+
+;特殊
+
+EQUIP_MENU = CFLAG:90
+
+FOR VIDEO_COUNT,0,CFLAG:491
+	
+	;調教内容と助手のロード
+	MENU = CFLAG:(VIDEO_COUNT + 460)
+	VIDEO_ASSI = MENU / 1000
+	MENU %= 1000
+
+	;着脱系の処理
+	;野外PLAY
+	IF MENU == 54
+		IF EQUIP_MENU & 1
+			EQUIP_MENU -= 1
+		ELSE
+			UP_SCORE = 500
+			PLAY_EXTRA:7 += 4
+			EQUIP_MENU |= 1
+		ENDIF
+	;浴室PLAY
+	ELSEIF MENU == 58
+		IF EQUIP_MENU & 2
+			EQUIP_MENU -= 2
+		ELSE
+			EQUIP_MENU |= 2
+		ENDIF
+	;新妻PLAY
+	ELSEIF MENU == 59
+		IF EQUIP_MENU & 4
+			EQUIP_MENU -= 4
+		ELSE
+			EQUIP_MENU |= 4
+		ENDIF
+	;绳子
+	ELSEIF MENU == 44
+		IF EQUIP_MENU & 8
+			EQUIP_MENU -= 8
+		ELSE
+			UP_SCORE = 500
+			PLAY_ACTION:3 += 4
+			PLAY_EXTRA:3 += 4
+			EQUIP_MENU |= 8
+		ENDIF
+	;バイブ
+	ELSEIF MENU == 11
+		UP_SCORE = 300
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:2 += 3
+		IF EQUIP_MENU & 16
+			EQUIP_MENU -= 16
+		ELSE
+			EQUIP_MENU |= 16
+		ENDIF
+	;アナルバイブ
+	ELSEIF MENU == 13
+		UP_SCORE = 700
+		PLAY_CBVA:3 += 3
+		PLAY_MENU:2 += 3
+		IF EQUIP_MENU & 32
+			EQUIP_MENU -= 32
+		ELSE
+			EQUIP_MENU |= 32
+		ENDIF
+	;浣腸
+	ELSEIF MENU == 46
+		;浣腸が評価されるのは失禁時のみ
+		IF EQUIP_MENU & 64
+			UP_SCORE = 1500
+			PLAY_CBVA:3 += 3
+			PLAY_MENU:2 += 3
+			PLAY_ACTION:3 += 5
+			PLAY_EXTRA:5 += 20
+			EQUIP_MENU -= 64
+		ELSE
+			EQUIP_MENU |= 64
+		ENDIF
+	;兽奸
+	ELSEIF MENU == 89
+		IF EQUIP_MENU & 128
+			EQUIP_MENU -= 128
+		ELSE
+			EQUIP_MENU |= 128
+		ENDIF
+	;触手生物
+	ELSEIF MENU == 100
+		IF EQUIP_MENU & 256
+			EQUIP_MENU -= 256
+		ELSE
+			UP_SCORE = 100
+			PLAY_EXTRA:8 += 5
+			EQUIP_MENU |= 256
+		ENDIF
+	;淋浴
+	ELSEIF MENU == 18
+		IF EQUIP_MENU & 512
+			EQUIP_MENU -= 512
+		ELSE
+			EQUIP_MENU |= 512
+			UP_SCORE = 100
+		ENDIF
+	;通常の調教
+	;COM:愛撫を見る
+	ELSEIF MENU == 0
+		UP_SCORE = 50
+		PLAY_CBVA:0 += 2
+		PLAY_CBVA:1 += 2
+		PLAY_MENU:1 += 3
+	;COM:舔阴を見る
+	ELSEIF MENU == 1
+		UP_SCORE = 50
+		PLAY_CBVA:0 += 3
+		PLAY_MENU:1 += 3
+	;COM:肛门爱抚を見る
+	ELSEIF MENU == 2
+		;アナルバイブ責めの場合
+		IF (EQUIP_MENU & 32)
+			UP_SCORE = 600
+			PLAY_CBVA:3 += 3
+			PLAY_MENU:1 += 3
+			PLAY_MENU:2 += 3
+		ELSE
+			UP_SCORE = 100
+			PLAY_CBVA:3 += 3
+			PLAY_MENU:1 += 3
+		ENDIF
+	;COM:自慰を見る
+	ELSEIF MENU == 3
+		BONUS_ABL = 31
+		;両穴オナニーを見る
+		IF (EQUIP_MENU & 16) && (EQUIP_MENU & 32)
+			UP_SCORE = 1800
+			PLAY_CBVA:2 += 2
+			PLAY_CBVA:3 += 2
+			PLAY_MENU:2 += 3
+			PLAY_ACTION:4 += 5
+		;バイブオナニーを見る
+		ELSEIF (EQUIP_MENU & 16)
+			UP_SCORE = 1000
+			PLAY_CBVA:2 += 3
+			PLAY_MENU:2 += 3
+			PLAY_ACTION:4 += 3
+		;アナルバイブオナニーを見る
+		ELSEIF (EQUIP_MENU & 32)
+			UP_SCORE = 1300
+			PLAY_CBVA:3 += 3
+			PLAY_MENU:2 += 3
+			PLAY_ACTION:4 += 3
+		;淋浴オナニーを見る
+		ELSEIF (EQUIP_MENU & 512)
+			UP_SCORE = 1200
+			PLAY_CBVA:0 += 2
+			PLAY_CBVA:1 += 2
+			PLAY_MENU:2 += 3
+			PLAY_ACTION:4 += 3
+		;通常自慰を見る
+		ELSE
+			UP_SCORE = 500
+			PLAY_CBVA:0 += 2
+			PLAY_CBVA:1 += 2
+			PLAY_ACTION:4 += 3
+		ENDIF
+	;COM:口交を見る
+	ELSEIF MENU == 4
+		BONUS_ABL = 32
+		UP_SCORE = 200
+		PLAY_CBVA:0 += 3
+		PLAY_MENU:1 += 3
+		SIF TALENT:121 == 0
+			PLAY_EXTRA:10 += 10
+	;COM:胸愛撫を見る
+	ELSEIF MENU == 5
+		UP_SCORE = 100
+		PLAY_CBVA:1 += 3
+		PLAY_MENU:1 += 3
+	;COM:接吻を見る
+	ELSEIF MENU == 6
+		UP_SCORE = 100
+		PLAY_ACTION:1 += 3
+	;自己扒开を見る
+	ELSEIF MENU == 7
+		BONUS_ABL = 17
+		UP_SCORE = 300
+		PLAY_CBVA:0 += 2
+		PLAY_CBVA:2 += 2
+		PLAY_ACTION:4 += 2
+	;COM:指挿入れを見る
+	ELSEIF MENU == 8
+		;バイブ責めの場合
+		IF (EQUIP_MENU & 16)
+			UP_SCORE = 400
+			PLAY_CBVA:2 += 3
+			PLAY_MENU:1 += 3
+			PLAY_MENU:2 += 3
+		ELSE
+			UP_SCORE = 150
+			PLAY_CBVA:2 += 3
+			PLAY_MENU:1 += 3
+		ENDIF
+	;COM:アナル舐めを見る
+	ELSEIF MENU == 9
+		UP_SCORE = 150
+		PLAY_CBVA:3 += 3
+		PLAY_MENU:1 += 3
+	;COM:ローターを見る
+	ELSEIF MENU == 10
+		UP_SCORE = 250
+		PLAY_CBVA:0 += 3
+		PLAY_MENU:2 += 3
+	;COM:Eマッサージャを見る
+	ELSEIF MENU == 12
+		UP_SCORE = 300
+		PLAY_CBVA:0 += 3
+		PLAY_MENU:2 += 3
+	;COM:阴蒂夹を見る
+	ELSEIF MENU == 14
+		UP_SCORE = 150
+		PLAY_CBVA:0 += 3
+		PLAY_MENU:2 += 3
+	;COM:乳头夹を見る
+	ELSEIF MENU == 15
+		UP_SCORE = 150
+		PLAY_CBVA:1 += 3
+		PLAY_MENU:2 += 3
+	;COM:搾乳器を見る
+	ELSEIF MENU == 16
+		UP_SCORE = 500
+		PLAY_CBVA:1 += 3
+		PLAY_MENU:2 += 3
+		PLAY_ACTION:3 += 3
+		PLAY_EXTRA:4 += 10
+	;COM:飞机杯を見る
+	ELSEIF MENU == 17
+		UP_SCORE = 100
+		PLAY_CBVA:0 += 3
+		PLAY_MENU:2 += 3
+		PLAY_ACTION:4 += 3
+		SIF TALENT:121 == 0
+			PLAY_EXTRA:10 += 10
+	;COM:肛珠を見る
+	ELSEIF MENU == 19
+		UP_SCORE = 700
+		PLAY_CBVA:3 += 3
+		PLAY_MENU:2 += 3
+	;COM:正常位を見る
+	ELSEIF MENU == 20
+		BONUS_ABL = 30
+		UP_SCORE = 800
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+	;COM:後背位を見る
+	ELSEIF MENU == 21
+		BONUS_ABL = 30
+		UP_SCORE = 1300
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+	;COM:対面座位を見る
+	ELSEIF MENU == 22
+		BONUS_ABL = 30
+		UP_SCORE = 700
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+	;COM:背面座位を見る
+	ELSEIF MENU == 23
+		BONUS_ABL = 30
+		UP_SCORE = 1500
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+	;COM:正常位肛交を見る
+	ELSEIF MENU == 26
+		BONUS_ABL = 30
+		UP_SCORE = 1000
+		PLAY_CBVA:3 += 3
+		PLAY_MENU:3 += 3
+	;COM:背后位肛交を見る
+	ELSEIF MENU == 27
+		BONUS_ABL = 30
+		UP_SCORE = 1500
+		PLAY_CBVA:3 += 3
+		PLAY_MENU:3 += 3
+	;COM:对面座位肛交を見る
+	ELSEIF MENU == 28
+		BONUS_ABL = 30
+		UP_SCORE = 900
+		PLAY_CBVA:3 += 3
+		PLAY_MENU:3 += 3
+	;COM:背面座位肛交を見る
+	ELSEIF MENU == 29
+		BONUS_ABL = 30
+		UP_SCORE = 1700
+		PLAY_CBVA:3 += 3
+		PLAY_MENU:3 += 3
+	;COM:手淫を見る
+	ELSEIF MENU == 30
+		BONUS_ABL = 32
+		UP_SCORE = 300
+		PLAY_ACTION:1 += 3
+	;COM:口交を見る
+	ELSEIF MENU == 31
+		BONUS_ABL = 32
+		UP_SCORE = 500
+		PLAY_ACTION:1 += 3
+	;COM:乳交を見る
+	ELSEIF MENU == 32
+		BONUS_ABL = 32
+		UP_SCORE = 650
+		PLAY_CBVA:1 += 3
+		PLAY_ACTION:1 += 3
+	;COM:股间性交
+	ELSEIF MENU == 33
+		BONUS_ABL = 32
+		UP_SCORE = 770
+		PLAY_CBVA:0 += 3
+		PLAY_MENU:3 += 3
+		PLAY_ACTION:1 += 3
+	;COM:騎乗位を見る
+	ELSEIF MENU == 34
+		BONUS_ABL = 30
+		UP_SCORE = 1700
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+		PLAY_ACTION:2 += 3
+	;COM:騎乗位アナルを見る
+	ELSEIF MENU == 36
+		BONUS_ABL = 30
+		UP_SCORE = 1700
+		PLAY_CBVA:3 += 3
+		PLAY_MENU:3 += 3
+		PLAY_ACTION:2 += 3
+	;COM:足コキを見る
+	ELSEIF MENU == 38
+		BONUS_ABL = 20
+		UP_SCORE = 550
+		PLAY_ACTION:2 += 3
+	;COM:スパンキングを見る
+	ELSEIF MENU == 40
+		BONUS_ABL = 21
+		UP_SCORE = 250
+		PLAY_ACTION:3 += 3
+	;COM:鞭を見る
+	ELSEIF MENU == 41
+		BONUS_ABL = 21
+		UP_SCORE = 450
+		PLAY_ACTION:3 += 3
+	;COM:針を見る
+	ELSEIF MENU == 42
+		BONUS_ABL = 21
+		UP_SCORE = 700
+		PLAY_ACTION:3 += 3
+	;COM:アイマスクを見る
+	ELSEIF MENU == 43
+		UP_SCORE = 150
+		PLAY_ACTION:3 += 5
+	;COM:ボールギャグを見る
+	ELSEIF MENU == 45
+		UP_SCORE = 100
+		PLAY_ACTION:3 += 5
+	;COM:ローションを見る
+	ELSEIF MENU == 50 && (EQUIP_MENU & 128) == 0
+		UP_SCORE = 100
+		PLAY_EXTRA:1 += 20
+	;会話する（自己紹介）を見る
+	ELSEIF MENU == 56
+		UP_SCORE = 10
+	;COM:助手にキスを見る
+	ELSEIF MENU == 60
+		UP_SCORE = 100
+		IF TALENT:ASSI:122 == 0
+			BONUS_ABL = 33
+			PLAY_EXTRA:9 += 3
+		ENDIF
+	;COM:クンニ強制を見る
+	ELSEIF MENU == 61
+		BONUS_ABL = 33
+		UP_SCORE = 250
+		PLAY_MENU:3 += 3
+		PLAY_ACTION:1 += 3
+		PLAY_EXTRA:6 += 3
+	;COM:助手を犯すを見る
+	ELSEIF MENU == 62
+		UP_SCORE = 800
+	;COM:貝あわせを見る
+	ELSEIF MENU == 63
+		BONUS_ABL = 33
+		UP_SCORE = 1000
+		PLAY_CBVA:0 += 3
+		PLAY_MENU:1 += 3
+		PLAY_EXTRA:9 += 10
+	;COM:３Ｐを見る
+	ELSEIF MENU == 64
+		UP_SCORE = 3000
+		PLAY_CBVA:2 += 2
+		PLAY_CBVA:3 += 2
+		PLAY_MENU:3 += 5
+		PLAY_EXTRA:6 += 3
+	;COM:助手を犯させるを見る
+	ELSEIF MENU == 65
+		BONUS_ABL = 33
+		UP_SCORE = 1200
+		PLAY_CBVA:3 += 3
+		PLAY_MENU:3 += 3
+		PLAY_EXTRA:6 += 3
+	;COM:二本フェラを見る
+	ELSEIF MENU == 66
+		BONUS_ABL = 32
+		UP_SCORE = 800
+		PLAY_ACTION:1 += 3
+		PLAY_EXTRA:6 += 3
+	;COM:ダブルフェラを見る
+	ELSEIF MENU == 68
+		BONUS_ABL = 32
+		UP_SCORE = 800
+		PLAY_ACTION:1 += 3
+		PLAY_EXTRA:6 += 3
+	;COM:シックスナインを見る
+	ELSEIF MENU == 69
+		BONUS_ABL = 32
+		UP_SCORE = 600
+		PLAY_CBVA:0 += 3
+		PLAY_ACTION:1 += 3
+	;COM:ダブル素股を見る
+	ELSEIF MENU == 70
+		UP_SCORE = 1200
+		PLAY_CBVA:0 += 3
+		PLAY_ACTION:1 += 3
+		PLAY_EXTRA:6 += 3
+	;COM:ダブルパイズリを見る
+	ELSEIF MENU == 71
+		UP_SCORE = 1300
+		PLAY_CBVA:1 += 3
+		PLAY_ACTION:1 += 3
+		PLAY_EXTRA:6 += 3
+	;COM:イラマチオを見る
+	ELSEIF MENU == 80
+		BONUS_ABL = 32
+		UP_SCORE = 1000
+		PLAY_ACTION:3 += 3
+	;COM:フィストファックを見る
+	ELSEIF MENU == 81
+		BONUS_ABL = 21
+		UP_SCORE = 2000
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:4 += 10
+	;COM:アナルフィストを見る
+	ELSEIF MENU == 82
+		BONUS_ABL = 21
+		UP_SCORE = 2500
+		PLAY_CBVA:3 += 3
+		PLAY_MENU:4 += 10
+	;COM:両穴フィストを見る
+	ELSEIF MENU == 83
+		BONUS_ABL = 21
+		UP_SCORE = 3000
+		PLAY_CBVA:2 += 2
+		PLAY_CBVA:3 += 2
+		PLAY_MENU:4 += 20
+	;COM:放尿を見る
+	ELSEIF MENU == 85
+		BONUS_ABL = 17
+		UP_SCORE = 500
+		PLAY_EXTRA:5 += 5
+	;COM:飲尿を見る
+	ELSEIF MENU == 86
+		BONUS_ABL = 17
+		UP_SCORE = 600
+		PLAY_EXTRA:5 += 5
+	;COM:ニプルファックを見る
+	ELSEIF MENU == 90
+		BONUS_ABL = 35
+		UP_SCORE = 900
+		PLAY_CBVA:1 += 3
+		PLAY_MENU:3 += 3
+		PLAY_ACTION:3 += 3
+		PLAY_EXTRA:4 += 10		
+	;COM:触手挿入を見る
+	ELSEIF MENU == 101
+		UP_SCORE = 800
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+		PLAY_EXTRA:8 += 5
+	;COM:アナル触手を見る
+	ELSEIF MENU == 102
+		UP_SCORE = 1000
+		PLAY_CBVA:3 += 3
+		PLAY_MENU:3 += 3
+		PLAY_EXTRA:8 += 5
+	;COM:触手クリ責めを見る
+	ELSEIF MENU == 103
+		UP_SCORE = 300
+		PLAY_CBVA:0 += 3
+		PLAY_MENU:1 += 3
+		PLAY_EXTRA:8 += 5
+	;COM:触手乳首責めを見る
+	ELSEIF MENU == 104
+		UP_SCORE = 300
+		PLAY_CBVA:1 += 3
+		PLAY_MENU:1 += 3
+		PLAY_EXTRA:8 += 5
+	;COM:触手搾乳を見る
+	ELSEIF MENU == 105
+		UP_SCORE = 1000
+		PLAY_CBVA:1 += 3
+		PLAY_ACTION:3 += 3
+		PLAY_EXTRA:4 += 10
+		PLAY_EXTRA:8 += 5
+	;COM:触手緊縛を見る
+	ELSEIF MENU == 106
+		UP_SCORE = 800
+		PLAY_ACTION:3 += 20
+		PLAY_EXTRA:3 += 20
+		PLAY_EXTRA:8 += 5
+	;COM:触手浣腸を見る
+	ELSEIF MENU == 107
+		UP_SCORE = 1500
+		PLAY_CBVA:3 += 3
+		PLAY_ACTION:3 += 3
+		PLAY_EXTRA:5 += 20
+		PLAY_EXTRA:8 += 5
+	;COM:触手口辱を見る
+	ELSEIF MENU == 108
+		UP_SCORE = 800
+		PLAY_ACTION:3 += 3
+		PLAY_EXTRA:8 += 5
+	;COM:触手ペニス責めを見る
+	ELSEIF MENU == 109
+		UP_SCORE = 1000
+		PLAY_CBVA:0 += 3
+		PLAY_MENU:1 += 3
+		PLAY_EXTRA:8 += 5
+		PLAY_EXTRA:10 += 10
+	;COM,挿入Ｇスポ責めを見る
+	ELSEIF MENU == 120
+		BONUS_ABL = 30
+		UP_SCORE = 1200
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+	;COM,挿入子宮口責めを見る
+	ELSEIF MENU == 121
+		BONUS_ABL = 30
+		UP_SCORE = 1400
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+	;COM,兜あわせを見る
+	ELSEIF MENU == 122
+		BONUS_ABL = 32
+		UP_SCORE = 200
+		PLAY_CBVA:0 += 3
+		PLAY_MENU:1 += 3
+		SIF TALENT:121 == 0
+			PLAY_EXTRA:10 += 10
+	;COM,パイズリフェラを見る
+	ELSEIF MENU == 123
+		BONUS_ABL = 32
+		UP_SCORE = 700
+		PLAY_CBVA:1 += 3
+		PLAY_ACTION:1 += 3
+	;COM,ディープスロートを見る
+	ELSEIF MENU == 124
+		BONUS_ABL = 32
+		UP_SCORE = 750
+		PLAY_ACTION:1 += 5
+	;COM,フェラ自慰を見る
+	ELSEIF MENU == 125
+		BONUS_ABL = 32
+		UP_SCORE = 800
+		PLAY_CBVA:0 += 2
+		PLAY_CBVA:1 += 2
+		PLAY_ACTION:1 += 3
+	;COM,手コキフェラを見る
+	ELSEIF MENU == 126
+		BONUS_ABL = 32
+		UP_SCORE = 600
+		PLAY_ACTION:1 += 4
+	;COM,バキュームフェラを見る
+	ELSEIF MENU == 127
+		BONUS_ABL = 32
+		UP_SCORE = 800
+		PLAY_ACTION:1 += 5
+	;COM,正常位・キスを見る
+	ELSEIF MENU == 128
+		BONUS_ABL = 30
+		UP_SCORE = 800
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+	;COM,正常位・胸愛撫を見る
+	ELSEIF MENU == 129
+		BONUS_ABL = 30
+		UP_SCORE = 900
+		PLAY_CBVA:1 += 2
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+	;COM,正常位ＳＰを見る
+	ELSEIF MENU == 130
+		BONUS_ABL = 30
+		UP_SCORE = 1000
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 4
+	;COM,後背位・胸愛撫を見る
+	ELSEIF MENU == 131
+		BONUS_ABL = 30
+		UP_SCORE = 1300
+		PLAY_CBVA:1 += 2
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+	;COM,後背位・スパンキングを見る
+	ELSEIF MENU == 132
+		BONUS_ABL = 30
+		UP_SCORE = 1400
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+		PLAY_ACTION:2 += 3
+	;COM,立ちバックを見る
+	ELSEIF MENU == 133
+		BONUS_ABL = 30
+		UP_SCORE = 1500
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+	;COM,後背位ＳＰを見る
+	ELSEIF MENU == 134
+		BONUS_ABL = 30
+		UP_SCORE = 1500
+		PLAY_CBVA:2 += 3
+		PLAY_MENU:3 += 3
+
+	ENDIF
+
+	;野外プレイ継続中
+	IF EQUIP_MENU & 1
+		BONUS_ABL = 17
+		PLAY_EXTRA:7 += 1
+	ENDIF
+	;緊縛プレイ継続中
+	IF EQUIP_MENU & 8
+		BONUS_ABL = 21
+		PLAY_EXTRA:3 += 1
+	ENDIF
+	;獣姦プレイ継続中
+	IF EQUIP_MENU & 128
+		BONUS_ABL = 39
+		PLAY_EXTRA:11 += 1
+	ENDIF
+	
+	;助手が女
+	SIF VIDEO_ASSI == 1
+		PLAY_EXTRA:5 += 1
+
+	;能力ボーナス
+	IF BONUS_ABL
+		IF ABL:BONUS_ABL > 5
+			TIMES UP_SCORE , 1.50
+		ELSEIF ABL:BONUS_ABL > 2
+			TIMES UP_SCORE , 1.20
+		ELSEIF ABL:BONUS_ABL > 0
+			TIMES UP_SCORE , 1.10
+		ENDIF	
+	ENDIF
+
+	SCORE += UP_SCORE
+
+	BONUS_ABL = 0
+	UP_SCORE = 0
+
+NEXT
+
+;ビデオ鑑賞
+;CALL WATCHING_VIDEO
+
+;ボーナス
+;処女喪失シーンがあれば加算
+IF TFLAG:32 & 1
+	SCORE += 5000
+	PRINTFORML 影像中记录了%SAVESTR:TARGET%丧失处女的画面
+	EXP:50 += 1
+	PRINTFORML %EXPNAME:50%＋１
+ENDIF
+
+;自己紹介シーンがあれば話術に応じてボーナス
+IF TFLAG:32 & 2
+	IF ABL:15 == 0
+		TIMES SCORE , 0.90
+	ELSEIF ABL:15 == 1
+		TIMES SCORE , 1.00
+	ELSEIF ABL:15 == 2
+		TIMES SCORE , 1.05
+	ELSEIF ABL:15 == 3
+		TIMES SCORE , 1.10
+	ELSEIF ABL:15 == 4
+		TIMES SCORE , 1.15
+	ELSEIF ABL:15 == 5
+		TIMES SCORE , 1.20
+	ELSE
+		TIMES SCORE , 1.25
+	ENDIF
+ENDIF
+
+;素質:処女を見る
+SIF TALENT:0
+	TIMES SCORE , 1.20
+;素質:崩壊を見る
+SIF TALENT:9
+	TIMES SCORE , 0.50
+;素質:無関心を見る
+SIF TALENT:21
+	TIMES SCORE , 0.70
+;素質:感情乏しいを見る
+SIF TALENT:22
+	TIMES SCORE , 0.70
+;素質:恥じらいを見る
+SIF TALENT:35
+	TIMES SCORE , 1.10
+;素質:淫乱を見る
+SIF TALENT:76
+	TIMES SCORE , 1.50
+;素質:謎の魅力を見る
+SIF TALENT:92
+	TIMES SCORE , 1.30
+
+;素質:小柄体系を見る
+SIF TALENT:100
+	TIMES SCORE , 1.20
+;素質:巨乳を見る
+SIF TALENT:110
+	TIMES SCORE , 1.20
+;素質:魅力を見る
+SIF TALENT:113
+	TIMES SCORE , 1.30
+;素質:爆乳を見る
+SIF TALENT:114
+	TIMES SCORE , 1.40
+;素質:超乳を見る
+SIF TALENT:119
+	TIMES SCORE , 1.60
+;素質:ふたなりを見る
+SIF TALENT:121
+	TIMES SCORE , 1.20
+;素質:オトコを見る。幼稚なら大丈夫
+SIF TALENT:122 && TALENT:132 == 0
+	TIMES SCORE , 0.20
+;素質:狂気を見る
+SIF TALENT:123
+	TIMES SCORE , 0.10
+;素質:動物耳を見る
+SIF TALENT:124
+	TIMES SCORE , 1.10
+;素質:人気者を見る
+SIF TALENT:126
+	TIMES SCORE , 1.30
+;素質:母乳体質を見る
+SIF TALENT:130
+	TIMES SCORE , 1.20
+;素質:未熟を見る
+SIF TALENT:135
+	TIMES SCORE , 2.00
+
+;ABL:被写技能をみる
+IF ABL:70 == 0
+	TIMES SCORE , 0.50
+ELSEIF ABL:70 == 1
+	TIMES SCORE , 0.80
+ELSEIF ABL:70 == 2
+	TIMES SCORE , 1.00
+ELSEIF ABL:70 == 3
+	TIMES SCORE , 1.20
+ELSEIF ABL:70 == 4
+	TIMES SCORE , 1.40
+ELSEIF ABL:70 == 5
+	TIMES SCORE , 1.50
+ELSEIF ABL:70 == 6
+	TIMES SCORE , 1.60
+ELSEIF ABL:70 == 7
+	TIMES SCORE , 1.70
+ELSEIF ABL:70 == 8
+	TIMES SCORE , 1.80
+ELSEIF ABL:70 == 9
+	TIMES SCORE , 1.90
+ELSE
+	TIMES SCORE , 2.00
+ENDIF
+
+;難易度補正
+;HARD
+;IF FLAG:5 == 3
+;	TIMES SCORE , 0.70
+;POWERFUL
+;ELSEIF FLAG:5 == 4
+;	TIMES SCORE , 0.50
+;ENDIF
+
+;ビデオタイトルを決める
+
+LOCALS = 
+
+IF PLAY_ACTION:1 > 3
+	LOCALS += "女王"
+ELSEIF PLAY_ACTION:2 > 3
+	LOCALS += "M女"
+ENDIF
+
+;境遇
+
+;素質:マザコン
+SIF TALENT:140
+	LOCALS += "母控"
+;素質:ファザコン
+SIF TALENT:141
+	LOCALS += "父控"
+;素質:ロリコン
+SIF TALENT:142
+	LOCALS += "萝莉控"
+;素質:ショタコン
+SIF TALENT:143
+	LOCALS += "正太控"
+
+;素質:人妻
+SIF TALENT:157
+	LOCALS += "人妻"
+;素質:妊娠
+SIF TALENT:153
+	LOCALS += "孕妇"
+
+IF TALENT:122
+	SELECTCASE TALENT:成为勇者前的生活
+	CASE 1
+		LOCALS += "学生"
+	CASE 2
+		LOCALS += "神官"
+	CASE 3
+		LOCALS += "农夫"
+	CASE 4
+		LOCALS += "渔夫"
+	CASE 5
+		LOCALS += "男妓"
+	CASE 6
+		LOCALS += "小偷"
+	CASE 7
+		LOCALS += "乞丐"
+	CASE 8
+		LOCALS += "大少爷"
+	CASE 9
+		LOCALS += "穷人"
+	CASE 10
+		LOCALS += "守墓人"
+	CASE 11
+		LOCALS += "咒术师"
+	CASE 12
+		LOCALS += "圣人"
+	CASE 13
+		LOCALS += "预言家"
+	CASE 14
+		LOCALS += "占卜师"
+	CASE 15
+		LOCALS += "店员"
+	CASE 16
+		LOCALS += "采药人"
+	CASE 17
+		LOCALS += "隐士"
+	CASE 18
+		LOCALS += "店员"
+	CASE 19
+		LOCALS += "军人"
+	CASE 20
+		LOCALS += "奴隶"
+	CASE 21
+		LOCALS += "主夫"
+	CASEELSE
+		LOCALS += "奴隶"
+	ENDSELECT
+ELSE
+	SELECTCASE TALENT:成为勇者前的生活
+	CASE 1
+		LOCALS += "学生"
+	CASE 2
+		LOCALS += "修道女"
+	CASE 3
+		LOCALS += "农妇"
+	CASE 4
+		LOCALS += "海女"
+	CASE 5
+		LOCALS += "妓女"
+	CASE 6
+		LOCALS += "女贼"
+	CASE 7
+		LOCALS += "乞丐"
+	CASE 8
+		LOCALS += "大小姐"
+	CASE 9
+		LOCALS += "穷人"
+	CASE 10
+		LOCALS += "墓守"
+	CASE 11
+		LOCALS += "巫女"
+	CASE 12
+		LOCALS += "圣女"
+	CASE 13
+		LOCALS += "预言家"
+	CASE 14
+		LOCALS += "占卜师"
+	CASE 15
+		LOCALS += "看板娘"
+	CASE 16
+		LOCALS += "采药人"
+	CASE 17
+		LOCALS += "千金"
+	CASE 18
+		LOCALS += "看板娘"
+	CASE 19
+		LOCALS += "军人"
+	CASE 20
+		LOCALS += "奴隶"
+	CASE 21
+		LOCALS += "主妇"
+	CASEELSE
+		LOCALS += "奴隶"
+	ENDSELECT
+ENDIF
+
+;露出癖4以上だと実名配信
+IF ABL:25 >= 4
+	LOCALS += SAVESTR:TARGET
+ENDIF
+
+LOCALS += "的"
+
+SIF PLAY_EXTRA:7 > 3
+	LOCALS += "野外"
+SIF PLAY_EXTRA:3 > 3
+	LOCALS += "緊縛"
+SIF PLAY_EXTRA:10 > 3
+	LOCALS += "扶她"
+SIF PLAY_EXTRA:9 > 3
+	LOCALS += "百合"
+SIF PLAY_EXTRA:6 > 3
+	LOCALS += "乱交"
+SIF PLAY_EXTRA:11 > 3
+	LOCALS += "兽奸"
+SIF C_RELATION:TARGET:MASTER == 5 && CFLAG:101
+	LOCALS += "近親相姦"
+SIF TFLAG:32 & 1
+	LOCALS += "處女喪失"
+
+IF PLAY_CBVA:0 > 6
+	LOCALS += "阴蒂蹂躏"
+ELSEIF PLAY_CBVA:1 > 6
+	LOCALS += "乳房蹂躏"
+ELSEIF PLAY_CBVA:2 > 3
+	LOCALS += "子宫口蹂躏"
+ELSEIF PLAY_CBVA:3 > 3
+	LOCALS += "肛门"
+ENDIF
+
+IF PLAY_ACTION:0 > 3
+	LOCALS += "奉仕"
+ELSEIF PLAY_ACTION:4 > 3
+	LOCALS += "自慰"
+ELSEIF PLAY_MENU:3 > 3
+	IF CFLAG:41 == 240 && CFLAG:601 == 901
+		LOCALS += "新婚初夜"
+	ELSE
+		SIF TALENT:157
+			LOCALS += "出軌"
+		LOCALS += "性交"
+	ENDIF
+ELSE
+	LOCALS += "调教"
+ENDIF
+
+IF SCORE > 0
+	PRINTFORMW 调教时的视频有着{SCORE}点的观赏价值。
+	IF ASSI > 0
+		IF ABL:ASSI:15
+			LOCAL = SCORE * ABL:ASSI:15 * 5
+			LOCAL /= 100
+			PRINTFORMW %SAVESTR:ASSI%的巧妙的编辑，令视频价值提高了{LOCAL}点。
+			SCORE += LOCAL
+		ENDIF
+	ENDIF
+	PRINTFORML 卖录像的{SCORE}点到手了。
+	MONEY += SCORE
+	EX_FLAG:4444 += SCORE
+	CFLAG:493 = SCORE
+	CSTR:6 = %LOCALS%
+	CALL VIDEO_BACKUP
+	
+	
+	CFLAG:498 = -1
+	SIF TALENT:220 == 0 && EX_TALENT:TARGET:1 == 0
+		EX_FLAG:9010 += 1
+	
+	IF (TALENT:317 == 4 || TALENT:157) && (TALENT:76 || TALENT:85) && CFLAG:41 == 240
+		LOCALS = 
+		IF CFLAG:601 == 901
+			IF TALENT:157
+				LOCALS += "前夫"
+			ELSEIF TALENT:317 == 4
+				LOCALS += "前男友"
+			ENDIF
+		ELSE
+			IF TALENT:157
+				LOCALS += "丈夫"
+			ELSEIF TALENT:317 == 4
+				LOCALS += "戀人"
+			ENDIF
+		ENDIF
+		IF TFLAG:32 & 1
+			PRINTFORML 把記錄著%SAVESTR:TARGET%處女喪失的影像也寄一份給%SAVESTR:TARGET%在故鄉的%LOCALS%……
+			PRINTFORML ・
+			PRINTFORML ・・
+			PRINTFORML ・・・
+			PRINTFORMW 【%SAVESTR:TARGET%的%LOCALS%視角】
+			PRINTFORML 自從%SAVESTR:TARGET%出發討伐魔王之後已經過了一段時日……
+			PRINTFORML 儘管毫無音訊，%SAVESTR:TARGET%的%LOCALS%每天仍期盼著她凱旋而歸。
+			PRINTFORML 在這樣一成不變的日子裡，某天不知從哪突然寄來了一封信與一顆水晶球。
+			PRINTFORML 信上寫著水晶球的操作方法，似乎是個可以撥放影像的魔法道具。
+			PRINTFORML %SAVESTR:TARGET%的%LOCALS%照著指示唸出驅動水晶球的口訣，水晶球隨即發出奇異的光芒，投射在眼前交織出一片光幕。
+			PRINTFORM 首先從光幕裡浮現的，是一個
+			PRINTFORM %GET_LOOK_INFO(TARGET, "头发颜色")%
+			SELECTCASE TALENT:TARGET:瞳色
+			CASE 1
+				PRINT 碧
+			CASE 2
+				PRINT 棕
+			CASE 3
+				PRINT 灰
+			CASE 4
+				PRINT 金
+			CASE 5
+				PRINT 赤
+			CASE 6
+				PRINT 黑
+			CASEELSE
+			ENDSELECT
+			PRINTFORML 眼，面帶羞澀微笑的身影。
+			PRINTFORMW 那熟悉的容顏……無庸置疑，正是朝思暮想的%SAVESTR:TARGET%！
+			PRINTFORML 
+			PRINTFORMW （這是…？）
+			PRINTFORML 映像中的%SAVESTR:TARGET%身上穿著一套\@TALENT:157 ? 遠比當初與自己成婚時更加 # 夢幻般 \@光潔耀眼的婚紗。
+			PRINTFORML 夾雜著羞怯與興奮，%SAVESTR:TARGET%朝著這個方向，以略帶顫抖的語調緩緩開口。
+			PRINTFORM 『%SELF_CALL(TARGET)%叫、%SAVESTR:TARGET%、{CFLAG:451}歲……是
+			PRINTFORM %GET_LOOK_INFO(TARGET, "种族")%
+			PRINTFORM \@TALENT:种族 != 9 ? 族 # \@的、
+			PRINTFORM %GET_LOOK_INFO(TARGET, "职业")%
+			PRINTFORMW ……』
+			PRINTFORMW 『%SELF_CALL(TARGET)%還、還是……處、處女的說』
+			PRINTFORML 微微起身後%SAVESTR:TARGET%滿臉通紅地提起婚紗裙擺，映像視角隨之下移，呈現出沒穿內褲的股間，
+			PRINTFORML 然後雙手輕輕分開汁水淋漓的私處，展示那仍無人造訪過的粉嫩花徑。
+			PRINTFORMW （怎麼回事…？為什麼%SAVESTR:TARGET%會…）
+			IF TALENT:157
+				PRINTFORML 由於戰事吃緊……當初草草辦完婚禮，甚至婚後還來不及圓房，%SAVESTR:TARGET%就被國家徵召而踏上征途。
+			ELSE
+				PRINTFORML 雖然和青梅竹馬的%SAVESTR:TARGET%交往已久，但當初已約定婚後才行夫妻房事。
+			ENDIF
+			PRINTFORML 所以%SAVESTR:TARGET%仍然還是純潔之身。
+			PRINTFORML %SAVESTR:TARGET%的%LOCALS%腦海中思緒紛程，目光卻死盯在映像中垂落著透明黏液的處女地無法移開……
+			PRINTFORML 畢竟眼前這淫靡的光景連身為\@TALENT:157 ? 丈夫 # 未婚夫 \@的自己也未曾見過。
+			PRINTFORML 然後%SAVESTR:TARGET%邊發顫邊說出有如晴天霹靂的話語。
+			PRINTFORMW 『是、是的…現、現在%SELF_CALL(TARGET)%要把純、純潔……獻給魔王大人%UNICODE(0x2661)%』
+			PRINTFORML 映像中的視野擴張開來，顯現出%SELF_CALL(TARGET)%身下的景物。
+			PRINTFORML %SELF_CALL(TARGET)%正跨在某個面容模糊的魔族男性身上，其兇惡無比的肉槍如同仰天長嘯般昂揚挺立。
+			PRINTFORMW 「騙人的吧……？不對、醒醒啊！%SAVESTR:TARGET%！」
+			PRINTFORML 然而%SAVESTR:TARGET%的%LOCALS%徒勞的呼喊絲毫於事無補，映像中的%SELF_CALL(TARGET)%正將那龜頭迎向秘唇之間，動作雖然緩慢但沒有絲毫遲疑。
+			PRINTFORMW 『那麼…請讓%SELF_CALL(TARGET)%…成為…魔王大人的女人吧~~%UNICODE(0x2661)%』
+			PRINTFORML %SELF_CALL(TARGET)%說著，緩緩坐了下去，將魔王的東西迎入體內。
+			PRINTFORMW 「%SAVESTR:TARGET%！不要啊！」
+			PRINTFORMW 『啊啊…嗚…嗯嗯嗯…呀啊啊啊啊啊~~%UNICODE(0x2661)%』
+			PRINTFORMW 「%SAVESTR:TARGET%啊！！！」
+			PRINTFORML (明明約好……等你討伐完魔王回來……從此一起過著幸福快樂的日子)
+			PRINTFORML 最愛的\@TALENT:157 ? 妻子 # 未婚妻 \@跨坐在別人身上，自己獻身什麼的……讓%SAVESTR:TARGET%的%LOCALS%難以置信。
+			PRINTFORML 但映像裡的%SAVESTR:TARGET%卻又如此逼真……
+			PRINTFORML 那秀眉微蹙的淚眼、含情脈脈的微笑，甚至是只在春夢中見過，如今卻因別人而綻放，落紅飄零的花園……
+			PRINTFORML 都訴說著一個令人心碎而不忍直視的噩夢。
+			PRINTFORML (是了，這一定只是個夢……)
+			PRINTFORMW 『欸嘿嘿……魔王大人的……全部進來了%UNICODE(0x2661)%』
+			PRINTFORMW 『這樣一來……%SELF_CALL(TARGET)%的身心……都是魔王大人的東西了%UNICODE(0x2661)%』
+			PRINTFORMW 『嗯嗯，還有點痛不過沒關係了……請好好享受%SELF_CALL(TARGET)%的服侍吧%UNICODE(0x2661)%』
+			PRINTFORML (所以那個在別人身上扭腰嬌喘的女人肯定也不是真正的%SAVESTR:TARGET%……)
+			PRINTFORML 一切都是夢境，嚇不倒人的……%SAVESTR:TARGET%的%LOCALS%找了個理由逃避現實。
+			PRINTFORMW 『啊啊……裡面……魔王大人的……又變大了%UNICODE(0x2661)%』
+			PRINTFORMW 『好、好的……請在裡面……%SELF_CALL(TARGET)%也……要高潮了%UNICODE(0x2661)%』
+			PRINTFORMW 『呀啊……啊嗯嗯嗯嗯嗯%UNICODE(0x2661)%！……呼、呼……滿、滿出來了%UNICODE(0x2661)%』
+			PRINTFORMW 『啊嗯……非常感謝%UNICODE(0x2661)%……%SELF_CALL(TARGET)%……會努力懷上魔王大人的孩子的%UNICODE(0x2661)%』
+			PRINTFORML 映像中%SAVESTR:TARGET%跟魔王的性戰持續許久，把婚紗都弄得髒亂不堪之後映像才結束。
+			PRINTFORML (這惡夢真他媽久……)
+			PRINTFORML %SAVESTR:TARGET%的%LOCALS%這麼想著……察覺到下身怪怪的，低頭才發現自己雙手不知何時探入褲襠內自我發電，手上盡是噁心黏膩感。
+			PRINTFORML 如今卻無力起身清理，索性往床上一倒，雙眼就此闔上。
+			PRINTFORMW 「%SAVESTR:TARGET%……」
+			PRINTFORML %SAVESTR:TARGET%的%LOCALS%無法接受失去\@TALENT:157 ? 妻子 # 未婚妻 \@的現實，轉而向夢中追尋已不存在的可能性。
+			PRINTFORML ・・・
+			PRINTFORML ・・
+			PRINTFORML ・
+			CFLAG:611 = 1
+		ELSEIF !CFLAG:611 && !TALENT:153
+			PRINTFORML 把%SAVESTR:TARGET%的NTR影像也寄一份給%SAVESTR:TARGET%在故鄉的%LOCALS%……
+			PRINTFORML ・
+			PRINTFORML ・・
+			PRINTFORML ・・・
+			PRINTFORMW 【%SAVESTR:TARGET%的%LOCALS%視角】
+			PRINTFORML 自從%SAVESTR:TARGET%出發討伐魔王之後已經過了一段時日……
+			PRINTFORML 儘管毫無音訊，%SAVESTR:TARGET%的%LOCALS%每天仍期盼著她凱旋而歸。
+			PRINTFORML 在這樣一成不變的日子裡，某天不知從哪突然寄來了一封信與一顆水晶球。
+			PRINTFORML 信上寫著水晶球的操作方法，似乎是個可以撥放影像的魔法道具。
+			PRINTFORML %SAVESTR:TARGET%的%LOCALS%照著指示唸出驅動水晶球的口訣，水晶球隨即發出奇異的光芒，投射在眼前交織出一片光幕。
+			PRINTFORM 首先從光幕裡浮現的，是一個
+			PRINTFORM %GET_LOOK_INFO(TARGET, "头发颜色")%
+			SELECTCASE TALENT:TARGET:瞳色
+			CASE 1
+				PRINT 碧
+			CASE 2
+				PRINT 棕
+			CASE 3
+				PRINT 灰
+			CASE 4
+				PRINT 金
+			CASE 5
+				PRINT 赤
+			CASE 6
+				PRINT 黑
+			CASEELSE
+			ENDSELECT
+			PRINTFORML 眼，面帶羞澀微笑的身影。
+			PRINTFORMW 那熟悉的容顏……無庸置疑，正是朝思暮想的%SAVESTR:TARGET%！
+			PRINTFORML 
+			PRINTFORMW （這是…？）
+			PRINTFORML 映像中的%SAVESTR:TARGET%身上穿著一套\@TALENT:157 ? 遠比當初與自己成婚時更加 # 夢幻般 \@光潔耀眼的婚紗。
+			PRINTFORML 夾雜著羞怯與興奮，%SAVESTR:TARGET%朝著這邊，以略帶顫抖的語調緩緩開口。
+			PRINTFORM 『%SELF_CALL(TARGET)%叫、%SAVESTR:TARGET%、{CFLAG:451}歲……是
+			PRINTFORM %GET_LOOK_INFO(TARGET, "种族")%
+			PRINTFORM \@TALENT:种族 != 9 ? 族 # \@的、
+			PRINTFORM %GET_LOOK_INFO(TARGET, "职业")%
+			PRINTFORMW ……』
+			PRINTFORMW 『請、請看…%SELF_CALL(TARGET)%的、這裡……已經準備好了』
+			PRINTFORML 微微起身後%SAVESTR:TARGET%滿臉通紅地提起婚紗裙擺，映像視角隨之下移，呈現出沒穿內褲的股間，
+			PRINTFORML 然後雙手輕輕分開汁水淋漓的私處，展示那不斷蠕動著的粉嫩花徑。
+			PRINTFORMW （怎麼回事…？為什麼%SAVESTR:TARGET%會做出這種事…）
+			PRINTFORML 眼前淫靡的光景連身為\@TALENT:157 ? 丈夫 # 未婚夫 \@的自己也未曾見過。
+			PRINTFORML %SAVESTR:TARGET%的%LOCALS%腦海中思緒紛程，目光卻死盯在映像中垂落著透明黏液的蜜穴無法移開，
+			PRINTFORML 直到%SAVESTR:TARGET%邊發顫邊說出有如晴天霹靂的話語。
+			PRINTFORMW 『其實在遙遠的故鄉……%SELF_CALL(TARGET)%曾經、有個\@TALENT:157 ? 丈夫 # 未婚夫 \@的說』
+			PRINTFORMW 『名字？長相？…那種東西…已經都忘掉了呢』
+			PRINTFORM 『現在的%SELF_CALL(TARGET)%……是只屬於魔王大人的
+			IF CFLAG:601 == 901
+				PRINTFORMW 妃子%UNICODE(0x2661)%』
+			ELSEIF TALENT:76
+				PRINTFORMW 肉便器%UNICODE(0x2661)%』
+			ELSEIF TALENT:85
+				PRINTFORMW 愛人%UNICODE(0x2661)%』
+			ENDIF
+			PRINTFORMW 『是、是的…接下來%SELF_CALL(TARGET)%要……全心全意、侍奉魔王大人』
+			PRINTFORML 映像中的視野擴張開來，顯現出%SELF_CALL(TARGET)%身下的景物。
+			PRINTFORML %SELF_CALL(TARGET)%正跨在某個魔族男性身上，那個比自己不知兇惡多少倍的肉槍如同仰天長嘯般昂揚挺立。
+			PRINTFORMW 「騙人的吧……？不對、醒醒啊！%SAVESTR:TARGET%！」
+			PRINTFORML 然而%SAVESTR:TARGET%的%LOCALS%徒勞的呼喊絲毫於事無補，映像中的%SELF_CALL(TARGET)%正將那龜頭迎向秘唇之間，動作雖然緩慢但沒有絲毫遲疑。
+			PRINTFORMW 『從今以後…%SELF_CALL(TARGET)%…就是…只屬於魔王大人的女人了~~%UNICODE(0x2661)%』
+			PRINTFORML %SAVESTR:TARGET%說著，緩緩坐了下去，將魔王的東西迎入體內。
+			PRINTFORMW 「%SAVESTR:TARGET%！不要啊！」
+			PRINTFORMW 『啊啊…嗚…嗯嗯嗯~~%UNICODE(0x2661)%』
+			PRINTFORMW 「%SAVESTR:TARGET%啊！！！」
+			PRINTFORML (明明約好……等你討伐完魔王回來……從此一起過著幸福快樂的日子)
+			PRINTFORMW 『欸嘿嘿……魔王大人的……全部進來了%UNICODE(0x2661)%』
+			PRINTFORMW 『魔王大人……舒服嗎？……%SELF_CALL(TARGET)%的裡面%UNICODE(0x2661)%』
+			PRINTFORMW 『多謝誇獎……請好好享受%SELF_CALL(TARGET)%的服侍吧%UNICODE(0x2661)%』
+			PRINTFORML 最愛的\@TALENT:157 ? 妻子 # 未婚妻 \@跨坐在別人身上，自己扭腰什麼的……讓%SAVESTR:TARGET%的%LOCALS%難以置信。
+			PRINTFORML 但映像裡的%SAVESTR:TARGET%卻又如此逼真……
+			PRINTFORML 夾染紅霞，杏眼含春，聲聲嬌喘，喚的卻是別人……
+			PRINTFORML 都訴說著一個令人心碎而不忍直視的噩夢。
+			PRINTFORML (是了，這一定只是個夢……)
+			PRINTFORML (所以那個在別人身上扭腰嬌喘的女人肯定也不是真正的%SAVESTR:TARGET%……)
+			PRINTFORML 一切都是夢境，嚇不倒人的……%SAVESTR:TARGET%的%LOCALS%找了個理由逃避現實。
+			PRINTFORMW 『啊啊……裡面……魔王大人的……又變大了%UNICODE(0x2661)%』
+			PRINTFORMW 『好、好的……請在裡面……%SELF_CALL(TARGET)%也……要高潮了%UNICODE(0x2661)%』
+			PRINTFORMW 『呀啊……啊嗯嗯嗯嗯嗯%UNICODE(0x2661)%！……呼、呼……滿、滿出來了%UNICODE(0x2661)%』
+			PRINTFORMW 『啊嗯……非常感謝%UNICODE(0x2661)%……%SELF_CALL(TARGET)%……會努力懷上魔王大人的孩子的%UNICODE(0x2661)%』
+			PRINTFORML 映像中%SAVESTR:TARGET%跟魔王的性戰持續許久，把婚紗都弄得髒亂不堪之後映像才結束。
+			PRINTFORML (這惡夢真他媽久……)
+			PRINTFORML %SAVESTR:TARGET%的%LOCALS%這麼想著……察覺到下身怪怪的，低頭才發現自己雙手不知何時探入褲襠內自我發電，手上盡是噁心黏膩感。
+			PRINTFORML 如今卻無力起身清理，索性往床上一倒，雙眼就此闔上。
+			PRINTFORMW 「%SAVESTR:TARGET%……」
+			PRINTFORML %SAVESTR:TARGET%的%LOCALS%無法接受失去\@TALENT:157 ? 妻子 # 未婚妻 \@的現實，轉而向夢中追尋已不存在的可能性。
+			PRINTFORML ・・・
+			PRINTFORML ・・
+			PRINTFORML ・
+			CFLAG:611 = 1
+		ELSEIF TALENT:153 && CFLAG:611
+			PRINTFORML 把記錄著%SAVESTR:TARGET%懷孕性愛的影像也寄一份給%SAVESTR:TARGET%在故鄉的%LOCALS%……
+			PRINTFORML ・
+			PRINTFORML ・・
+			PRINTFORML ・・・
+			PRINTFORMW 【%SAVESTR:TARGET%的%LOCALS%視角】
+			PRINTFORML 自從%SAVESTR:TARGET%出發討伐魔王之後不知過了多久……
+			PRINTFORML %SAVESTR:TARGET%的%LOCALS%家裡有個奇怪的水晶球，但想不起是什麼時候出現的。
+			PRINTFORML %SAVESTR:TARGET%的%LOCALS%每晚總是習慣性地拿起水晶球，之後好像會發生什麼說不清道不明的事……
+			PRINTFORML 然而早上醒來時就什麼也記不得了，只剩筋疲力盡的身軀跟一褲子的腥臭物。
+			PRINTFORMW 某天，%SAVESTR:TARGET%的%LOCALS%又收到了一顆水晶球……
+			PRINTFORML 
+			PRINTFORMW 『魔王大人%UNICODE(0x2661)%……魔王大人%UNICODE(0x2661)%』
+			PRINTFORML 似曾相識的景象，穿著婚紗的%SAVESTR:TARGET%跨坐在魔王身上努力扭著腰。
+			PRINTFORML 不同的是套著婚紗的腹部卻高高隆起，顯然是懷上了魔王的孩子。
+			PRINTFORML 因懷孕而更加脹大的胸部也暴露在外，隨著%SAVESTR:TARGET%的動作邊彈跳邊噴灑著大量母乳。
+			PRINTFORMW 『看到了嗎？%SELF_CALL(TARGET)%沒用的\@TALENT:157 ? 前夫 # 未婚夫 \@唷……%SELF_CALL(TARGET)%的肚子，已經這麼大了%UNICODE(0x2661)%』
+			PRINTFORMW 『每天子宮都被魔王大人的愛灌得滿滿的%UNICODE(0x2661)%……很快就懷上愛的結晶了呢%UNICODE(0x2661)%』
+			PRINTFORMW 『今天也要……讓魔王大人好好地疼愛我們母子唷%UNICODE(0x2661)%』
+			PRINTFORML 語畢，%SAVESTR:TARGET%邊扭腰邊俯身將胸部湊到魔王面前，
+			PRINTFORML 隨著魔王含住奶頭一陣吸吮，%SAVESTR:TARGET%的動作與嬌喘更發激烈。
+			PRINTFORML 高潮時兩人分別噴湧出大量的精液與母乳，糾纏的軀體因而染滿白濁。
+			PRINTFORMW 『啊哈%UNICODE(0x2661)%……魔王大人射太多了啦%UNICODE(0x2661)%……肚子裡的寶寶都要泡在精液裡了%UNICODE(0x2661)%』
+			PRINTFORML 明明是不堪入目的下流景象，%SAVESTR:TARGET%的%LOCALS%卻無法將視線移開。
+			PRINTFORMW 『呼呼，那麼再見囉，可悲的\@TALENT:157 ? 前夫 # 未婚夫 \@唷……』
+			PRINTFORMW 『以後還會寄水晶球給你的……讓可憐沒人愛的你當配菜用唷♪』
+			PRINTFORML 
+			PRINTFORML %SAVESTR:TARGET%的%LOCALS%心中某處似乎徹底崩潰了。
+			PRINTFORML 從褲子裡掏出做案工具後，就這樣一遍又一遍地反覆播放映像並自我發電著。
+			PRINTFORML ・・・
+			PRINTFORML ・・
+			PRINTFORML ・
+		ENDIF
+	ENDIF
+ELSE
+	PRINTL 录制的视频没有成为有用的东西。
+ENDIF
+
+;再調教時に出ないようにビデオを消す
+CFLAG:491 = 0
+
+WAIT
+
+RETURN 0
+
+;-----------------------------------
+@EVENT_VIDEO_DAY
+#DIM VIEW
+#DIM FAV
+;-----------------------------------
+
+SIF TARGET < 0 || TARGET > CHARANUM
+	RETURN 0
+
+;非公開ははじく
+SIF CFLAG:497 == 0
+	RETURN 0
+
+VIEW = 0
+FAV = 0
+
+;評価ボーナス
+VIEW += CFLAG:493 / 10
+
+;マニアックさによるデメリット
+IF CFLAG:494 > 0 && CFLAG:494 < 100
+	VIEW *= 100 - CFLAG:494
+	VIEW /= 100
+	VIEW += 1
+ENDIF
+
+;ふぁぼは閲覧数の1%程度
+FAV = (VIEW / 100) + RAND:2
+;マニアックボーナス
+FAV *= (CFLAG:494 / 2) + 1
+;閲覧数以上のふぁぼは得られない
+SIF FAV > VIEW
+	FAV = VIEW
+
+;加算
+CFLAG:495 += VIEW
+CFLAG:496 += FAV
+
+IF CSTR:6 != ""
+	PRINTL  
+	PRINTFORML 录制于水晶中的「%CSTR:6%」在黑市上流通了起来……
+	IF FAV > 0
+		PRINTFORMW 收到了{VIEW}点金钱，并收到了{FAV}封粉丝信。
+	ELSE
+		PRINTFORMW 收到了{VIEW}点金钱。
+	ENDIF
+	
+	MONEY += VIEW
+	EX_FLAG:4444 += VIEW
+	
+	PRINTL  
+ENDIF
+
+RETURN 0
+
+;-----------------------------------
+@VIDEO_MATURO2
+#DIM CONTENT
+#DIM CONTENT_COUNT
+;-----------------------------------
+CONTENT_COUNT = 0
+IF GETBIT(EX_FLAG:9000,2)
+	FOR CONTENT, 0, 20000
+		IF SUISEI_STR:CONTENT == "" && CONTENT_COUNT == 0
+			SUISEI_STR:CONTENT = %TSTR:30%
+			CONTENT_COUNT += 1
+			SIF TALENT:220 == 0 && EX_TALENT:2 == 0
+				EX_FLAG:9010 += 1
+		ENDIF
+	NEXT
+ENDIF
+TSTR:30 =
+;-----------------------------------
+@VIDEO_MATURO
+#DIM CONTENT
+#DIM CONTENT_COUNT
+;-----------------------------------
+CONTENT_COUNT = 0
+IF GETBIT(EX_FLAG:9000,2)
+	FOR CONTENT, 0, 20000
+		IF SUISEI_STR:CONTENT == "" && CONTENT_COUNT == 0
+			SUISEI_STR:CONTENT = %TSTR:30%
+			CONTENT_COUNT += 1
+			SIF TALENT:220 == 0 && EX_TALENT:2 == 0
+				EX_FLAG:9010 += 1
+		ENDIF
+	NEXT
+ENDIF
+TSTR:30 = 
+;-----------------------------------
+@VIDEO_BACKUP
+#DIM CONTENT
+#DIM CONTENT_COUNT
+;-----------------------------------
+CONTENT_COUNT = 0
+
+FOR CONTENT, 0, 20000
+	IF SUISEI_STR:CONTENT == "" && CONTENT_COUNT == 0
+		SUISEI_STR:CONTENT = %CSTR:6%
+		CONTENT_COUNT += 1
+	ENDIF
+NEXT
+
+;-----------------------------------
+@VIDEO_CHECK
+#DIM CONTENT
+#DIM CONTENT_COUNT
+;-----------------------------------
+CONTENT = 0
+CONTENT_COUNT = 0
+
+;FOR CONTENT, 0, CHARANUM
+;	SIF CSTR:CONTENT:6 != ""
+;		CONTENT_COUNT += 1
+;NEXT
+
+FOR CONTENT, 0, 20000
+	SIF SUISEI_STR:CONTENT != ""
+		CONTENT_COUNT += 1
+NEXT
+
+RETURN CONTENT_COUNT
+
+;-----------------------------------
+@VIDEO_SHELF(NO_PAGE,NUM_PAGE,CONTENT_COUNT)
+#DIM NO_PAGE
+#DIM NUM_PAGE
+#DIM CONTENT
+#DIM CONTENT_COUNT
+#DIM CONTENT_COUNT_NEXT
+#DIM T_LCOUNT
+#DIM L_LCOUNT
+;-----------------------------------
+;FOR CONTENT, LIST_POS, CHARANUM
+;	IF CSTR:CONTENT:6 != ""
+;		LOCALS = 《%CSTR:CONTENT:6%》
+;		PRINTFORM %LOCALS,24,LEFT%	
+;		CONTENT_COUNT++
+;	ENDIF
+;	IF CONTENT_COUNT % 3 == 0
+;		T_LCOUNT++
+;		PRINTL
+;	ENDIF
+;NEXT
+CONTENT_COUNT_NEXT = CONTENT_COUNT + (NUM_PAGE * 3) + 1
+
+FOR CONTENT, CONTENT_COUNT, CONTENT_COUNT_NEXT
+	IF SUISEI_STR:CONTENT != ""
+		LOCALS = 《%SUISEI_STR:CONTENT%》
+		PRINTFORM %LOCALS,24,LEFT%	
+		CONTENT_COUNT++
+	ENDIF
+	SIF (CONTENT == (CONTENT_COUNT_NEXT - 1) && ( CONTENT_COUNT % 3 == 1 || CONTENT_COUNT % 3 == 2 )) || CONTENT_COUNT % 3 == 0
+		PRINTL
+NEXT

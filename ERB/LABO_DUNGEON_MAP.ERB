@@ -1,0 +1,289 @@
+﻿;フィールドでの戦闘
+;水面下での開発に戻しました
+;この部分のコードが欲しいひとは0.310以前のバージョンを参照してください
+
+@DUNGEON_MAP
+
+;迎撃時体力が回復していると迎撃再開
+IF CFLAG:A:1 == 3
+	IF (BASE:A:0 * 100 / MAXBASE:A:0 > 80) && (BASE:A:1 * 100 / MAXBASE:A:1 > 80)
+		CFLAG:A:507 = 0
+	ENDIF
+ENDIF
+
+;フラグオフ
+CFLAG:A:503 = 0
+
+CALL UNIT_MOVE
+
+BASE:A:1 -= RAND:6
+	
+;帰還するかどうか
+IF BASE:A:0 * 100 / MAXBASE:A:0 < 45
+	PRINTFORML %SAVESTR:A%は帰還を決意した
+	CFLAG:A:507 = 1
+ELSEIF BASE:A:1 * 100 / MAXBASE:A:1 < 45
+	PRINTFORML %SAVESTR:A%は帰還を決意した
+	CFLAG:A:507 = 1
+ENDIF
+SIF RAND:5 == 0
+	CALL DUNGEON_BITCH
+
+;宝箱を見つける
+SIF CFLAG:A:1 == 2 && RAND:4 == 0
+	CALL EQUIP_SELECT
+
+;アイテムの使用
+CALL USE_EX_ITEM
+
+;移動を反映
+CFLAG:A:502 = D:20
+
+;休憩フェイズ
+
+;装備効果(キャンプ)
+W:8 = 18
+CALL EQUIP_CHECK
+SIF CFLAG:A:503 & 1 && RESULT > 0
+	CFLAG:A:503 += 1
+
+;装備効果(キャンプ禁止)
+W:8 = 19
+CALL EQUIP_CHECK
+SIF CFLAG:A:503 & 1 && RESULT > 0
+	CFLAG:A:503 -= 1
+	
+IF CFLAG:A:1 == 2 && CFLAG:A:503 & 1
+	IF FLAG:5 & 32
+		PRINTL  
+		DRAWLINE
+		PRINTFORMW %SAVESTR:A%は隠れて休憩した
+		DRAWLINE
+		PRINTL 
+	ENDIF
+ELSEIF CFLAG:A:1 == 2 && CFLAG:A:503 & 1
+	IF FLAG:5 & 32
+		PRINTL  
+		DRAWLINE
+		PRINTFORMW %SAVESTR:A%は安全な場所でキャンプを設営し、休憩した
+		DRAWLINE
+		PRINTL 
+	ENDIF
+ELSEIF CFLAG:A:1 == 3
+	
+ENDIF
+SIF FLAG:5 & 32
+	PRINTL  
+TARGET = -1
+RETURN 0
+
+
+
+;-----------------------------------
+@UNIT_MOVE
+;-----------------------------------
+IF CFLAG:A:507 == 0
+	X = RAND:90
+ELSE
+	X = -90
+ENDIF
+
+;装備効果(侵攻)
+W:8 = 17
+CALL EQUIP_CHECK
+SIF RESULT > 0
+	X *= 2
+
+;装備効果(試練)
+W:8 = 19
+CALL EQUIP_CHECK
+SIF RESULT > 0
+	X /= 2
+
+IF CFLAG:A:509 == 1
+	IF RAND:3 == 0
+		;たまに回復
+		;ハメを防ぐため先に判定する
+		CFLAG:A:509 = 0
+	ELSE
+		X = 0
+	ENDIF
+ENDIF
+	
+IF CFLAG:A:1 == 2
+	D:20 += X
+ELSE
+	X *= 2
+	D:20 -= X
+ENDIF
+
+;------------------------------------------------
+$MOVE_LOOP
+;------------------------------------------------
+
+LOCAL:0 = CFLAG:A:510
+LOCAL:1 = CFLAG:A:511
+
+
+LOCAL:2 = DA:(LOCAL:1):(LOCAL:0)/32
+
+IF D:20 < 0
+	SIF LOCAL:0 > 16
+		LOCAL:0 += RAND:3 - 1
+	SIF LOCAL:0 < 16
+		LOCAL:0 -= RAND:3 - 1
+	SIF LOCAL:1 > 16
+		LOCAL:1 += RAND:3 - 1
+	SIF LOCAL:1 < 16
+		LOCAL:1 -= RAND:3 - 1
+ELSEIF D:20 > 10
+	D:20 /= 10
+	SIF LOCAL:0 > 16
+		LOCAL:0 -= RAND:3 - 1
+	SIF LOCAL:0 < 16
+		LOCAL:0 += RAND:3 - 1
+	SIF LOCAL:1 > 16
+		LOCAL:1 -= RAND:3 - 1
+	SIF LOCAL:1 < 16
+		LOCAL:1 += RAND:3 - 1
+ENDIF
+
+;領域外を避ける
+SIF LOCAL:0 < 0 || LOCAL:0 > 31
+	GOTO MOVE_LOOP
+SIF LOCAL:1 < 0 || LOCAL:1 > 31
+	GOTO MOVE_LOOP
+
+LOCAL:10 = DA:(LOCAL:1):(LOCAL:0)/32
+
+;高低差がある地形を避ける
+SIF LOCAL:2 != LOCAL:10 && RAND:5 > 0
+	GOTO MOVE_LOOP
+
+
+
+	
+P:0 = LOCAL:0
+P:1 = LOCAL:1
+
+;移動する場合、移動先によって分岐
+
+IF LOCAL:0 == 16 && LOCAL:1 == 16
+	CFLAG:A:501 = 2
+	;PRINTFORMW *%SAVESTR:A%が魔王城攻略に挑戦した*
+	PRINTL ここが魔王の城だ………
+					JUMP ENDING_2
+	RETURN 0
+ENDIF
+
+CALL UNIT_CHECK
+IF RESULT >= 0
+	IF CFLAG:RESULT:1 == CFLAG:A:1
+		;仲間の場合移動停止
+		RETURN 0
+	ELSEIF CFLAG:RESULT:1 == 2
+		;違う場合対戦
+		B = RESULT
+		CALL DUNGEON_BATTLE2
+		;陥落したか否か
+		IF RESULT == 2
+			PRINTFORML %SAVESTR:B%は陥落した…
+			MONEY += 1000 * CFLAG:B:9
+			PRINTFORMW {1000 * CFLAG:B:9}Gを入手！
+			CFLAG:A:505 += 1
+			CFLAG:B:506 = 1
+			CFLAG:B:507 = 0
+		ELSEIF RESULT == 1
+			TARGET = -1
+			RETURN 0
+		ENDIF
+	ENDIF
+	RETURN 0
+ENDIF
+
+
+CALL MON_CHECK
+IF RESULT > 0
+	;魔王軍は仲間
+	SIF CFLAG:A:1 == 3
+		RETURN 0
+	M:2 = RESULT
+	CALL DUNGEON_BATTLE
+	;陥落したか否か
+	IF CFLAG:A:1 != 2
+		PRINTFORML %SAVESTR:A%は陥落した…
+		MONEY += 1000 * CFLAG:A:9
+		PRINTFORML {1000 * CFLAG:A:9}Gを入手！
+		CFLAG:A:506 = 1
+		CFLAG:A:507 = 0
+		
+	ENDIF
+	RETURN 0
+ENDIF
+
+
+
+CFLAG:A:510 = P:0
+CFLAG:A:511 = P:1
+
+IF D:20 < 0
+	D:20 = 100
+ELSEIF D:20 > 100
+	D:20 = 0
+ENDIF
+
+RETURN 0
+
+;------------------------------------------
+@CONFIG_LABO_MAP_STATUS
+;------------------------------------------
+
+SELECTCASE FLAG:502
+	CASE 1
+		PRINT ２Ｄ
+	CASE 0
+		PRINT 普通
+ENDSELECT
+PRINTL 
+
+;------------------------------------------
+@CONFIG_LABO_MAP_SETTING
+;------------------------------------------
+
+PRINTL [0]普通
+PRINTL [1]２Ｄ
+DRAWLINE
+PRINTL [100] 返回
+
+WHILE 1
+	INPUT
+	SELECTCASE RESULT
+		CASE 0 TO 1
+			FLAG:502 = RESULT
+			SIF FLAG:502 == 1
+				CALL LABO_MAP_SET
+			RETURN 0
+		CASE 100
+			RETURN 0
+	ENDSELECT
+	CLEARLINE 1
+WEND
+
+;------------------------------------------
+@LABO_MAP_SET
+;------------------------------------------
+CALL GEO_TEST
+CALL SET_VIL
+FOR LOCAL:0,0,50
+	FOR LOCAL:1,0,50
+		DB:(LOCAL:0):(LOCAL:1) = 0
+	NEXT
+NEXT
+
+
+
+
+
+
+
+

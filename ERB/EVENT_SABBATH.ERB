@@ -1,0 +1,315 @@
+﻿;----------------------------------
+@SABBATH
+#DIM SABBATH_USER
+#DIM COUNT_F
+#DIM COUNT_A
+#DIM COUNT_B
+#DIM COUNT_V
+#DIM COUNT_S
+#DIM COUNT_Z
+;----------------------------------
+
+;調教状態以外は除外
+SIF CFLAG:1 != 0
+	RETURN 0
+
+;満月以外は除外
+SIF DAY:2 <= 14 || DAY:2 >= 16
+	RETURN 0
+
+;法术か咒术を持っていないと除外
+SIF TALENT:242 == 0 && TALENT:250 == 0
+	RETURN 0
+
+;淫乱以外は除外
+SIF TALENT:76 == 0
+	RETURN 0
+
+;各種回数 Fフェラ Aアナル B胸 V性器 S精液 Z兽奸
+COUNT_F = 0
+COUNT_A = 0
+COUNT_B = 0
+COUNT_V = 0
+COUNT_S = 0
+COUNT_Z = 0
+
+PRINTL  
+PRINTFORM %SAVESTR:TARGET%参与了献给无名的淫荡女神的仪式，
+IF TALENT:122
+	;男人
+	PRINTFORM 全裸的魔族女性和女奴隶在陪侍着，
+ELSEIF TALENT:121
+	;扶她
+	PRINTFORM 暴露乳房的装束让阴茎勃起了，
+ELSE
+	PRINTFORM 穿着乳房、性器、屁股全部暴露的邪恶服装，
+ENDIF
+
+PRINTFORMW 对地下城里的怪物们，进行了性施舍。
+
+
+IF TALENT:122
+	;男人
+	PRINTFORML %SAVESTR:TARGET%抱着魔族女人，
+	PRINTFORMW 将精液施舍给了她。
+ELSEIF TALENT:121
+	;扶她
+	PRINTFORML %SAVESTR:TARGET%抱着魔族女人，
+	PRINTFORMW 将精液施舍给了她。
+	
+	IF TALENT:0 || TALENT:273
+		;处女・私处封印
+		PRINTFORML %SAVESTR:TARGET%因为性器被封印着，
+		PRINTFORMW 所以使用肛门不停地侍奉着阴茎。
+		IF TALENT:77
+			;扶她处女尻穴狂
+			PRINTFORMW %SAVESTR:TARGET%陶醉在从后穴传递向前穴的快感中。
+			COUNT_A += 1
+		ENDIF
+		COUNT_A += RAND:10 + 1
+		COUNT_S += COUNT_A + RAND:10
+	ELSE
+		PRINTFORMW 将自己能用上的穴，全部拿来侍奉阴茎。
+		COUNT_V += RAND:10 + 1
+		COUNT_A += RAND:10 + 1
+		COUNT_S += COUNT_A + COUNT_V + RAND:10
+	ENDIF
+	
+ELSEIF TALENT:0
+	;处女
+	PRINTFORML %SAVESTR:TARGET%纯洁的性器上被贴上了封条。
+	PRINTFORMW 所以使用肛门不停地侍奉着阴茎。
+	IF TALENT:77
+		;处女尻穴狂
+		PRINTFORMW %SAVESTR:TARGET%因肛门的快感而愉悦着。
+		COUNT_A += 1
+	ENDIF
+	COUNT_A += RAND:10 + 1
+	COUNT_S += COUNT_A + RAND:10
+ELSEIF TALENT:273
+	;私处封印
+	PRINTFORML %SAVESTR:TARGET%因为性器被封印着，
+	PRINTFORMW 所以使用肛门不停地侍奉着阴茎。
+	IF TALENT:77
+		;私处封印尻穴狂
+		PRINTFORMW %SAVESTR:TARGET%陶醉在从后穴传递向前穴的快感中。
+		COUNT_A += 1
+	ENDIF
+	COUNT_A += RAND:10 + 1
+	COUNT_S += COUNT_A + RAND:10
+ELSEIF CFLAG:42 == 79 && (CFLAG:40 & 64) && FLAG:37
+	;貞操帯
+	PRINTFORML %SAVESTR:TARGET%因为带着贞操带，
+	PRINTFORMW 菊穴和嘴巴被塞得满满的，不曾空闲。
+	IF TALENT:77
+		;貞操帯尻穴狂い
+		PRINTFORMW %SAVESTR:TARGET%陶醉在从后穴传递向前穴的快感中。
+		COUNT_A += 1
+	ENDIF
+	COUNT_A += RAND:10 + 1
+	COUNT_S += COUNT_A + RAND:10
+ELSEIF ABL:39 >= 1 && RAND:2 == 0
+	;兽奸中毒
+	
+	IF ABL:17 >= 1
+		;露出癖
+		PRINTFORML %SAVESTR:TARGET%有着喜欢与野兽交配的传闻，聚集了很多从地下城里慕名而来的人。
+		COUNT_V += ABL:17
+		COUNT_A += ABL:17
+	ENDIF
+	
+	PRINTFORML %SAVESTR:TARGET%满心欢喜地用性器迎接了猪的阴茎。
+	PRINTFORMW 为路人呈现了一场献给邪神的兽奸秀。
+	
+	;性爱狂
+	SIF TALENT:75
+		COUNT_V += 1
+	
+	;尻穴狂
+	SIF TALENT:77
+		COUNT_A += 1
+	
+	COUNT_V += RAND:10 + ABL:39
+	COUNT_A += RAND:10 + ABL:39
+	COUNT_S += COUNT_A + COUNT_V + RAND:10
+	COUNT_Z += COUNT_S
+ELSE
+	
+	IF ABL:17 >= 1
+		;露出癖
+		PRINTFORML %SAVESTR:TARGET%在观众的欢呼声中，开始了乱交派对。
+		COUNT_V += ABL:17
+		COUNT_A += ABL:17
+	ENDIF
+	
+	IF ABL:16 >= 1
+		;侍奉精神
+		PRINTFORML 无论是多么丑陋的怪物和魔族，%SAVESTR:TARGET%都一视同仁地给予了性施舍。
+		COUNT_V += ABL:16
+		COUNT_A += ABL:16
+	ENDIF
+	
+	PRINTFORML 有空的怪物们不停地排着队，将她所有能用的穴都侵犯了一遍。
+	PRINTFORMW 浑身里里外外都沾满了精液，整个广场被异样的臭味笼罩着。
+	
+	;性爱狂
+	SIF TALENT:75
+		COUNT_V += 1
+	
+	;尻穴狂
+	SIF TALENT:77
+		COUNT_A += 1
+	
+	COUNT_V += RAND:10 + 1
+	COUNT_A += RAND:10 + 1
+	COUNT_S += COUNT_A + COUNT_V + RAND:10
+ENDIF
+
+IF COUNT_A > 0
+	;肛门经验
+	PRINTFORML %EXPNAME:1%+{COUNT_A}
+	EXP:1 += COUNT_A
+ENDIF
+
+IF COUNT_V > 0
+	;私处经验
+	PRINTFORML %EXPNAME:0%+{COUNT_V}
+	EXP:0 += COUNT_V
+ENDIF
+
+LOCAL:0 = COUNT_A + COUNT_V
+
+IF LOCAL:0 > 0
+	;性交经验
+	PRINTFORML %EXPNAME:5%+{LOCAL:0}
+	EXP:5 += LOCAL:0
+ENDIF
+
+IF S > 0
+	;精液经验
+	PRINTFORML %EXPNAME:20%+{COUNT_S}
+	EXP:20 += COUNT_S
+ENDIF
+
+IF COUNT_Z > 0
+	;兽奸经验
+	PRINTFORML %EXPNAME:56%+{COUNT_Z}
+	EXP:56 += COUNT_Z
+ENDIF
+
+IF COUNT_A > 0
+	;肛门
+	PRINTFORML %PALAMNAME:2%点数+{COUNT_A}
+	JUEL:2 += COUNT_A
+ENDIF
+
+IF COUNT_V > 0
+	;私处
+	PRINTFORML %PALAMNAME:1%点数+{COUNT_V}
+	JUEL:1 += COUNT_V
+ENDIF
+
+LOCAL:0 = (COUNT_A + COUNT_V + COUNT_S + COUNT_Z) * 10
+
+IF LOCAL:0 > 0
+	;欲情・耻情
+	PRINTFORML %PALAMNAME:5%点数+{LOCAL:0}
+	PRINTFORML %PALAMNAME:8%点数+{LOCAL:0}
+	JUEL:5 += LOCAL:0
+	JUEL:8 += LOCAL:0
+ENDIF
+
+IF TALENT:1
+	PRINTL 【童贞丧失】
+	TALENT:1 = 0
+ENDIF
+
+WAIT
+
+RETURN 0
+
+;----------------------------------
+@SABBATH_DAY
+#DIM SABBATH_USER
+;----------------------------------
+;モブ姦儀式
+
+;3日に一度
+LOCAL = DAY:2
+LOCAL %= 3
+SIF LOCAL > 0
+	RETURN 0
+
+;法術か呪術を持っていないと除外
+SIF TALENT:242 == 0 && TALENT:250 == 0
+	RETURN 0
+
+;陥落以外は除外
+SIF CFLAG:0 == 0
+	RETURN 0
+
+;信仰値が40以上必要
+SIF CFLAG:152 < 40
+	RETURN 0
+
+SABBATH_USER = RAND:4
+
+
+PRINTL  
+PRINTFORML %SAVESTR:TARGET%参与了献给无名的淫荡女神的仪式，
+
+IF SABBATH_USER == 0 && ITEM:22
+	;野良犬がいれば、獣姦儀式
+	PRINTDATAW
+		DATAFORM 祭坛前，信徒的少女和山羊交配了起来……
+		DATAFORM 为了收集狗的精液的女信徒用嘴巴不停收集着……
+		DATAFORM 祭坛前，信徒的人妻和狗交配着……
+	ENDDATA
+ELSEIF SABBATH_USER == 1 && CFLAG:152 > 80
+	;乱交儀式
+	PRINTDATAW
+		DATAFORM 祭坛前，信众们开始做起了爱……
+		DATAFORM 新婚的信众夫妇们玩起了交换Play……
+		DATAFORM 祭坛前年轻的信众们乱交了起来……
+	ENDDATA
+
+;かつて信じていた神を冒涜する
+ELSEIF SABBATH_USER == 2 && CFLAG:152 > 60 && TALENT:250 && (TALENT:17 || TALENT:282)
+	PRINTFORM 向潜藏地底的死亡女神
+	PRINTDATAW
+		DATAFORM 献上了她被侵犯着的淫荡画像……
+		DATAFORM 的圣器里自慰发泄着……
+	ENDDATA
+	
+ELSEIF SABBATH_USER == 2 && CFLAG:152 > 60 && TALENT:242 && (TALENT:17 || TALENT:282)
+	PRINTFORM 向纯洁的神圣女神
+	PRINTDATAW
+		DATAFORM 唱起了她被人侵犯着的歌词……
+		DATAFORM 展示着她的信徒在野外被玷污的画面……
+	ENDDATA
+	
+ELSEIF SABBATH_USER == 2 && CFLAG:152 > 60 && TALENT:315 == 11 && (TALENT:17 || TALENT:282)
+	PRINTFORM 向丰饶的大地女神
+	PRINTDATAW
+		DATAFORM 展示着她的信徒被兽人侵犯的模样……
+		DATAFORM 献上了装满精液的圣杯……
+	ENDDATA
+	
+ELSEIF SABBATH_USER == 2 && CFLAG:152 > 60 && TALENT:315 == 12 && (TALENT:17 || TALENT:282)
+	PRINTFORM 向包容一切的大海女神
+	PRINTDATAW
+		DATAFORM 的神像上喷上了精液……
+		DATAFORM 献上了穿着淫荡改造的神官服并穿着它跳起了淫荡的舞蹈……
+	ENDDATA
+	
+ELSE
+	;その他
+	PRINTDATAW
+		DATAFORM 祭坛前，信徒的女孩自慰了起来……
+		DATAFORM 献上了淫荡的雕像，信徒的少年在那上面喷上了精液……
+		DATAFORM 献上了信徒的女精灵和兽人做爱的模样……
+	ENDDATA
+ENDIF
+
+RETURN 0
+

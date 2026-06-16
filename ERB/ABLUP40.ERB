@@ -1,0 +1,146 @@
+﻿
+;-------------------------------------------------
+;フリー中毒のLvUP
+;-------------------------------------------------
+@ABLUP40
+IF ABL:40 >= 10
+	PRINTW 已达到MAX
+	RETURN 0
+ENDIF
+
+;必要な快Ｆ点数
+A = 0
+;必要な屈服点数
+B = 0
+;必要な異常経験回数
+F = 0
+
+CALL DECIDE_ABLUP40
+
+;上げるときは異常経験必要（素質：[淫乱][中毒しやすい]なら無視できる）
+SIF F > 0
+	PRINTFORML %EXPNAME:50%{F}以上(現在{EXP:50})
+
+;欲望が必要
+PRINTFORML %ABLNAME:11%LV{ABL:39 + 1}以上(現在LV{ABL:11})
+
+PRINTFORM [0] - %PALAMNAME:15%点数×{JUEL:15}/{A} ……
+IF I == 0
+	PRINT ＯＫ
+ELSE
+	SIF I & 1
+		PRINT 点数不足 
+	SIF I & 2
+		PRINT 经验不足
+	SIF I & 4
+		PRINT 能力不足 
+ENDIF
+PRINTL 
+PRINTL [100] - 放弃
+
+INPUT
+IF (RESULT < 0 || RESULT > 0) && RESULT != 100
+	RESTART
+ELSEIF I != 0 && RESULT == 0
+	PRINTL 条件不足
+	RESTART
+ELSEIF RESULT == 100
+	RETURN 0
+ENDIF
+
+ABL:40 += 1
+IF RESULT == 0
+	JUEL:15 -= A
+ENDIF
+
+PRINTFORML %ABLNAME:40%のレベルが{ABL:40}になりました
+
+RETURN 0
+
+;--------------------------------------------------
+;レベルアップに必要な点数計算、レベルアップ予告処理
+;--------------------------------------------------
+@DECIDE_ABLUP40
+SIF ABL:40 >= 10
+	RETURN 0
+
+;条件別にＯＫかダメかを記録する
+I = 0
+
+IF ABL:40 == 0
+	A = 2000
+ELSEIF ABL:40 == 1
+	A = 5000
+ELSEIF ABL:40 == 2
+	A = 10000
+ELSEIF ABL:40 == 3
+	A = 20000
+ELSEIF ABL:40 == 4
+	A = 30000
+ELSEIF ABL:40 == 5
+	A = 45000
+ELSEIF ABL:40 == 6
+	A = 75000
+ELSEIF ABL:40 == 7
+	A = 100000
+ELSEIF ABL:40 == 8
+	A = 200000
+ELSEIF ABL:40 == 9
+	A = 300000
+ENDIF
+
+F = 0
+;２以上に上げるときは異常経験必要（素質：[中毒しやすい][淫乱]なら無視できる）
+SIF ABL:40 >= 2 && (TALENT:72 == 0 && TALENT:76 == 0)
+		F = ABL:40 + 1
+
+;自制心
+IF TALENT:20
+	TIMES A , 2.50
+ENDIF
+;快感に素直
+IF TALENT:70
+	TIMES A , 0.75
+;快感の否定
+ELSEIF TALENT:71
+	TIMES A , 1.75
+ENDIF
+;中毒しやすい
+IF TALENT:72
+	TIMES A , 0.50
+ENDIF
+;倒錯的
+IF TALENT:80
+	TIMES A , 0.75
+ENDIF
+;狂気
+IF TALENT:123
+	TIMES A , 0.50
+ENDIF
+
+
+
+;最低でも１回・１個は必要
+SIF A < 1
+	A = 1
+
+;欲望が必要
+SIF ABL:11 < ABL:40 + 1
+	I |= 4
+;快Ｆ点数は足りている？
+SIF JUEL:15 < A
+	I |= 1
+
+;異常経験は足りている？
+SIF EXP:50 < F
+	I |= 2
+
+IF I == 0
+	RETURN 1
+ELSE
+	RETURN 0
+ENDIF
+
+;
+;
+;

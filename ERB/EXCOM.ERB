@@ -1,0 +1,60 @@
+﻿;=========================================
+;EX部分相關處理
+;2017.01.31 添加
+;=========================================
+@ADDCHARA_EX(ARG)
+TARGET = ARG
+[SKIPSTART]
+;单独处理部分EX素质
+;----------------口上添加-----------------
+SIF CFLAG:ARG:6 == 10031
+	EX_TALENT:ARG:101 = 1
+SIF CFLAG:ARG:6 == 10032
+	EX_TALENT:ARG:102 = 1
+SIF CFLAG:ARG:6 == 10033
+	EX_TALENT:ARG:103 = 1
+SIF CFLAG:ARG:6 == 10035
+	EX_TALENT:ARG:104 = 1
+SIF ARG == MASTER
+	EX_TALENT:ARG:200 = 1
+;---------------口上添加END---------------
+;------------特殊战斗素质添加-------------
+IF CFLAG:ARG:6 == 10034
+	EX_TALENT:801 = 1
+	EX_TALENT:901 = 1
+ENDIF
+;-----------特殊战斗素质添加END-----------
+[SKIPEND]
+SIF NO:ARG >= 17 || NO:ARG == 0
+	TRYCALLFORM CHARA_EX_{NO:ARG}
+;---------------口上处理------------------
+@GET_EX_KOJO_NUM(ARG)
+#FUNCTION
+FOR COUNT,101,201
+	SIF EX_TALENT:ARG:COUNT
+		LOCAL = COUNT + 900
+NEXT
+RETURNF LOCAL
+
+@EX_TALENTNAME_INIT
+;----------------EX_TALENT名称定义-------------
+SIF STRLENS(EX_TALENTNAME:0) > 1
+	RETURN
+SIF STRLENS(EX_TALENTNAME:1) > 1
+	RETURN
+	
+EX_TALENTNAME:0 = 灵魂错位
+EX_TALENTNAME:1 = 近卫
+EX_TALENTNAME:2 = 后代
+EX_TALENTNAME:3 = 魔王替身
+EX_TALENTNAME:4 = 狂王替身
+EX_TALENTNAME:101 = 琼
+EX_TALENTNAME:102 = 普林希斯
+EX_TALENTNAME:103 = 嘉德
+EX_TALENTNAME:104 = 菲娅
+EX_TALENTNAME:200 = 魔王
+EX_TALENTNAME:801 = 无双
+EX_TALENTNAME:901 = 一人军团
+EX_TALENTNAME:902 = 魔女
+EX_TALENTNAME:903 = 魔界公主
+EX_TALENTNAME:904 = 天神

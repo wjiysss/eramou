@@ -1,0 +1,14 @@
+.codex_claude_runs/
+__pycache__/
+*.pyc
+.sav
+.tools/
+.trae/
+.claude/
+_start_emuera_run_result.json
+demo_todos.json
+result.txt
+_ast_check.py
+_do_extract.py
+_extract_groups.py
+refactor_comf.py

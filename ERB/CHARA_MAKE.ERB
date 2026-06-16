@@ -1,0 +1,1334 @@
+﻿;---------------------------------------------------------
+@CHARA_MAKE(ARG, ARG:1 = 0, ARG:2 = 0)
+;ARG:1	性格設定
+;	160,慈愛　161,自信家　162,気弱　163,高貴　164,冷徹　165,村娘Ａ;マオ専用性格、ユニーク
+;	166,悪女　167,ハート;ユニーク　168,スペード;ユニーク　169,ダイヤ;ユニーク　170,クラブ;ユニーク
+;	171,村娘Ｂ;リリィ専用性格、ユニーク　172,知的　173,庇護者, 174,貴公子
+;ARG:2	種族設定
+;	12：人間　1：エルフ　2：人狼　3：吸血鬼　4：デュラハン　5：ドラゴン
+;	6：天使　7：ダークエルフ　8：堕天使　9：魔族　10：ホビット　11：ドワーフ
+;---------------------------------------------------------
+
+SWAP A, ARG
+
+;性别
+SIF !EX_TALENT:A:2
+	CALL CM_GENDER
+	
+;命名
+SIF !EX_TALENT:A:2	;后代：命名->设置家族关系->CHARA_MAKE
+	CALL CHARA_NAME_RANDOM_DEFINE(A)
+
+;Level・经验值設定
+CFLAG:A:9 = 1
+EXP:A:80 = 0
+
+;家族初期化
+CFLAG:A:605 = 0
+
+;売春への積極性
+CFLAG:A:120 = 1
+
+IF !TALENT:A:精英 && !EX_TALENT:A:1 && !EX_TALENT:A:2
+	;侵攻楼层
+	CALL CM_STP
+	;职业、基础
+	CALL CM_BASE
+	;勇者初始等级
+	CALL CM_ST
+ELSEIF !EX_TALENT:A:2
+	;初始位置
+	CFLAG:A:1 = 0
+	;职业、基础
+	CALL CM_BASE
+	;精英部下初始等级
+	CALL CM_ST_ACE
+ELSE
+	;初始位置
+	CFLAG:A:1 = 0
+	;职业、基础
+	CALL CM_BASE
+ENDIF
+
+
+;口上性格
+IF INRANGE(NO:A,1,16)
+	CALL CM_KJ, ARG:1
+ELSEIF INRANGE(NO:A,200,211)
+	;精英，暂用勇者口上
+	CALL CM_KJ, ARG:1
+ENDIF
+
+
+;初心者の烙印
+SIF DAY:0 <= 60
+	TALENT:A:291 = 1
+
+;处女
+CALL CM_VIRGIN
+
+;素质
+CALL CM_TALENT
+
+;战术技能
+CALL CM_SKILL
+
+;外貌
+CALL CM_LOOK, ARG:2
+;2016/11/1 令后代来历生效
+IF EX_TALENT:A:2
+	TALENT:A:阴毛状态 = 2
+	;TALENT:A:成为勇者前的生活 = 0
+	;TALENT:A:成为勇者的契机 = 0
+ENDIF
+	
+;善恶
+CALL CM_KIND
+
+;妊娠性交经验
+SIF !EX_TALENT:A:2
+	CALL CM_NS_EXP
+
+; [IF_DEBUG]
+; ;家族設定（后代不设定家族
+; SIF RAND:4 == 0 && !EX_TALENT:A:2
+	; CALL SET_FAMILY_LINK, A
+
+; 
+; [ENDIF]
+
+;新的家族系统（后代不设定家族
+SIF RAND:4 == 0 && !EX_TALENT:A:2
+	CALL FAMILY_REGISTER(A)
+	
+;根据家族成员继承素质
+CALL CM_FAMILY_TALENT
+	
+
+;コスチューム
+CALL CM_CLOTH	;SET_CHAR_CLOTH
+
+;一人称の設定
+CALL RANDOM_SELF_CALL, A
+
+;年齢or身長などを表示する設定の場合は身体データを設定
+IF GETBIT(FLAG:5,12) || GETBIT(FLAG:5,15)
+	CALL CHAR_BODY_GENERATE_WAPPED, A
+ENDIF
+
+SWAP A, ARG
+RETURN ARG
+
+
+;侵入階層・侵攻度・侵攻中・再起点設定
+@CM_STP
+CFLAG:A:501 = 1
+CFLAG:A:502 = 0
+CFLAG:A:1 = 2
+CFLAG:A:508 = 3
+
+
+;職ごとの基礎パラメーター
+@CM_BASE
+IF TALENT:A:战士 || TALENT:A:骑士
+	;战士&骑士
+	CFLAG:A:11 = 20
+	CFLAG:A:12 = 20
+	CFLAG:A:13 = 20
+	CFLAG:A:14 = 20
+ELSEIF TALENT:A:魔法师 || TALENT:A:巫女
+	;魔法师&巫女
+	CFLAG:A:11 = 15
+	CFLAG:A:12 = 15
+	CFLAG:A:13 = 15
+	CFLAG:A:14 = 15
+ELSEIF TALENT:A:神官 || TALENT:A:忍者
+	;神官&忍者
+	CFLAG:A:11 = 15
+	CFLAG:A:12 = 20
+	CFLAG:A:13 = 15
+	CFLAG:A:14 = 20
+ELSEIF TALENT:A:盗贼 || TALENT:A:弓手
+	;盗贼&弓手
+	CFLAG:A:11 = 20
+	CFLAG:A:12 = 15
+	CFLAG:A:13 = 20
+	CFLAG:A:14 = 15
+ELSEIF TALENT:A:精英
+	;:220
+	CFLAG:A:11 = 15
+	CFLAG:A:12 = 15
+	CFLAG:A:13 = 15
+	CFLAG:A:14 = 15
+ELSE
+	;その他
+	CFLAG:A:11 = 15
+	CFLAG:A:12 = 15
+	CFLAG:A:13 = 15
+	CFLAG:A:14 = 15
+ENDIF
+
+;神官と巫女は治癒を持つ
+;戦士と騎士は鼓舞を持つ
+IF TALENT:A:202 == 1 || TALENT:A:206 == 1
+	TALENT:A:117 = 1
+	;高い信仰値を持つ
+	CFLAG:A:152 = 20
+ELSEIF TALENT:A:200 == 1 || TALENT:A:205 == 1
+	TALENT:A:118 = 1
+ENDIF
+
+;怪物种族によるボーナス
+;史莱姆は固い。触手はパワー。
+;妖精の身体能力は低い。
+;巨人の身体能力は高い。
+;いくつも同時には起こらない
+
+IF TALENT:A:种族2 == 2
+	CFLAG:A:12 += 5
+	CFLAG:A:14 += 5
+ELSEIF TALENT:A:种族2 == 5
+	CFLAG:A:11 += 5
+	CFLAG:A:13 += 5
+ELSEIF TALENT:A:种族2 == 6
+	CFLAG:A:11 -= 4
+	CFLAG:A:12 -= 4
+	CFLAG:A:13 -= 4
+	CFLAG:A:14 -= 4
+ELSEIF TALENT:A:种族2 == 7
+	CFLAG:A:11 += 5
+	CFLAG:A:12 += 5
+	CFLAG:A:13 += 5
+	CFLAG:A:14 += 5
+ENDIF
+
+;精英は魔の刻印を持つ
+;神官と巫女は治癒を持つ
+;战士と骑士は鼓舞を持つ
+IF TALENT:A:精英
+	TALENT:A:254 = 1
+ELSEIF TALENT:A:神官 || TALENT:A:巫女
+	TALENT:A:117 = 1
+ELSEIF TALENT:A:战士 == 1 || TALENT:A:骑士 == 1
+	TALENT:A:118 = 1
+ENDIF
+
+@CM_KJ, ARG = 0
+;性格設定
+;160,慈爱,
+;161,自信家,
+;162,懦弱,
+;163,高贵,
+;164,冷静,
+;166,恶女,
+;174,贵公子
+;175,伶俐
+VARSET TALENT:A:0, 0, 160, 180
+IF INRANGE(ARG,160,180)
+	TALENT:A:ARG = 1
+ELSE
+	$CHARA_MIND_LOOP
+	X = RAND:9 + 160
+
+	;ユニークは除外
+	SIF X == 165
+		GOTO CHARA_MIND_LOOP
+	;オトコなら悪女なれない
+	SIF TALENT:A:122 && X == 166
+		GOTO CHARA_MIND_LOOP
+	;高貴のオトコならきっと貴公子です
+	SIF TALENT:A:122 && X == 163
+		X = 174
+	SIF X == 167
+		X = 175	
+	IF X >= 168 && X <= 169
+		X += 5
+		;女で貴公子？いえ、高貴の女だわ
+		SIF TALENT:A:122 == 0 && X == 174
+			X = 163
+	
+	ENDIF
+	TALENT:A:X = 1
+ENDIF
+
+
+
+@CM_GENDER
+;121,扶她,;男人でなくてもSEX系調教が可能
+;122,男人,;男である
+IF RAND:60 == 0
+	TALENT:A:121 = 1
+ELSEIF RAND:6 == 0 && GETBIT(FLAG:8,0) == 1
+	TALENT:A:122 = 1
+ENDIF
+
+@CM_VIRGIN
+;处女フラグ
+IF TALENT:A:122 == 1
+	TALENT:A:0 = 0
+	;童貞
+	IF RAND:3 > 0
+		TALENT:A:1 = 1
+		CFLAG:A:15 = -1
+		CFLAG:A:16 = -1
+	ELSE
+		CFLAG:A:15 = 0
+		CFLAG:A:16 = 0
+	ENDIF
+ELSEIF EX_TALENT:A:2
+	TALENT:A:0 = 1
+	CFLAG:A:16 = -1
+ELSEIF TALENT:A:121 == 1
+	;扶她处女
+	SIF RAND:8
+		TALENT:A:0 = 1
+	;扶她初吻&童贞
+	IF RAND:3 > 0
+		TALENT:A:1 = 1
+		CFLAG:A:16 = -1
+	ELSE
+		CFLAG:A:16 = 0
+	ENDIF
+	;扶她初体验
+	IF TALENT:A:0 && TALENT:A:1
+		CFLAG:A:15 = -1
+	ELSEIF TALENT:A:0 == 0 || TALENT:A:1 == 0
+		CFLAG:A:15 = 0
+	ENDIF
+ELSEIF FLAG:82 == 1 && RAND:2 == 0
+	TALENT:A:0 = 1
+	CFLAG:A:16 = -1
+ELSEIF RAND:8
+	TALENT:A:0 = 1
+	CFLAG:A:16 = -1
+ENDIF
+;处女の場合初吻はまだ
+SIF TALENT:A:0 == 1
+	CFLAG:A:16 = -1
+
+;处女の場合ランダムで貞操封印を行う
+SIF TALENT:A:0 == 1 && RAND:5 == 0 && TALENT:A:精英 != 1
+	TALENT:A:273 = 1
+
+;157,人妻,;欲望が上がりやすくなります
+IF RAND:12 == 0 && TALENT:A:122 == 0 && !EX_TALENT:A:2
+	TALENT:A:157 = 1
+	TALENT:A:0 = 0
+ENDIF
+
+@CM_TALENT
+;10,胆怯,;ABL:顺从が上げやすい。PALAM:反感が上がりにくい
+;12,刚强,;コマンドを実行しにくい。売却の際に顺从4以上必要
+;14,文静,;PALAM:反感が上がりにくい
+X = RAND:3
+;慈爱か懦弱だと胆怯
+IF X == 0 && (TALENT:A:160 == 1 || TALENT:A:162 == 1)
+	TALENT:A:10 = 1
+;自信家か高贵か冷静か恶女が貴公子が伶俐だと嚣张
+ELSEIF X == 1  && (TALENT:A:161 == 1 || TALENT:A:163 == 1 || TALENT:A:164 == 1 || TALENT:A:166 == 1 || TALENT:A:174 == 1 || TALENT:A:175 == 1)
+	TALENT:A:12 = 1
+;慈爱か懦弱だと文静
+ELSEIF X == 2 && (TALENT:A:160 == 1 || TALENT:A:162 == 1)
+	TALENT:A:14 = 1
+ENDIF
+
+;11,反抗心,;コマンドを実行しにくい。売却の際に顺从4以上必要。PALAM:恭顺と欲情が上がりにくい
+;13,坦率,;コマンドを実行しやすい。ABL:顺从と侍奉精神が上げやすい。PALAM:恭顺が上がりやすい
+;16,嚣张,;ABL:顺从と侍奉精神が上げにくい。
+X = RAND:12
+IF X == 0
+	TALENT:A:11 = 1
+	;反抗心だと一定確率で傲娇る
+	SIF RAND:8 == 0
+		TALENT:A:18 = 1
+ELSEIF X == 1
+	TALENT:A:13 = 1
+;自信家か高贵か冷静か恶女が貴公子が伶俐だと嚣张
+ELSEIF X == 2 && (TALENT:A:161 == 1 || TALENT:A:163 == 1 || TALENT:A:164 == 1 || TALENT:A:166 == 1 || TALENT:A:174 == 1 || TALENT:A:175 == 1)
+	TALENT:A:16 = 1
+ENDIF
+
+;15,高姿态,;コマンドを実行しにくい。ABL:技巧と侍奉精神が上げにくい。PALAM:屈服が上がりにくい
+;17,低姿态,;コマンドを実行しやすい。ABL:侍奉精神が上げやすい。PALAM:屈服が上がりやすい
+;18,傲娇,;反抗心を同時に持つ場合、顺从4以上で反抗心→坦率に変更
+X = RAND:12
+IF X == 0
+	TALENT:A:15 = 1
+ELSEIF X == 1 && TALENT:A:18 == 0
+	TALENT:A:17 = 1
+ELSEIF X == 2 && TALENT:A:18 == 0
+	TALENT:A:18 = 1
+ENDIF
+
+;20,克制,;売却の際に欲望4以上必要。ABL:侍奉精神が上げにくい。快楽系PALAMが上がりにくい
+;21,冷漠,:ABL:侍奉精神が上げにくい。PALAM:恭顺、欲情、屈服、恐怖、反感が上がりにくい
+;22,感情淡薄,:ABL:侍奉精神が上げにくい。PALAMが全体的に上がりにくい
+;23,好奇心,;コマンドを実行しやすい。PALAM:习得が上がりやすい
+;63,献身的,;奉仕系調教を実行しやすい。ABL:侍奉精神が上げやすい。PALAM:屈服が上がりやすい
+X = RAND:16
+IF X == 0
+	TALENT:A:21 = 1
+ELSEIF X == 1
+	TALENT:A:23 = 1
+ELSEIF X == 2
+	TALENT:A:22 = 1
+ELSEIF X == 3
+	TALENT:A:20 = 1
+ELSEIF X == 4
+	TALENT:A:63 = 1
+ENDIF
+
+;24,保守的,;コマンドを実行しにくい。ABL:侍奉精神が上げにくい。PALAM:习得が上がりにくい
+;25,乐观的,;ABL:侍奉精神が上げやすい。PALAM:抑郁が上がりにくい
+;26,悲观的,;ABL:侍奉精神が上げやすい。PALAM:抑郁が上がりやすい
+X = RAND:12
+IF X == 0
+	TALENT:A:24 = 1
+ELSEIF X == 1
+	TALENT:A:25 = 1
+ELSEIF X == 2
+	TALENT:A:26 = 1
+ENDIF
+
+;27,戒备森严,;全てのABLが上げにくい
+;28,爱表现,;コマンドを実行しやすい。ABL:露出癖が上げやすい
+X = RAND:8
+IF X == 0
+	TALENT:A:27 = 1
+ELSEIF X == 1
+	TALENT:A:28 = 1
+ENDIF
+
+;30,看重贞操,;情爱系調教の効果が低い。PALAM:反感が上がりやすい
+;31,看轻贞操,;情爱系調教の効果が低い。PALAM:反感が上がりにくい
+X = RAND:12
+IF X == 0
+	TALENT:A:30 = 1
+ELSEIF X == 1
+	TALENT:A:31 = 1
+ENDIF
+
+;32,压抑,;コマンドを実行しにくい。売却の際に欲望4以上必要。PALAM:欲情が上がりにくい。PALAM:反感が上がりやすい
+;33,开放,;ABL:抖M气质とABL:百合气质が上げやすい。PALAM:欲情と屈服が上がりやすい
+X = RAND:12
+IF X == 0
+	TALENT:A:32 = 1
+ELSEIF X == 1
+	TALENT:A:33 = 1
+ENDIF
+
+;34,抵抗,;コマンドを実行しにくい。売却の際に欲望4以上必要。PALAM:欲情が上がりにくい。PALAM:反感が上がりやすい
+SIF RAND:12 == 0
+	TALENT:A:34 = 1
+
+;35,害羞,;コマンドを実行しにくい。露出系調教の効果が高い
+;36,不知羞耻,;露出系調教の効果が低い
+X = RAND:12
+IF X == 0
+	TALENT:A:35 = 1
+ELSEIF X == 1
+	TALENT:A:36 = 1
+ENDIF
+
+;37,把柄,;コマンドを実行しやすい
+SIF RAND:8 == 0
+	TALENT:A:37 = 1
+
+;40,害怕疼痛,;PALAM:恐怖と反感が上がりやすい。ABL:抖M气质があるとSM系調教でPALAM:欲情が上がりやすい
+;41,不惧疼痛,;PALAM:恐怖と反感が上がりにくい
+X = RAND:12
+IF X == 0
+	TALENT:A:40 = 1
+ELSEIF X == 1
+	TALENT:A:41 = 1
+ENDIF
+
+;42,容易湿,;PALAM:润滑が上がりやすい
+;43,不易湿,;PALAM:润滑が上がりにくい
+X = RAND:12
+IF X == 0
+	TALENT:A:42 = 1
+ELSEIF X == 1
+	TALENT:A:43 = 1
+ENDIF
+
+;48,眼镜,;眼鏡が似合う
+SIF RAND:12 == 0
+	TALENT:A:48 = 1
+
+;50,快速学习,;ABL:侍奉精神が上げやすい。PALAM:习得が上がりやすい
+;51,学习缓慢,;ABL:侍奉精神が上げにくい。PALAM:习得が上がりにくい
+X = RAND:12
+IF X == 0
+	TALENT:A:50 = 1
+ELSEIF X == 1
+	TALENT:A:51 = 1
+ENDIF
+
+;52,擅用舌头,;フェラ系調教の効果が高い
+SIF RAND:8 == 0
+	TALENT:A:52 = 1
+
+;57,漏尿癖,;放尿コマンドが常に使えるようになる。絶頂時に放尿。
+SIF RAND:50 == 0
+	TALENT:A:57 = 1
+
+;60,容易自慰,;自慰関連が実行しやすい。ABL:自慰中毒が上げやすい
+SIF RAND:8 == 0
+	TALENT:A:60 = 1
+
+;61,不怕污臭,;フェラ系調教を実行しやすい。ABL:精液中毒が上げやすい
+;62,反感污臭,;フェラ系調教を実行しにくい。ABL:精液中毒が上げにくい
+X = RAND:12
+IF X == 0
+	TALENT:A:61 = 1
+ELSEIF X == 1
+	TALENT:A:62 = 1
+ENDIF
+
+
+;70,接受快感,;コマンドを実行しやすい。ABL:欲望と侍奉精神が上げやすい。PALAM:欲情が上がりやすい
+;71,否定快感,;コマンドを実行しにくい。PALAM:欲情が上がりにくい
+X = RAND:12
+IF X == 0
+	TALENT:A:70 = 1
+ELSEIF X == 1
+	TALENT:A:71 = 1
+ENDIF
+
+;72,容易上瘾,;ABL:自慰中毒、精液中毒、百合中毒が上げやすい
+SIF RAND:8 == 0
+	TALENT:A:72 = 1
+
+;容易陷落頻度はここを弄ってください
+SIF RAND:30 == 0
+	TALENT:A:73 = 1
+;抵抗诱惑
+SIF RAND:30 == 0
+    TALENT:A:69 = 1	
+	
+
+;80,倒錯的,;SM系調教の効果が高い。ABLが全体的に上がりやすい
+SIF RAND:8 == 0
+	TALENT:A:80 = 1
+
+;81,双性恋,;レズ調教を実行しやすい。ABL:レズ、百合中毒が上げやすい
+;82,讨厌男人,;男人による調教が実行しにくい
+X = RAND:12
+IF X == 0
+	TALENT:A:81 = 1
+ELSEIF X == 1
+	TALENT:A:82 = 1
+ENDIF
+
+;20,抖S气质
+;21,抖M气质
+X = RAND:8
+IF X == 0
+	ABL:A:20 = 3
+ELSEIF X == 1
+	ABL:A:21 = 3
+ENDIF
+
+;84,嫉妒,;いるだけで他のキャラの回復量減少。効果は累積する
+SIF RAND:10 == 0
+	TALENT:A:84 = 1
+
+;87,小恶魔,;調教者の時にコマンドを実行しやすい
+SIF RAND:8 == 0
+	TALENT:A:87 = 1
+
+;17,露出癖
+SIF RAND:40 == 0
+	ABL:A:17 = 3
+
+;91,魅惑,;調教者の時にコマンドを実行しやすい。調教者の時にPALAMが全体的に上がりやすい
+SIF RAND:20 == 0
+	TALENT:A:91 = 1
+
+;99,魁梧,;PALAM:苦痛、恐怖が上がりにくい
+;100,娇小,;PALAM:苦痛、恐怖が上がりやすい
+X = RAND:12
+IF TALENT:A:种族2 == 7
+	IF X <= 8
+		TALENT:A:99 = 1
+	ELSEIF X == 11
+		TALENT:A:100 = 1
+	ENDIF
+ELSE
+	IF X == 0
+		TALENT:A:99 = 1
+	ELSEIF X == 1
+		TALENT:A:100 = 1
+	ENDIF
+ENDIF
+
+;101,阴蒂钝感,;PALAM:阴核が上がりにくい
+;102,阴蒂敏感,;PALAM:阴核が上がりやすい
+X = RAND:12
+IF X == 0
+	TALENT:A:101 = 1
+ELSEIF X == 1
+	TALENT:A:102 = 1
+ENDIF
+
+;103,私处钝感,;PALAM:私处が上がりにくい
+;104,私处敏感,;PALAM:私处が上がりやすい
+X = RAND:12
+IF X == 0 && TALENT:A:122 == 0
+	TALENT:A:103 = 1
+ELSEIF X == 1 && TALENT:A:122 == 0
+	TALENT:A:104 = 1
+ENDIF
+
+;105,肛门钝感,;PALAM:肛门が上がりにくい
+;106,肛门敏感,;PALAM:肛门が上がりやすい
+X = RAND:12
+IF X == 0
+	TALENT:A:105 = 1
+ELSEIF X == 1
+	TALENT:A:106 = 1
+ENDIF
+
+;107,乳房钝感,;PALAM:乳房が上がりにくい
+;108,乳房敏感,;PALAM:乳房が上がりやすい
+X = RAND:12
+IF X == 0
+	TALENT:A:107 = 1
+ELSEIF X == 1
+	TALENT:A:108 = 1
+ENDIF
+
+;119,超乳,;【爆乳】の上位コンパチ
+;114,爆乳,;【巨乳】の上位コンパチ
+;116,絶壁,;【貧乳】の上位（下位？）コンパチ
+;109,貧乳,;ABL:Ｂ感覚が上げやすい。胸関連の調教にペナルティ
+;110,巨乳,;ABL:Ｂ感覚が上げにくい。胸関連の調教にボーナス
+IF RAND:50 == 0 && TALENT:A:122 == 0
+	TALENT:A:119 = 1
+ELSEIF RAND:25 == 0 && TALENT:A:122 == 0
+	TALENT:A:114 = 1
+ELSEIF RAND:24 == 0 && TALENT:A:122 == 0
+	TALENT:A:116 = 1
+ELSEIF RAND:8 == 0 && TALENT:A:122 == 0
+	TALENT:A:109 = 1
+ELSEIF RAND:7 == 0 && TALENT:A:122 == 0
+	TALENT:A:110 = 1
+ENDIF
+
+;111,快速回复,;体力回復量が多い
+;112,回复缓慢,;体力回復量が少ない
+X = RAND:12
+IF X == 0
+	TALENT:A:111 = 1
+ELSEIF X == 1
+	TALENT:A:112 = 1
+ENDIF
+
+;113,魅力,;売却額増加
+SIF RAND:8 == 0
+	TALENT:A:113 = 1
+
+;132,幼稚,;子供っぽい
+;133,早泄,;射精が早くなる
+;134,软弱,;幼儿退行しやすい
+;135,未熟,;指を除くＶ使用コマンド困難。射精しない。妊娠しない。売却額は低いがビデオの売値が高い
+;男性和扶她可能会早泄
+SIF RAND:25 == 0 && (TALENT:A:122 || TALENT:A:121)
+	TALENT:A:133 = 1
+;慈爱か懦弱だと软弱
+SIF RAND:6 == 0 && (TALENT:A:160 == 1 || TALENT:A:162 == 1)
+	TALENT:A:134 = 1
+;未熟可能会早泄和幼稚
+IF RAND:12 == 0
+	TALENT:A:135 = 1
+	SIF RAND:8 == 0
+		TALENT:A:132 = 1
+	SIF RAND:8 == 0 && (TALENT:A:122 || TALENT:A:121)
+		TALENT:A:133 = 1
+ENDIF
+
+;v0.350追加
+;140～143,各種コンプレックス,：調教効果が変わる
+IF TALENT:A:122
+	;男人の場合恋母情结萝莉控が多い
+	IF RAND:25 == 0
+		TALENT:A:140 = 1
+	ELSEIF RAND:24 == 0
+		TALENT:A:142 = 1
+	ELSEIF RAND:40 == 0
+		TALENT:A:141 = 1
+	ELSEIF RAND:39 == 0
+		TALENT:A:143 = 1
+	ENDIF
+ELSEIF TALENT:A:121
+	;扶她の場合ニュートラル
+	IF RAND:30 == 0
+		TALENT:A:140 = 1
+	ELSEIF RAND:29 == 0
+		TALENT:A:142 = 1
+	ELSEIF RAND:28 == 0
+		TALENT:A:141 = 1
+	ELSEIF RAND:27 == 0
+		TALENT:A:143 = 1
+	ENDIF
+ELSE
+	;それ以外の場合恋父情结正太控が多い
+	IF RAND:25 == 0
+		TALENT:A:141 = 1
+	ELSEIF RAND:24 == 0
+		TALENT:A:143 = 1
+	ELSEIF RAND:40 == 0
+		TALENT:A:140 = 1
+	ELSEIF RAND:39 == 0
+		TALENT:A:142 = 1
+	ENDIF
+ENDIF
+;152，不受洗脑
+SIF RAND:30 == 0
+	TALENT:A:152 = 1
+;157,人妻,;欲望が上がりやすくなります
+;=> @CM_VIRGIN
+
+;290,担保人,;借金が増えていきます
+IF TALENT:A:37 && RAND:4 == 0
+	;把柄があると担保人である確率が高いです
+	TALENT:A:290 = 1
+ELSEIF RAND:12 == 0
+	TALENT:A:290 = 1
+ENDIF
+
+@CM_KIND
+;善恶值[-150,150]
+;:220は善良値が低い
+IF TALENT:A:精英 != 1
+	CFLAG:A:151 = RAND:200
+ELSE
+	CFLAG:A:151 = RAND:100
+ENDIF
+
+@CM_SKILL
+;戦闘技能
+;战术;LVUP時にステータスにボーナス
+SIF RAND:40 == 0
+	TALENT:A:240 = 1
+;魔术;魔法を使用できる
+;妖精は魔术を覚えやすい
+IF TALENT:A:种族2 != 6
+	SIF RAND:40 == 0
+		TALENT:A:241 = 1
+ELSE
+	SIF RAND:20 == 0
+		TALENT:A:241 = 1
+ENDIF
+;法术;回復魔法を使用できる。また信仰の証
+;妖精は法术も覚えやすい
+IF TALENT:A:种族2 != 6
+	SIF RAND:40 == 0
+		TALENT:A:242 = 1
+ELSE
+	SIF RAND:20 == 0
+		TALENT:A:242 = 1
+ENDIF
+;奇袭;先手確率UP・先手時に攻撃にボーナス
+SIF RAND:40 == 0
+	TALENT:A:243 = 1
+
+;肌肉型・虚弱
+;巨人は肌肉型になりやすく、虚弱にならない
+IF TALENT:A:种族2 == 7
+	SIF RAND:10 == 0
+		TALENT:A:248 = 1
+ELSEIF RAND:30 == 0
+	TALENT:A:248 = 1
+ELSEIF RAND:29 == 0
+	TALENT:A:256 = 1
+ENDIF
+
+;铁壁;ピンチ時にステータス回復
+SIF RAND:40 == 0
+	TALENT:A:249 = 1
+;咒术;咒术系魔法を使用できる
+;妖精は法术をも覚えやすい
+IF TALENT:A:种族2 != 6
+	SIF RAND:40 == 0
+		TALENT:A:250 = 1
+ELSE
+	SIF RAND:20 == 0
+		TALENT:A:250 = 1
+ENDIF
+;忍术;攻撃力に戦闘ダメージを受けない
+;妖精は忍术すらをも（ｒｙ
+IF TALENT:A:种族2 != 6
+	SIF RAND:40 == 0
+		TALENT:A:251 = 1
+ELSE
+	;流石に忍术妖精は少し少ない
+	SIF RAND:30 == 0
+		TALENT:A:251 = 1
+ENDIF
+;先制;戦闘前に追加攻撃
+SIF RAND:40 == 0
+	TALENT:A:252 = 1
+
+;褐色とか白皙とか
+IF RAND:12 == 0
+	TALENT:A:253 = 1
+ELSEIF RAND:11 == 0
+	TALENT:A:255 = 1
+ELSEIF TALENT:A:种族2 == 8 || TALENT:A:种族2 == 9
+	SIF RAND:10 == 0
+		TALENT:A:244 = 1
+ENDIF
+
+;魔法耐性
+SIF RAND:40 == 0
+	TALENT:A:257 = 1
+	
+;いずれの術も覚えていない妖精は魔法耐性を得る
+SIF TALENT:A:种族2 == 6 && TALENT:A:241 != 1 && TALENT:A:242 != 1 && TALENT:A:250 != 1 && TALENT:A:251 != 1
+	TALENT:A:257 = 1
+
+;俊足
+SIF RAND:40 == 0
+	TALENT:A:258 = 1
+
+;独眼とか额头天眼とか
+IF RAND:60 == 0
+	TALENT:A:259 = 1
+ELSEIF RAND:59 == 0
+	TALENT:A:260 = 1
+ENDIF
+
+;能力者技能
+
+;火之能力者
+SIF RAND:40 == 0
+	TALENT:A:275 = 1
+;冰之能力者
+SIF RAND:40 == 0
+	TALENT:A:276 = 1
+;雷之能力者
+SIF RAND:40 == 0
+	TALENT:A:277 = 1
+;光之能力者
+SIF RAND:40 == 0
+	TALENT:A:278 = 1
+;暗之能力者
+SIF RAND:40 == 0
+	TALENT:A:279 = 1
+
+;額の目の場合、闇チャンス2回目
+SIF TALENT:A:260 == 1 && RAND:40 == 0
+	TALENT:A:279 = 1
+;（stick增加）冲突检查	
+CALL CMI_CONFLICT_CHECK(A)
+	
+@CM_LOOK, ARG
+
+X = TARGET
+TARGET = A
+CALL LOOK_SET, ARG
+TARGET = X
+
+;白虎
+IF RAND:20 == 0
+	TALENT:A:125 = 1
+	TALENT:A:310 = 1
+	TALENT:A:311 = 1
+ENDIF
+
+
+@CM_ST
+;勇者初始等级
+IF FLAG:60 > 0 && FLAG:402 == 0
+	REPEAT FLAG:60
+		CALL ST_UP, A
+	REND
+ENDIF
+BASE:A:0 = MAXBASE:A:0
+BASE:A:1 = MAXBASE:A:1
+
+@CM_ST_ACE
+;精英初始等级
+IF FLAG:60 > 0 && CFLAG:MASTER:9 > 2
+	LOCAL = CFLAG:MASTER:9 * 6
+	LOCAL += RAND:(CFLAG:MASTER:9) * 2
+	LOCAL /= 10
+	REPEAT LOCAL
+		CALL ST_UP, A
+	REND
+ENDIF
+
+@CM_FAMILY_TALENT
+#DIM FAMILY_ID
+#DIM HAIR_COLOR
+;家族の身体的特徴が遺伝
+LOCAL = CFLAG:A:605
+LOCAL:1 = LOCAL % 10
+CALL SEARCH_FAMILY, A
+FAMILY_ID = RESULT
+
+IF FAMILY_ID > 0
+	;家族が15歳未満
+	IF CFLAG:FAMILY_ID:451 < 15
+		;大柄なら体格を一段階大さくする
+		IF TALENT:FAMILY_ID:魁梧 && RAND:3 == 0
+			IF TALENT:A:娇小
+				TALENT:A:娇小 = 0
+			ELSE
+				TALENT:A:魁梧 = 1
+			ENDIF
+		ENDIF
+
+		;巨乳以上なら乳を一段階大さくする
+		IF ((TALENT:FAMILY_ID:巨乳 && RAND:4) || (TALENT:FAMILY_ID:爆乳 && RAND:2) || (TALENT:FAMILY_ID:超乳) == 0) && TALENT:A:122 == 0
+			IF TALENT:A:绝壁
+				TALENT:A:绝壁 = 0
+				TALENT:A:贫乳 = 1
+			ELSEIF TALENT:A:贫乳
+				TALENT:A:贫乳 = 0
+			ELSEIF (TALENT:A:巨乳 == 0 && TALENT:A:爆乳 == 0 && TALENT:A:超乳 == 0)
+				TALENT:A:巨乳 = 1
+			ELSEIF TALENT:A:巨乳
+				TALENT:A:巨乳 = 0
+				TALENT:A:爆乳 = 1
+			ELSE
+				TALENT:A:爆乳 = 0
+				TALENT:A:超乳 = 1
+			ENDIF
+		ENDIF
+	;家族が18歳以上
+	ELSEIF CFLAG:FAMILY_ID:451 > 17
+		;小柄体型なら体格を一段階小さくする
+		IF TALENT:FAMILY_ID:娇小 && RAND:3 == 0
+			IF TALENT:A:魁梧
+				TALENT:A:魁梧 = 0
+			ELSE
+				TALENT:A:娇小 = 1
+			ENDIF
+		ENDIF
+
+		;貧乳以下なら階乳を一段小さくする
+		IF ((TALENT:FAMILY_ID:贫乳 && RAND:4) || (TALENT:FAMILY_ID:绝壁 && RAND:2) == 0) && TALENT:A:122 == 0
+			IF TALENT:A:超乳
+				TALENT:A:超乳 = 0
+				TALENT:A:爆乳 = 1
+			ELSEIF TALENT:A:爆乳
+				TALENT:A:爆乳 = 0
+				TALENT:A:巨乳 = 1
+			ELSEIF TALENT:A:巨乳
+				TALENT:A:巨乳 = 0
+			ELSEIF (TALENT:A:贫乳 == 0 && TALENT:A:绝壁 == 0)
+				TALENT:A:贫乳 = 1
+			ELSE
+				TALENT:A:贫乳 = 0
+				TALENT:A:绝壁 = 1
+			ENDIF
+		ENDIF
+	ENDIF
+
+	IF (TALENT:FAMILY_ID:肌肉型 || TALENT:FAMILY_ID:虚弱) && RAND:3 == 0
+		TALENT:A:肌肉型 = TALENT:FAMILY_ID:肌肉型
+		TALENT:A:虚弱 = TALENT:FAMILY_ID:虚弱
+	ENDIF
+
+	IF (TALENT:FAMILY_ID:褐色肌肤 || TALENT:FAMILY_ID:白皙) && RAND:2 == 0
+		TALENT:A:褐色肌肤 = TALENT:FAMILY_ID:褐色肌肤
+		TALENT:A:白皙 = TALENT:FAMILY_ID:白皙
+	ENDIF
+
+	SIF TALENT:FAMILY_ID:额头天眼 && RAND:3 == 0
+		TALENT:A:额头天眼 = TALENT:FAMILY_ID:额头天眼
+
+	;家族と「近い色」の髪になる可能性が高い
+	;白 銀 金 粉 赤 栗 暗金 緑 青 紫 黒の順
+	IF RAND:5 != 0
+		IF TALENT:FAMILY_ID:头发颜色 == 1 ;金
+			HAIR_COLOR =130
+		ELSEIF TALENT:FAMILY_ID:头发颜色 == 2 ;栗
+			HAIR_COLOR =160
+		ELSEIF TALENT:FAMILY_ID:头发颜色 == 3 ;黑
+			HAIR_COLOR =230
+		ELSEIF TALENT:FAMILY_ID:头发颜色 == 4 ;赤
+			HAIR_COLOR =150
+		ELSEIF TALENT:FAMILY_ID:头发颜色 == 5 ;銀
+			HAIR_COLOR =120
+		ELSEIF TALENT:FAMILY_ID:头发颜色 == 6 ;青
+			HAIR_COLOR =210
+		ELSEIF TALENT:FAMILY_ID:头发颜色 == 7 ;綠
+			HAIR_COLOR =200
+		ELSEIF TALENT:FAMILY_ID:头发颜色 == 8 ;紫
+			HAIR_COLOR =220
+		ELSEIF TALENT:FAMILY_ID:头发颜色 == 9 ;白
+			HAIR_COLOR =110
+		ELSEIF TALENT:FAMILY_ID:头发颜色 == 10 ;暗金
+			HAIR_COLOR =170
+		ELSEIF TALENT:FAMILY_ID:头发颜色 == 11 ;粉
+			HAIR_COLOR =140
+		ENDIF
+		HAIR_COLOR = HAIR_COLOR - 20 + RAND:9 + RAND:9 + RAND:9 + RAND:9 + RAND:9
+		IF HAIR_COLOR > 225
+			TALENT:A:头发颜色 = 3
+		ELSEIF HAIR_COLOR > 215
+			TALENT:A:头发颜色 = 8
+		ELSEIF HAIR_COLOR > 205
+			TALENT:A:头发颜色 = 6
+		ELSEIF HAIR_COLOR > 185
+			TALENT:A:头发颜色 = 7
+		ELSEIF HAIR_COLOR > 165
+			TALENT:A:头发颜色 = 10
+		ELSEIF HAIR_COLOR > 155
+			TALENT:A:头发颜色 = 2
+		ELSEIF HAIR_COLOR > 145
+			TALENT:A:头发颜色 = 4
+		ELSEIF HAIR_COLOR > 135
+			TALENT:A:头发颜色 = 11
+		ELSEIF HAIR_COLOR > 125
+			TALENT:A:头发颜色 = 1
+		ELSEIF HAIR_COLOR > 115
+			TALENT:A:头发颜色 = 5	
+		ELSE
+			TALENT:A:头发颜色 = 9
+		ENDIF
+	ENDIF
+
+	SIF RAND:5 != 0
+		TALENT:A:瞳色 = TALENT:FAMILY_ID:瞳色
+
+	SIF RAND:3 == 0
+		TALENT:A:体型 = TALENT:FAMILY_ID:体型
+
+	SIF RAND:3 == 0
+		TALENT:A:乳头 = TALENT:FAMILY_ID:乳头
+
+	IF RAND:3 == 0
+		TALENT:A:阴毛状态 = TALENT:FAMILY_ID:阴毛状态
+		TALENT:A:阴毛生长极限 = TALENT:FAMILY_ID:阴毛生长极限
+	ENDIF
+ENDIF
+
+
+@CM_NS_EXP
+;--------------------
+;各種経験
+;--------------------
+
+;出産経験
+P = 0
+LOCAL = TALENT:A:320 % 10
+IF LOCAL == 0 && TALENT:A:157 == 1 && RAND:2 == 0
+	P += RAND:3
+ELSE
+	;娘の数
+	LOCAL:1 = TALENT:A:320 % 1000
+	P += LOCAL:1 / 100
+	;息子の数
+	LOCAL:1 = TALENT:A:320 % 10000
+	P += LOCAL:1 / 1000
+ENDIF
+
+EXP:A:60 += P
+
+;性交経験
+IF TALENT:A:处女 == 0
+	EXP:A:0 = RAND:8 + 1 + P
+	EXP:A:5 = EXP:A:0
+ELSEIF P
+	;処女であるのに出産経験がある
+	EXP:A:0 = RAND:4 + 1 + P
+	EXP:A:5 = EXP:A:0
+	;処女を消す
+	TALENT:A:处女 = 0
+ENDIF
+
+
+;自慰经验
+IF RAND:30 == 0
+	;たまに猿みたいなオナニストが出現
+	EXP:A:10 = RAND:50
+ELSEIF TALENT:A:121 == 1 || TALENT:A:122 == 1
+	;扶她・男人は自慰しちゃうよね
+	EXP:A:10 = RAND:30
+ELSEIF TALENT:A:60 == 1
+	;容易自慰
+	EXP:A:10 = RAND:20
+ELSEIF RAND:10 == 0
+	;比較的自慰しちゃってる
+	EXP:A:10 = RAND:10
+ENDIF
+
+;ただし善恶值が高いと自慰なんてしない
+SIF CFLAG:A:151 > 150
+	EXP:A:10 = 0
+	
+;オトコにV経験はない
+SIF TALENT:A:122
+	EXP:A:0 = 0
+
+;初体験
+CALL CHARA_FIRST_EXP, A
+
+
+
+;--------------------------------------------------
+@CM_CLOTH
+;--------------------------------------------------
+;キャラのコスチュームを職業ごとに決定
+
+IF TALENT:A:200 && TALENT:A:122
+	;オトコ戦士
+	;チェインメイル
+	R = 3
+	;初期装備：ソード
+	CFLAG:A:550 = 40
+ELSEIF TALENT:A:战士 == 1
+	;战士
+	
+	;生成名でランダムで中華風
+	;IF CFLAG:A:6 > 2000000000 && RAND:3 == 0
+	IF CFLAG:A:6 >= 4500 && RAND:3 == 0
+		;チャイナドレス
+		R = 214
+		IF RAND:2 == 0
+			;初期装備：クレセントブレード
+			CFLAG:A:550 = 51
+		ELSE
+			;初期装備：ナックル
+			CFLAG:A:550 = 52
+		ENDIF
+	ELSE
+	IF RAND:6 == 0
+		R = 292
+	ELSEIF RAND:5 == 0
+		R = 2
+	ELSEIF RAND:4 == 0
+		R = 3
+	ELSEIF RAND:3 == 0
+		R = 4
+	ELSEIF RAND:2 == 0
+		R = 108
+	ELSE
+		R = 193
+	ENDIF
+	;初期装備：剑
+	CFLAG:A:550 = 40
+	ENDIF
+ELSEIF TALENT:A:201 && TALENT:A:122
+	;オトコ魔術師
+	;冒険服
+	R = 103
+	;アミュレット付き
+	CFLAG:A:42 = 85
+	;初期装備：スタッフ
+	CFLAG:A:550 = 41
+ELSEIF TALENT:A:魔法师 == 1
+	;魔法师
+	IF RAND:3 == 0
+		R = 5
+	ELSEIF RAND:2 == 0
+		R = 251
+	ELSE
+		R = 103
+	ENDIF
+	;アミュレット付き
+	CFLAG:A:42 = 85
+	;初期装備：法杖
+	CFLAG:A:550 = 41
+ELSEIF TALENT:A:神官 == 1
+	;神官
+	IF RAND:3 == 0
+		R = 5
+	ELSEIF RAND:2 == 0
+		R = 251
+	ELSE
+		R = 207
+	ENDIF
+	;初期装備：权杖
+	CFLAG:A:550 = 46
+ELSEIF TALENT:A:203 && TALENT:A:122
+	;オトコ盗賊
+	;冒険服
+	R = 103
+	;初期装備：ダガー
+	CFLAG:A:550 = 43
+ELSEIF TALENT:A:盗贼 == 1
+	;盗贼
+	IF RAND:3 == 0
+		R = 5
+	ELSEIF RAND:2 == 0
+		R = 251
+	ELSE
+		R = 103
+	ENDIF
+	;初期装備：匕首
+	CFLAG:A:550 = 43
+ELSEIF TALENT:A:205 && TALENT:A:122
+	;オトコ騎士
+	;騎士鎧
+	R = 105
+	;初期装備：ソード
+	CFLAG:A:550 = 40
+ELSEIF TALENT:A:骑士 == 1
+	;骑士
+	IF RAND:3 == 0
+		R = 105
+	ELSEIF RAND:2 == 0
+		R = 6
+	ELSE
+		R = 111
+	ENDIF
+	;初期装備：剑
+	CFLAG:A:550 = 40
+ELSEIF TALENT:A:206 && TALENT:A:122
+	;オトコ巫女
+	;巫女装束
+	R = 104
+	;初期装備：スタッフ
+	CFLAG:A:550 = 41
+ELSEIF TALENT:A:巫女 == 1
+	;巫女
+	R = 104
+	;初期装備：法杖
+	CFLAG:A:550 = 41
+ELSEIF TALENT:A:207 && TALENT:A:122
+	;オトコ忍者
+	;忍者装束
+	R = 110
+	;初期装備：シュリケン
+	CFLAG:A:550 = 44
+ELSEIF TALENT:A:忍者 == 1
+	;忍者
+	R = 110
+	;初期装備：手里剑
+	CFLAG:A:550 = 44
+ELSEIF TALENT:A:208 && TALENT:A:122
+	;オトコ弓師
+	;冒険服
+	R = 103
+	;初期装備：アロー
+	CFLAG:A:550 = 45
+ELSEIF TALENT:A:弓手 == 1
+	;弓手
+	IF RAND:3 == 0
+		R = 5
+	ELSEIF RAND:2 == 0
+		R = 251
+	ELSE
+		R = 103
+	ENDIF
+	;初期装備：弓箭
+	CFLAG:A:550 = 45
+ELSEIF TALENT:A:种族2 == 2 || TALENT:A:137 == 1
+	;史莱姆とFURRYは全裸
+	R = 0
+	;初期装備：鞭
+	CFLAG:A:550 = 42
+ELSEIF TALENT:A:种族2 == 3
+	;昆虫
+	IF RAND:6 == 0
+		R = 193
+	ELSEIF RAND:5 == 0
+		R = 0
+	ELSE
+		R = 293
+	ENDIF
+		CFLAG:A:550 = 42
+ELSEIF TALENT:A:种族2 == 4
+	;植物
+	IF RAND:5 == 0
+		R = 201
+	ELSEIF RAND:4 == 0
+		R = 202
+	ELSEIF RAND:3 == 0
+		R = 204
+	ELSEIF RAND:2 == 0
+		R = 294
+	ELSE
+		R = 0
+	ENDIF
+	;初期装備：鞭
+	CFLAG:A:550 = 42	
+ELSEIF TALENT:A:种族2 == 5
+	;触手。基本イメージは海妖なので、下半身空けとく
+	IF RAND:5 == 0
+		R=0
+	ELSEIF RAND:4 == 0
+		R=19
+	ELSEIF RAND:3 == 0
+		R=31
+	ELSEIF RAND:2 == 0
+		R=201
+	ELSE
+		R=203
+	ENDIF
+	;初期装備：鞭
+	CFLAG:A:550 = 42
+ELSEIF TALENT:A:种族2 == 6
+	;妖精
+	IF RAND:5 == 0
+		R=0
+	ELSEIF RAND:4 == 0
+		R=122
+	ELSEIF RAND:3 == 0
+		R=201
+	ELSEIF RAND:2 == 0
+		R=241
+	ELSE
+		R=294
+	ENDIF
+	SIF TALENT:A:122 && R == 201
+		R=103
+	;初期装備：鞭
+	CFLAG:A:550 = 42
+ELSEIF TALENT:A:精英 == 1
+	;:220
+	IF RAND:6 == 0
+		R = 203
+	ELSEIF RAND:5 == 0
+		R = 2
+	ELSEIF RAND:4 == 0
+		R = 7
+	ELSEIF RAND:3 == 0
+		R = 4
+	ELSEIF RAND:2 == 0
+		R = 103
+	ELSE
+		R = 193
+	ENDIF
+	;初期装備：鞭
+	CFLAG:A:550 = 42
+ELSEIF TALENT:A:精英 == 1 && TALENT:A:122
+	;:220,122
+	;冒険服
+	R = 103
+	;初期装備：鞭
+	CFLAG:A:550 = 42
+ELSE
+	R = 1
+	;初期装備：鞭
+	CFLAG:A:550 = 42
+ENDIF
+
+
+;初期装備接頭語
+CFLAG:A:550 += RAND:10 * 100000
+
+CFLAG:A:41 = R
+CFLAG:A:45 = 0
+CFLAG:A:46 = 0
+R = 0
+X = TARGET
+TARGET = A
+CALL WEARING_CLOTH_ABLE
+TARGET = X
+;眼镜で眼鏡付き
+SIF TALENT:A:48 == 1
+	CFLAG:A:42 = 83
+
+;ドワーフとホビットの処理はLOOK.ERBの种族決定時（$RACE）に移動
+
+
+
+RETURN 0
+

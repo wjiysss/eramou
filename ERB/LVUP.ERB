@@ -1,0 +1,89 @@
+﻿;----------------------------------
+@LVUP, ARG:0
+;----------------------------------
+;ARG:0はキャラNo
+
+LOCAL:0 = CFLAG:(ARG:0):9 * 10 + 10
+
+LOCAL:2 = 0
+
+$LVUP_REPEAT
+IF ARG == MASTER
+	;魔王必要经验值 = LV * 100 + 10
+	LOCAL = LOCAL:0
+ELSEIF TALENT:ARG:220 == 1
+	;精英必要经验值 = LV * 20 + 10 （勇者的两倍）
+	LOCAL:0 -= 10
+	LOCAL = LOCAL:0 * 2 + 10
+ELSE
+	;通常勇者经验值 = LV * 10 + 10
+	LOCAL = LOCAL:0
+ENDIF
+
+IF EXP:ARG:80 >= LOCAL
+	EXP:ARG:80 -= LOCAL
+	CALL ST_UP, ARG:0
+	LOCAL:0 = CFLAG:(ARG:0):9 * 10 + 10
+	LOCAL:2 ++
+	GOTO LVUP_REPEAT
+ENDIF
+
+IF LOCAL:2 > 0
+	LOCALS = \@ ARG == MASTER ? %NAME:MASTER% # %SAVESTR:ARG% \@
+	PRINTFORML *%LOCALS%的等级提升为LV{CFLAG:ARG:9}*
+ENDIF
+IF TALENT:(ARG:0):291 && CFLAG:(ARG:0):9 >= 30
+	PRINTFORML %SAVESTR:(ARG:0)%在战斗中越发成熟，终于成长成了真正的勇者……
+	PRINTFORML %SAVESTR:(ARG:0)%失去了[初心者]。
+	TALENT:(ARG:0):291 = 0
+ENDIF
+
+RETURN LOCAL:2
+
+
+@ST_UP, ARG:0
+CFLAG:(ARG:0):9 += 1
+CFLAG:(ARG:0):13 += 1
+CFLAG:(ARG:0):14 += 1
+;ランダムでさらに強く
+LOCAL:0 = RAND:2
+IF LOCAL:0 == 0
+	CFLAG:(ARG:0):13 += 1
+ELSEIF LOCAL:0 == 1
+	CFLAG:(ARG:0):14 += 1
+ENDIF
+IF DAY >= 100
+	CFLAG:(ARG:0):13 += RAND:3
+	CFLAG:(ARG:0):14 += RAND:3
+ENDIF
+IF TALENT:(ARG:0):240 == 1
+	CFLAG:(ARG:0):13 += RAND:3
+	CFLAG:(ARG:0):14 += RAND:3
+ENDIF
+IF TALENT:(ARG:0):248 == 1
+	CFLAG:(ARG:0):13 += RAND:2
+	CFLAG:(ARG:0):14 += RAND:2
+ENDIF
+
+;竜族戦闘補正
+IF TALENT:(ARG:0):314 == 5
+	CFLAG:(ARG:0):13 += RAND:2
+	CFLAG:(ARG:0):14 += RAND:2
+ENDIF
+
+;矮人族防御補正
+SIF TALENT:(ARG:0):314 == 11
+	CFLAG:(ARG:0):14 += RAND:2
+
+;史莱姆防御補正
+SIF TALENT:ARG:261 == 1
+	CFLAG:ARG:14 += RAND:2
+
+;触手攻撃補正
+SIF TALENT:ARG:262 == 1
+	CFLAG:ARG:13 += RAND:2
+
+MAXBASE:(ARG:0):0 += 10
+MAXBASE:(ARG:0):1 += 10
+
+RETURN 0

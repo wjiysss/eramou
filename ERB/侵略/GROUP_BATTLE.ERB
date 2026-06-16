@@ -1,0 +1,127 @@
+﻿;2016/11/10	事件群体作战作成。改编自元战斗系统
+
+;--------------------------------------------------
+@GROUP_BATTLE, (ARG:0)
+#DIM DEFID
+#DIM ATKID
+#DIM TURN
+#DIM ATK_TURN
+#DIM ATKER
+#DIM DEFER
+#DIM MAX_LEN = 10, 10, 10
+;--------------------------------------------------
+;ARG:0 = リーダー
+;DEFID = 守方のID
+;ATKID = 攻方のID
+;Aが行動キャラNo Cが敵NPC隊列記憶
+;TURN  = 戦闘ターン
+
+
+;戦闘の流れについて
+;リーダー→仲間A→仲間B→リーダー→…のループで1回ずつ攻撃を行います
+;なので、メンバーがリーダーのみや二人だとたくさん攻撃します
+;6ターン攻撃を行います
+;攻撃者が一人前に出て、攻撃を行い相手の攻撃を受けます
+;誰か一人でも堕ちた場合、戦闘が中断されます
+
+
+;先制
+FOR TURN, 0, 3
+	IF TURN == 0
+		ATKER = ARG:0
+	ELSEIF TURN == 1
+		ATKER = CFLAG:(ARG:0):531
+	ELSEIF TURN == 2
+		ATKER = CFLAG:(ARG:0):532
+	ELSE
+		BREAK
+	ENDIF
+	
+	SIF ATKER <= 0
+		CONTINUE
+	
+	IF TALENT:ATKER:252 == 1 && CFLAG:ATKER:503 & 32
+		;先制不可
+		SIF FLAG:5 & 32
+			PRINTL 因为障碍物的阻挡未能先发制人……
+	ELSEIF  TALENT:ATKER:252 == 1
+		Z = 0
+		CALL ENEMY_ATTACK, ATKER, 2
+	ENDIF
+NEXT
+
+
+;攻撃順。ランダム
+ATK_TURN = RAND:3
+FOR TURN, 0, 99
+	;ターン数超過の場合
+	;強制的に戦闘が中断される
+NEXT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;--------------------------------------
+@GROUP_BATTLE_DEATH_CHECK
+#DIM ALIVE
+#DIM ATKID
+#DIM DEFID
+;--------------------------------------
+;ALIVE = 生き残り数
+
+;敌人側の生き残りを算出
+B = 0
+ALIVE = 0
+REPEAT 3
+	B += 99
+	IF E:B > 0
+		ALIVE = 1
+		BREAK
+	ENDIF
+	B -= 99
+	IF DEFID == 3
+		PRINTFORMW %NAME:DEFID%冲散了濒死的%NAME:ATKID%、并俘虏了他们的精神。
+	ENDIF
+	B += 100
+REND
+
+;全滅時
+IF ALIVE == 0
+	PRINTFORML %NAME:ATKID%的作战失败了………
+	RETURN 2
+ENDIF
+
+;魔王側の生き残りを算出
+B = 0
+ALIVE = 0
+REPEAT 3
+	B += 99
+	IF E:B > 0
+		ALIVE = 1
+		BREAK
+	ENDIF
+	B -= 99
+	PRINTFORMW %NAME:ATKID%冲散了濒死的%NAME:DEFID%。
+	B += 100
+REND
+
+;全滅時
+IF ALIVE == 0
+	PRINTL 魔王军的作战失败了………
+	RETURN 1
+ENDIF
+
+RETURN 0	

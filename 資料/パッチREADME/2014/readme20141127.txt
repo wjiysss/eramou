@@ -1,0 +1,27 @@
+﻿eramaou0.330_振動の宝石が減るバグの修正＋β
+
+
+DUNGEON_TRAP.ERBの95行目
+ITEM:TRAP_ID -= 1
+の前の行に
+SIF TRAP_ID >= 60 && TRAP_ID < 80
+を追加(この部分のせいかITEM:0が減算されてるようなので)
+
+
+あと274行目(一方通行の罠)の
+ITEM:63 -= 1
+を
+ITEM:63 += 1
+に修正(侵攻度<40の時は発動しないので罠消費しないよう修正)
+
+
+※＋αでの修正部分
+SIF TRAP_ID >= 60 && TRAP_ID < 80 を
+SIF TRAP_ID >= 60 && TRAP_ID < 80 && TRAP_NUM > 0
+に修正（TRAP_NUMが0以下になってもトラップの消費が止まらないため）
+
+
+※＋βでの修正部分
+SIF TRAP_ID >= 60 && TRAP_ID < 80 && TRAP_NUM > 0 でもトラップの数が0以下になるので
+SIF TRAP_ID >= 60 && TRAP_ID < 80 && ITEM:TRAP_ID > 0 に修正
+

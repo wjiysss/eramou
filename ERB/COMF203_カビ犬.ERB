@@ -1,0 +1,295 @@
+﻿;eramaou追加コマンド
+
+;-------------------------------------------------
+;霉菌犬
+;レベル２０以上
+;-------------------------------------------------
+@COM203
+
+PRINTL 霉菌犬
+
+CALL TRAIN_MESSAGE_B
+
+;-------------------------------------------------
+;戦闘値の計算
+;-------------------------------------------------
+LOSEBASE:0 += CFLAG:0:9
+SIF BASE:0 <= 0
+	LOSEBASE:0 /= 4
+LOSEBASE:1 += CFLAG:0:9 * 20
+
+CALL ARENA_SLAVE_POINT
+;戦闘点が低ければ追加ダメージ || ;失神中はダメ
+IF RESULT < (2 * CFLAG:0:9) || TFLAG:899 > 0
+	;気力が0なら追加ダメージ無し
+	IF BASE:1 <= 0 || TFLAG:899 > 0
+		PRINTFORMW 霉菌犬压着筋疲力尽的%SAVESTR:TARGET%扭动着腰。
+	ELSE
+		;追加ダメージ
+		LOSEBASE:0 += CFLAG:0:9
+		LOSEBASE:1 += CFLAG:0:9
+		PRINTFORMW %SAVESTR:TARGET%吸入了霉菌犬的有毒吐息。
+		IF BASE:1 < LOSEBASE:1
+			PRINTFORMW 随后筋疲力尽地倒下了。
+			PRINTW ＜奴隶陷落＞
+		ENDIF
+	ENDIF
+ELSE
+	PRINTFORMW %SAVESTR:TARGET%闭气躲过霉菌犬的有毒气息，拼命逃跑着。
+ENDIF
+
+;死斗场収入
+;TFLAG:402 += (LOSEBASE:0 * 2) + RAND:RESULT
+
+TFLAG:400 = 203
+;戦闘後の処理
+CALL COM_AFTER_ARENA
+SIF RESULT == 0
+	RETURN 1
+
+;-------------------------------------------------
+;各種コマンドへ
+;-------------------------------------------------
+$INPUT_LOOP_0
+PRINTL 对哪里进行凌辱？
+PRINTL [0] - 嘴巴
+PRINTL [1] - 胸部
+SIF !TALENT:122 && !TALENT:273 && CFLAG:42 != 79 
+	PRINTL [2] - 私处
+PRINTL [3] - 肛门
+PRINTL [999] 暂时放过
+
+INPUT
+
+IF RESULT == 0
+	PRINTL ＜霉菌犬・口交＞
+	SELECTCOM = 31
+	CALL COM31
+	;口交実行不可時
+	SIF RESULT == 0
+		RETURN 0
+	;死斗场収入
+	TFLAG:402 += (LOSEBASE:0 * 2) + RAND:RESULT
+ELSEIF RESULT == 1
+	PRINTL ＜霉菌犬・胸爱抚＞
+	SELECTCOM = 5
+	CALL COM5
+	;死斗场収入
+	TFLAG:402 += (LOSEBASE:0 * 2) + RAND:RESULT
+ELSEIF RESULT == 2
+	;対象是男人，或带有处女封印,或贞操带
+	SIF TALENT:122 || TALENT:273 || (CFLAG:42 == 79 && (CFLAG:40 & 64) && FLAG:37)
+		RETURN 0
+	PRINTL ＜霉菌犬・背后位＞
+	SELECTCOM = 21
+	CALL COM21
+	;处女を奪わせなかった場合
+	SIF RESULT == 0
+		RETURN 0
+	;死斗场収入
+	TFLAG:402 += (LOSEBASE:0 * 2) + RAND:RESULT
+ELSEIF RESULT == 3
+	PRINTL ＜霉菌犬・背后位肛交＞
+	SELECTCOM = 27
+	CALL COM27
+	;死斗场収入
+	TFLAG:402 += (LOSEBASE:0 * 2) + RAND:RESULT
+ELSEIF RESULT == 999
+	PRINTFORMW %SAVESTR:MASTER%让霉菌犬退下了……
+	RETURN 0
+ELSE
+	GOTO INPUT_LOOP_0
+ENDIF
+
+;-------------------------------------------------
+;射精チェック
+;兽奸コマンドの改編です。
+;-------------------------------------------------
+SIF MAXBASE:MASTER:4 == 0
+	GOTO END_EJAC
+
+B = 0
+
+;ABL:技巧をみる
+IF ABL:12 == 0
+	B = 450
+ELSEIF ABL:12 == 1
+	B = 1000
+ELSEIF ABL:12 == 2
+	B = 1600
+ELSEIF ABL:12 == 3
+	B = 2200
+ELSEIF ABL:12 == 4
+	B = 2700
+ELSE
+	B = 3200
+ENDIF
+
+;ABL:顺从をみる
+IF ABL:10 == 0
+	TIMES B , 0.30
+ELSEIF ABL:10 == 1
+	TIMES B , 0.50
+ELSEIF ABL:10 == 2
+	TIMES B , 0.70
+ELSEIF ABL:10 == 3
+	TIMES B , 1.00
+ELSEIF ABL:10 == 4
+	TIMES B , 1.20
+ELSE
+	TIMES B , 1.30
+ENDIF
+
+;PALAM:欲情をみる
+IF PALAM:5 < PALAMLV:1
+	TIMES B , 1.00
+ELSEIF PALAM:5 < PALAMLV:2
+	TIMES B , 1.10
+ELSEIF PALAM:5 < PALAMLV:3
+	TIMES B , 1.20
+ELSEIF PALAM:5 < PALAMLV:4
+	TIMES B , 1.30
+ELSEIF PALAM:5 < PALAMLV:5
+	TIMES B , 1.40
+ELSE
+	TIMES B , 1.50
+ENDIF
+
+;キス
+IF SELECTCOM == 6
+	B = 0
+;背后位
+ELSEIF SELECTCOM == 21
+	TIMES B , 1.00
+;背后位肛交
+ELSEIF SELECTCOM == 27
+	TIMES B , 1.50
+;手淫
+ELSEIF SELECTCOM == 30
+	TIMES B , 0.80
+;口交
+ELSEIF SELECTCOM == 31
+	TIMES B , 1.20
+;骑乘位
+ELSEIF SELECTCOM == 34
+	TIMES B , 1.50
+ELSE
+	B = 0
+ENDIF
+
+BASE:MASTER:4 += B
+
+S = BASE:MASTER:4
+EJAC = MAXBASE:MASTER:4
+
+IF  S > EJAC * 2
+	E = 2
+ELSEIF S > EJAC
+	E = 1
+ELSE
+	E = 0
+ENDIF
+
+IF E
+;射精している
+	TIMES SOURCE:4 , 3.00
+
+	;ABL:精液中毒をみる
+	IF ABL:32 == 0
+		SOURCE:7 = 0
+		TIMES SOURCE:5 , 2.00
+		TIMES SOURCE:13, 2.00
+	ELSEIF ABL:32 == 1
+		SOURCE:7 = 200
+		TIMES SOURCE:5 , 2.50
+		TIMES SOURCE:13, 1.60
+	ELSEIF ABL:32 == 2
+		SOURCE:7 = 500
+		TIMES SOURCE:5 , 3.00
+		TIMES SOURCE:13, 1.00
+	ELSEIF ABL:32 == 3
+		SOURCE:7 = 1200
+		TIMES SOURCE:5 , 4.50
+		TIMES SOURCE:13, 0.70
+	ELSEIF ABL:32 == 4
+		SOURCE:7 = 2500
+		TIMES SOURCE:5 , 6.00
+		TIMES SOURCE:13, 0.40
+	ELSE
+		SOURCE:7 = 5000
+		TIMES SOURCE:5 , 8.00
+		TIMES SOURCE:13, 0.10
+	ENDIF
+ENDIF
+
+;大量射精
+IF E == 2
+	EXP:20 += 3
+	PRINTL 怪物大量射精
+	PRINTL 精液经验＋３
+
+	BASE:MASTER:4 -= EJAC*2
+	SIF BASE:MASTER:4 >= EJAC
+		BASE:MASTER:4 = EJAC-1
+	;私处内射精フラグ（怪物）
+	SIF SELECTCOM == 21 || SELECTCOM == 34
+		TFLAG:38 = 2
+	;口交で射精フラグ
+	SIF SELECTCOM == 31
+		TFLAG:0 = 2
+	;セックスで射精フラグ
+	SIF SELECTCOM == 21 || SELECTCOM == 27
+		TFLAG:2 = 2
+;通常の射精
+ELSEIF E == 1
+	EXP:20 += 1
+	PRINTL 怪物射精
+	PRINTL 精液经验＋１
+
+	BASE:MASTER:4 -= EJAC
+	SIF BASE:MASTER:4 >= EJAC
+		BASE:MASTER:4 = EJAC-1
+	;私处内射精フラグ（怪物）
+	SIF SELECTCOM == 21 || SELECTCOM == 34
+		TFLAG:38 = 1
+	;口交で射精フラグ
+	SIF SELECTCOM == 31
+		TFLAG:0 = 1
+	;セックスで射精フラグ
+	SIF SELECTCOM == 21 || SELECTCOM == 27
+		TFLAG:2 = 1
+ENDIF
+
+$END_EJAC
+
+;-------------------------------------------------
+;汚れ
+;-------------------------------------------------
+SIF SELECTCOM == 21
+	STAIN:3 |= 2
+SIF SELECTCOM == 27
+	STAIN:4 |= 2
+SIF SELECTCOM == 30
+	STAIN:1 |= 2
+SIF SELECTCOM == 31
+	STAIN:0 |= 2
+SIF SELECTCOM == 37
+	STAIN:0 |= 8
+SIF SELECTCOM == 21 && E > 0
+	STAIN:3 |= 4
+SIF SELECTCOM == 27 && E > 0
+	STAIN:4 |= 4
+SIF SELECTCOM == 30 && E > 0
+	STAIN:1 |= 4
+SIF SELECTCOM == 31 && E > 0
+	STAIN:0 |= 4
+
+;死斗场怪物が射精フラグ
+TFLAG:15 = E
+
+RETURN 1
+
+
+;
+;
+;

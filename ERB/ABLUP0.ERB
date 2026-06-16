@@ -1,0 +1,229 @@
+﻿;阴蒂感觉のLvUP処理とその可否判定
+;eratohoA ver1,204のスクリプトをベースに処理を簡略化
+;eraIM@Sから導入しました(eramaou)
+;-------------------------------------------------
+;阴蒂感觉のLvUP
+;-------------------------------------------------
+@ABLUP0
+#DIM CALC
+;各部位感覚封鎖
+CALC = 0
+SIF TALENT:103 & 2
+	CALC ++
+SIF TALENT:105 & 2
+	CALC ++
+SIF TALENT:107 & 2
+	CALC ++
+
+;最大Lvは5、[自慰狂い]が付いている場合はLv10まで解放
+DRAWLINE
+IF TALENT:122
+	PRINT 阴茎
+ELSEIF TALENT:121
+	PRINT 阴茎(阴蒂)
+ELSE
+	PRINT 阴蒂
+ENDIF
+PRINTL 的感度提升了。
+IF TALENT:122
+	PRINT 阴茎
+ELSE
+	PRINT 阴蒂
+ENDIF
+PRINTL 感觉越高，越容易在舔舐、自慰等行为得到更大的快感。
+CUSTOMDRAWLINE ‥
+IF ABL:0 >= 5 && TALENT:74 == 0
+	PRINTW 需要特殊素质才能继续提升
+	RETURN 0
+ELSEIF TALENT:101 & 2
+	PRINTW 阴核感觉已经被封锁了
+	RETURN 0
+ELSEIF ABL:0 >= CALC * 5 + 10
+	PRINTW 已达最高级
+	RETURN 0
+ENDIF
+
+;必要な阴核点数
+A = 0
+
+;条件別にＯＫかダメかを記録する
+;阴核点数による可否（I=0:可、I&1:点数不足、I&2:経験不足）
+I = 0
+
+CALL DECIDE_ABLUP0
+IF TALENT:122
+	PRINTFORM [0] - 阴茎点数×{JUEL:0}/{A} ……
+ELSE
+	PRINTFORM [0] - %PALAMNAME:0%点数×{JUEL:0}/{A} ……
+ENDIF
+PRINTV GET_ABLUP_STATE(I)
+PRINTL 
+
+PRINTL [100] - 停止
+
+
+INPUT
+IF (RESULT < 0 || RESULT > 0) && RESULT != 100
+	RESTART
+ELSEIF I != 0 && RESULT == 0
+	PRINTL 未满足条件
+	RESTART
+ELSEIF RESULT == 100
+	RETURN 0
+ENDIF
+
+ABL:0 += 1
+
+IF RESULT == 0
+	JUEL:0 -= A
+ENDIF
+
+PRINTFORML %ABLNAME:0%变为LV{ABL:0}。
+
+RETURN 0
+
+;-------------------------------------------------
+; ARG=0:可、ARG&1:点数不足、ARG&2:経験不足、ARG&4:能力不足
+;-------------------------------------------------
+@GET_ABLUP_STATE(ARG)
+#FUNCTIONS
+IF ARG == 0
+	RETURNF "ＯＫ"
+ELSE
+	LOCALS =
+	SIF ARG & 1
+		LOCALS += "点数不足 "
+	SIF ARG & 2
+		LOCALS += "经验不足 "
+	SIF ARG & 4
+		LOCALS += "能力不足"
+	RETURNF LOCALS
+ENDIF
+
+
+;-------------------------------------------------
+@CORE_ABLUP0
+;-------------------------------------------------
+ABL:0 ++
+
+IF I == 0
+	JUEL:0 -= A
+ENDIF
+
+
+;-------------------------------------------------
+;C感覚LvUP判定
+;-------------------------------------------------
+@DECIDE_ABLUP0
+#DIM CALC
+#DIM LCOUNT
+;各部位感覚封鎖
+CALC = 0
+SIF TALENT:103 & 2
+	CALC ++
+SIF TALENT:105 & 2
+	CALC ++
+SIF TALENT:107 & 2
+	CALC ++
+
+;C感覚はLv5が上限、[自慰狂い]が付いている場合はLv10まで解放
+SIF ABL:0 >= 5 && TALENT:74 == 0
+	RETURN 0
+SIF ABL:0 >= CALC * 5 + 10
+	RETURN 0
+;感覚封鎖されている場合は不可
+SIF TALENT:101 & 2
+	RETURN 0
+
+;判定変数を空に
+A = 0
+I = 0
+
+IF ABL:0 == 0
+	A = 1
+ELSEIF ABL:0 == 1
+	A = 20
+ELSEIF ABL:0 == 2
+	A = 400
+ELSEIF ABL:0 == 3
+	A = 8000
+ELSEIF ABL:0 == 4
+	A = 20000
+ELSEIF ABL:0 == 5
+	A = 40000
+ELSEIF ABL:0 == 6
+	A = 60000
+ELSEIF ABL:0 == 7
+	A = 90000
+ELSEIF ABL:0 == 8
+	A = 120000
+ELSEIF ABL:0 == 9
+	A = 180000
+ELSEIF ABL:0 < 15
+	A = 180000
+	FOR LCOUNT, 0, (ABL:0 - 9)
+		A = A * 125 / 100
+	NEXT
+ELSEIF ABL:0 < 20
+	A = 362000
+	FOR LCOUNT, 0, (ABL:0 - 14)
+		A = A * 120 / 100
+	NEXT
+ELSEIF ABL:0 < 25
+	A = 583000
+	FOR LCOUNT, 0, (ABL:0 - 19)
+		A = A * 115 / 100
+	NEXT
+ENDIF
+
+;戒备森严
+IF TALENT:27
+	SIF ABL:0 == 4
+		TIMES A , 2.00
+	SIF ABL:0 == 5
+		TIMES A , 2.50
+	SIF ABL:0 >= 6
+		TIMES A , 3.00
+ENDIF
+
+;阴蒂钝感
+SIF TALENT:101
+	TIMES A , 1.20
+
+;阴蒂敏感
+SIF TALENT:102
+	TIMES A , 0.80
+
+;他部位の封鎖数
+IF ABL:0 > 5 && ABL:0 <= 10 && CALC > 0
+	A = A * (15 - CALC) / 15
+ELSEIF ABL:0 <= 15 && CALC > 1
+	A = A * (16 - CALC) / 15
+ELSEIF ABL:0 <= 20 && CALC > 2
+	A = A * (17 - CALC) / 15
+ENDIF
+
+;淫乱
+SIF TALENT:76
+	TIMES A , 0.80
+;自慰狂
+SIF TALENT:74
+	TIMES A , 0.80
+
+;最低でも1個は必要
+SIF A < 1
+	A = 1
+
+;阴核点数で上げる
+SIF JUEL:0 < A
+	I |= 1
+
+IF I == 0
+	RETURN 1
+ELSE
+	RETURN 0
+ENDIF
+
+;
+;
+;

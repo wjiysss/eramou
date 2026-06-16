@@ -1,0 +1,120 @@
+﻿;eramaou追加コマンド
+
+;-------------------------------------------------
+;助手
+;助手も戦えるんです
+;SELECTCOMを入れないと
+;-------------------------------------------------
+@COM201
+
+SIF ASSI != PLAYER
+	RETURN 0
+
+PRINTL 助手
+
+CALL TRAIN_MESSAGE_B
+
+;-------------------------------------------------
+;戦闘値の計算
+;-------------------------------------------------
+CALL ARENA_ASSI_POINT
+
+LOSEBASE:0 += RESULT
+LOSEBASE:1 += RESULT * 10
+
+C = RESULT
+
+CALL ARENA_SLAVE_POINT
+
+;戦闘点が低ければ追加ダメージ
+IF RESULT < C
+	;気力が0なら追加ダメージ無し
+	IF BASE:1 <= 0
+		PRINTFORMW %SAVESTR:ASSI%将%SAVESTR:TARGET%踩在脚下。
+	ELSE
+		PRINTFORMW %SAVESTR:TARGET%完全无法抵挡%SAVESTR:ASSI%的攻击！
+		;追加ダメージ
+		LOSEBASE:0 += C
+		LOSEBASE:1 += C * 5
+		IF BASE:1 < LOSEBASE:1
+			PRINTFORMW 然后，%SAVESTR:ASSI%发出痛恨的一击，将%SAVESTR:TARGET%的武器打掉了。
+			PRINTW ＜奴隶陷落＞
+		ENDIF
+	ENDIF
+ELSE
+	PRINTFORMW %SAVESTR:TARGET%对%SAVESTR:ASSI%进行了反击。
+	BASE:ASSI:0 -= RESULT
+	BASE:ASSI:1 -= RESULT * 10
+ENDIF
+;死斗场収入
+;TFLAG:402 += LOSEBASE:0 * 5 + RAND:RESULT
+
+TFLAG:400 = 201
+;戦闘後の処理
+CALL COM_AFTER_ARENA
+SIF RESULT == 0
+	RETURN 1
+;戦闘で助手退却していた場合、暂时放过
+SIF ASSI != PLAYER
+	RETURN 1
+
+;-------------------------------------------------
+;各種コマンドへ
+;-------------------------------------------------
+$INPUT_LOOP_0
+PRINTL 对哪里进行凌辱？
+SIF TALENT:ASSI:121 == 1 || TALENT:ASSI:122 == 1 || ITEM:PBAND == 1
+	PRINTL [0] - 嘴巴
+PRINTL [1] - 胸部
+SIF (TALENT:ASSI:121 == 1 || TALENT:ASSI:122 == 1 || ITEM:PBAND == 1) && TALENT:122 == 0 && TALENT:273 == 0 && CFLAG:42 != 79  && (!TALENT:135 || TALENT:ASSI:83 == 1)
+	PRINTL [2] - 私处
+SIF TALENT:ASSI:121 == 1 || TALENT:ASSI:122 == 1 || ITEM:PBAND == 1
+	PRINTL [3] - 肛门
+PRINTL [999] 暂时放过
+
+INPUT
+
+IF RESULT == 0 && (TALENT:ASSI:121 == 1 || TALENT:ASSI:122 == 1 || ITEM:PBAND == 1)
+	PRINTL ＜助手・口交＞
+	SELECTCOM = 31
+	CALL COM31
+	;口交実行不可時
+	SIF RESULT == 0
+		RETURN 0
+	;死斗场収入
+	TFLAG:402 += LOSEBASE:0 * 5 + RAND:RESULT
+ELSEIF RESULT == 1
+	PRINTL ＜助手・胸爱抚＞
+	SELECTCOM = 5
+	CALL COM5
+	;死斗场収入
+	TFLAG:402 += LOSEBASE:0 * 5 + RAND:RESULT
+ELSEIF RESULT == 2 && (TALENT:ASSI:121 == 1 || TALENT:ASSI:122 == 1 || ITEM:PBAND == 1) && TALENT:122 == 0 && TALENT:273 == 0 && CFLAG:42 != 79  && (!TALENT:135 || TALENT:ASSI:83 == 1)
+	;対象が男人なら戻る
+	SIF TALENT:122
+		RETURN 0
+	PRINTL ＜助手・背后位＞
+	SELECTCOM = 21
+	CALL COM21
+	;处女を奪わせなかった場合
+	SIF RESULT == 0
+		RETURN 0
+	;死斗场収入
+	TFLAG:402 += LOSEBASE:0 * 5 + RAND:RESULT
+ELSEIF RESULT == 3 && (TALENT:ASSI:121 == 1 || TALENT:ASSI:122 == 1 || ITEM:PBAND == 1)
+	PRINTL ＜助手・背后位肛交＞
+	SELECTCOM = 27
+	CALL COM27
+	;死斗场収入
+	TFLAG:402 += LOSEBASE:0 * 5 + RAND:RESULT
+ELSEIF RESULT == 999
+	PRINTFORMW %NAME:MASTER%叫%SAVESTR:ASSI%退下了……
+	RETURN 0
+ELSE
+	GOTO INPUT_LOOP_0
+ENDIF
+
+RETURN 1
+;
+;
+;

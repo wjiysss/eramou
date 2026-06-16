@@ -1,0 +1,7 @@
+﻿eramaou0.330_魔の誘惑バグ修正
+
+CHARA_TEMPTATION.ERB	CALL PARTY_DEL(ARG)の前に
+			CFLAG:ARG:506 = 1
+			CFLAG:ARG:507 = 0
+			の処理を追加
+

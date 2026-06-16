@@ -1,0 +1,18 @@
+﻿;--------------------------------
+@SELL_FIGHTMONEY
+;--------------------------------
+;死斗場収入
+
+;観戦したまま終わった場合チケットを減らす
+SIF TEQUIP:55
+	ITEM:35 -= 1
+
+IF TFLAG:402 > 0
+	IF TFLAG:402 > 12000
+		TFLAG:402 = 12000
+	ENDIF
+	PRINTFORMW 从死斗场的观战费中获得{TFLAG:402 * 5}点收入
+MONEY += TFLAG:402 * 5
+EX_FLAG:4444 += TFLAG:402 * 5
+TFLAG:402 = 0
+ENDIF

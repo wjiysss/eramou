@@ -1,0 +1,54 @@
+﻿;--------------------------------------
+@CHARA_INIT(L_A)
+; 初始化从csv加载的角色
+;--------------------------------------
+#DIM L_A
+
+SAVESTR:L_A = %CALLNAME:L_A%
+
+;等级与基础数值
+IF CFLAG:L_A:9 > 1 && CFLAG:L_A:11 == 0
+;当CSV只设置了等级没有设置攻击力等数据时
+	LOCAL = CFLAG:L_A:9
+	REPEAT LOCAL
+		CALL ST_UP, L_A
+	REND
+	CFLAG:L_A:9 = LOCAL
+	BASE:L_A:0 = MAXBASE:L_A:0
+	BASE:L_A:1 = MAXBASE:L_A:1
+ENDIF
+
+;着替え装着
+SWAP L_A, TARGET
+CALL WEARING_CLOTH_ABLE
+SWAP L_A, TARGET
+
+;一人称の設定
+CALL RANDOM_SELF_CALL, L_A
+
+;年齢or身長などを表示する設定の場合は身体データを設定
+IF GETBIT(FLAG:5,12) || GETBIT(FLAG:5,15)
+	SIF CFLAG:L_A:451 == 0 || CFLAG:L_A:453 == 0
+		CALL CHAR_BODY_GENERATE_WAPPED, L_A
+ENDIF
+
+;能力者技能
+IF !(TALENT:L_A:275 || TALENT:L_A:276 || TALENT:L_A:277 || TALENT:L_A:278 || TALENT:L_A:279)
+	;火之能力者
+	SIF RAND:40 == 0
+		TALENT:L_A:275 = 1
+	;冰之能力者
+	SIF RAND:40 == 0
+		TALENT:L_A:276 = 1
+	;雷之能力者
+	SIF RAND:40 == 0
+		TALENT:L_A:277 = 1
+	;光之能力者
+	SIF RAND:40 == 0
+		TALENT:L_A:278 = 1
+	;暗之能力者
+	SIF RAND:40 == 0
+		TALENT:L_A:279 = 1
+ENDIF
+
+RETURN L_A

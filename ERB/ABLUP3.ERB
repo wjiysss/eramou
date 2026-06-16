@@ -1,0 +1,237 @@
+﻿;肛门感觉のLvUP処理とその可否判定
+;eratohoA ver1,204のスクリプトをベースに処理を簡略化
+;eraIM@Sから導入しました(eramaou)
+;-------------------------------------------------
+;肛门感觉のLvUP
+;-------------------------------------------------
+@ABLUP3
+#DIM CALC
+;各部位感覚封鎖
+CALC = 0
+SIF TALENT:101 & 2
+	CALC ++
+SIF TALENT:103 & 2
+	CALC ++
+SIF TALENT:107 & 2
+	CALC ++
+
+DRAWLINE
+;PRINTL 肛门的感度提升了。
+;PRINTL 肛门感觉越高，越容易在肛交、肛门爱抚等行为得到更大的快感。
+;CUSTOMDRAWLINE ‥
+;最大Lvは5、[尻穴狂い]が付いている場合はLv10まで解放
+
+
+IF ABL:3 >= 5 && TALENT:77 == 0
+	PRINTW 需要特殊素质才能继续提升
+	RETURN 0
+ELSEIF TALENT:105 & 2
+	PRINTW 肛门感觉已经被封锁了
+	RETURN 0
+ELSEIF ABL:3 >= CALC * 5 + 10
+	PRINTW 已达最高级
+	RETURN 0
+ENDIF
+
+;必要な肛门感觉点数
+A = 0
+;必要な肛门经验回数
+B = 0
+
+;条件別にＯＫかダメかを記録する
+;肛门感觉点数による可否（I=0:可、I&1:点数不足、I&2:経験不足）
+I = 0
+
+CALL DECIDE_ABLUP3
+
+PRINTFORM [0] - %PALAMNAME:2%点数×{JUEL:2}/{A} ……
+PRINTV GET_ABLUP_STATE(I)
+PRINTL 
+PRINTFORML       %EXPNAME:1%　　{EXP:1}/{B}
+
+PRINTL [100] - 停止
+
+
+INPUT
+IF (RESULT < 0 || RESULT > 0) && RESULT != 100
+	RESTART
+ELSEIF I != 0 && RESULT == 0
+	PRINTL 未满足条件
+	RESTART
+ELSEIF RESULT == 100
+	RETURN 0
+ENDIF
+
+ABL:3 += 1
+
+IF RESULT == 0
+	JUEL:2 -= A
+ENDIF
+
+PRINTFORML %ABLNAME:3%变为LV{ABL:3}。
+
+RETURN 0
+
+
+;-------------------------------------------------
+@CORE_ABLUP3
+;-------------------------------------------------
+ABL:3++
+
+IF I == 0
+	JUEL:2 -= A
+ENDIF
+
+
+;-------------------------------------------------
+;肛门感觉のLvUP可否判定
+;-------------------------------------------------
+@DECIDE_ABLUP3
+#DIM CALC
+#DIM LCOUNT
+;各部位感覚封鎖
+CALC = 0
+SIF TALENT:101 & 2
+	CALC += 1
+SIF TALENT:103 & 2
+	CALC += 1
+SIF TALENT:107 & 2
+	CALC += 1
+
+;Ａ感覚はLv5が上限、[尻穴狂い]が付いている場合はLv10まで解放
+SIF ABL:3 >= 5 && TALENT:77 == 0
+	RETURN 0
+SIF ABL:3 >= CALC * 5 + 10
+	RETURN 0
+;感覚封鎖されている場合は不可
+SIF TALENT:105 & 2
+	RETURN 0
+
+;判定変数を空に
+A = 0
+B = 0
+I = 0
+
+IF ABL:3 == 0
+	A = 1
+	B = 2
+ELSEIF ABL:3 == 1
+	A = 20
+	B = 10
+ELSEIF ABL:3 == 2
+	A = 400
+	B = 30
+ELSEIF ABL:3 == 3
+	A = 8000
+	B = 75
+ELSEIF ABL:3 == 4
+	A = 20000
+	B = 150
+ELSEIF ABL:3 == 5
+	A = 40000
+	B = 180
+ELSEIF ABL:3 == 6
+	A = 60000
+	B = 250
+ELSEIF ABL:3 == 7
+	A = 90000
+	B = 350
+ELSEIF ABL:3 == 8
+	A = 120000
+	B = 500
+ELSEIF ABL:3 == 9
+	A = 180000
+	B = 600
+ELSEIF ABL:3 < 15
+	A = 180000
+	B = 600
+	FOR LCOUNT, 0, (ABL:3 - 9)
+		A = A * 125 / 100
+		B = B * 115 / 100
+	NEXT
+ELSEIF ABL:3 < 20
+	A = 362000
+	B = 966
+	FOR LCOUNT, 0, (ABL:3 - 14)
+		A = A * 120 / 100
+		B = B * 120 / 100
+	NEXT
+ELSEIF ABL:3 < 25
+	A = 583000
+	B = 1942
+	FOR LCOUNT, 0, (ABL:3 - 19)
+		A = A * 115 / 100
+		B = B * 125 / 100
+	NEXT
+ENDIF
+
+;戒备森严
+IF TALENT:27
+	IF ABL:3 == 4
+		TIMES A , 2.00
+		TIMES B , 2.00
+	ELSEIF ABL:3 == 5
+		TIMES A , 2.50
+		TIMES B , 2.50
+	ELSEIF ABL:3 >= 6
+		TIMES A , 3.00
+		TIMES B , 3.00
+	ENDIF
+ENDIF
+
+;A鈍感
+IF TALENT:105
+	TIMES A , 1.20
+	TIMES B , 1.10
+ENDIF
+
+;他部位の封鎖数
+IF ABL:3 > 5 && ABL:3 <= 10 && CALC > 0
+	A = A * (15 - CALC) / 15
+	B = B * (20 - CALC) / 20
+ELSEIF ABL:3 <= 15 && CALC > 1
+	A = A * (16 - CALC) / 15
+	B = B * (21 - CALC) / 20
+ELSEIF ABL:3 <= 20 && CALC > 2
+	A = A * (17 - CALC) / 15
+	B = B * (22 - CALC) / 20
+ENDIF
+
+;淫乱
+IF TALENT:76
+	TIMES A , 0.80
+	TIMES B , 0.80
+ENDIF
+;尻穴狂
+IF TALENT:77
+	TIMES A , 0.80
+	TIMES B , 0.80
+ENDIF
+;A敏感
+IF TALENT:106
+	TIMES A , 0.80
+	TIMES B , 0.80
+ENDIF
+
+;最低でも1個は必要
+SIF A < 1
+	A = 1
+SIF B < 1
+	B = 1
+
+;肛门点数は足りている？
+SIF JUEL:2 < A
+	I |= 1
+;肛门经验は足りているか？
+SIF EXP:1 < B
+	I |= 2
+
+IF I == 0
+	RETURN 1
+ELSE
+	RETURN 0
+ENDIF
+
+;
+;
+;

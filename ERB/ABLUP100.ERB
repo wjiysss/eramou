@@ -1,0 +1,156 @@
+﻿;-------------------------------------------------
+;异界综合征の消去処理
+;-------------------------------------------------
+@ABLUP100
+DRAWLINE
+;PRINTL 异界综合征有所緩解了。
+;PRINTL 异界综合征的程度越严重，对于异界的反应会越差。
+;CUSTOMDRAWLINE ‥
+;异界综合征が存在しない場合
+IF MARK:10 <= 0
+	PRINTL 并没有异界异常反应
+	WAIT
+	RETURN 0
+ENDIF
+
+;必要な感覚LV
+C = 0
+;必要な戦闘レベル
+B = 0
+;必要な异界点数
+A = 0
+
+;条件別にＯＫかダメかを記録する
+I = 0
+
+CALL DECIDE_ABLUP100
+
+;异界综合征Lv+5Lvの何の感覚が必、あるいは
+PRINTFORML 各处感觉总计{MARK:10 + 5}以上(现在{C})或
+
+;异界综合征Lv*10の戦闘レベルが必要、そして
+PRINTFORML 战斗等级LV{B}以上(现在LV{CFLAG:9})必要，然后
+
+PRINTFORM [0] - %EXPNAME:99%点数×{EXP:99}/{A} ……
+PRINTV GET_ABLUP_STATE(I)
+PRINTL 
+
+PRINTL [100] - 停止
+
+INPUT
+IF RESULT != 0 && RESULT != 100
+	RESTART
+ELSEIF I != 0 && RESULT == 0
+	PRINTL 未满足条件
+	RESTART
+ELSEIF RESULT == 100
+	RETURN 0
+ENDIF
+
+MARK:10 -= 1
+
+EXP:99 -= A
+
+PRINTFORML %MARKNAME:10%下降为LV{MARK:10}。
+
+RETURN 0
+
+
+;-------------------------------------------------
+@CORE_ABLUP100
+;-------------------------------------------------
+MARK:10 --
+
+IF I == 0
+	EXP:99 -= A
+ENDIF
+
+
+;-------------------------------------------------
+;异界综合征の消去可否判定
+;-------------------------------------------------
+@DECIDE_ABLUP100
+;反抗刻印が存在しない場合
+SIF MARK:10 <= 0
+	RETURN 0
+
+;判定変数を空に
+I = 0
+
+B = 0
+
+IF MARK:10 == 1
+	A = 2000
+ELSEIF MARK:10 == 2
+	A = 5000
+ELSEIF MARK:10 == 3
+	A = 15000
+ELSEIF MARK:10 == 4
+	A = 30000
+ELSEIF MARK:10 == 5
+	A = 50000
+ENDIF
+
+;胆小
+IF TALENT:10
+	TIMES A, 1.20
+ENDIF
+
+;智慧
+IF TALENT:172
+	TIMES A, 0.80
+ENDIF
+
+;刚强
+IF TALENT:12
+	TIMES A , 1.80
+ENDIF
+
+;嚣张
+IF TALENT:16
+	TIMES A , 1.20
+ENDIF
+
+;坦率
+IF TALENT:13
+	TIMES A , 0.50
+ENDIF
+
+;爱慕
+IF TALENT:85
+	TIMES A , 0.50
+ENDIF
+
+;淫乱
+IF TALENT:76
+	TIMES A , 0.70
+ENDIF
+
+M = 0
+;异界综合征Lv+5Lvの何の感覚が必、あるいは
+C = ABL:0 + ABL:1 + ABL:2 + ABL:3 + ABL:4
+SIF MARK:10 < C - 5
+	M += 1
+
+;异界综合征Lv*10の戦闘レベルが必要、そして
+B = MARK:10 * 10
+SIF B > CFLAG:9
+	M += 1
+
+SIF M == 2
+	I |= 4
+	
+M = 0
+	
+;必要な异界点数不足
+SIF EXP:99 < A
+	I |= 2
+
+IF I == 0
+	RETURN 1
+ELSE
+	RETURN 0
+ENDIF
+;
+;
+;

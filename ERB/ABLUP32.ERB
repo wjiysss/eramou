@@ -1,0 +1,385 @@
+﻿;精液中毒のLvUP処理とその可否判定
+;eratohoA ver1,204のスクリプトをベースに処理を簡略化
+;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;精液中毒のLvUP
+;-------------------------------------------------
+@ABLUP32
+DRAWLINE
+;PRINTL 奴隶的精液成瘾加深了。
+;PRINTL 精液中毒越高，越容易在被射以及饮精中感到满足，
+;PRINTL 长期没有感到精液的气息，会让她躁动不安。
+;CUSTOMDRAWLINE ‥
+;精液中毒はLv5が上限
+;[淫乱][快速学习][不怕污臭][不怕脏][喜欢精液]が付いている場合はLv10まで开放
+IF ABL:32 >= 5 && (TALENT:76 == 0 && TALENT:50 == 0 && TALENT:61 == 0 && TALENT:64 == 0 && TALENT:47 == 0)
+	PRINTW 需要特殊素质才能继续提升
+	RETURN 0
+ELSEIF ABL:32 >= 10
+	PRINTW 已达最高级
+	RETURN 0
+;精液中毒＋百合中毒＋兽奸中毒は11以上にならない
+;でも、珠が沢山あるの場合はレベルアップできる。
+ELSEIF ABL:32 + ABL:33 + ABL:39 >= 10
+	IF JUEL:5 < ABL:32 * ABL:32 * 6500 || JUEL:6 < ABL:32 * ABL:32 * 19000
+	PRINTFORML 精液中毒({ABL:32})＋百合中毒({ABL:33})＋兽奸中毒({ABL:39})上限为10
+	PRINTFORML 至少达成%PALAMNAME:5%点数{ABL:32 * ABL:32 * 4000}点或%PALAMNAME:6%点数{ABL:32 * ABL:32 * 19000}点的其中一项
+	PRINTFORMW 方可提升当前精液中毒的等级
+	RETURN 0
+	ENDIF
+ENDIF
+
+;必要な欲情点数
+A = 0
+;必要な屈服点数
+B = 0
+;必要な精液经验
+C = 0
+;必要な异常经验回数
+D = 0
+
+;条件別にＯＫかダメかを記録する
+;精液经验多いバージョンの可否（I=0:可、I&1:点数不足、I&2:経験不足、I&4:能力不足）
+I = 0
+;精液经验少ないバージョンの可否（J=0:可、J&1:点数不足、J&2:経験不足、J&4:能力不足）
+J = 0
+
+CALL DECIDE_ABLUP32
+
+;ＬＶ２から３、ＬＶ３から４、４から５に上げるときは异常经验必要（素質：[不怕污臭][容易上瘾]なら無視できる）
+SIF D > 0
+	PRINTFORML %EXPNAME:50%{D}以上(现在{EXP:50})且
+
+;侍奉精神が精液中毒＋１レベルでないといけない([淫乱]がない場合)
+IF TALENT:76 == 0
+	PRINTFORML %ABLNAME:16%LV{ABL:32 + 1}以上(现在LV{ABL:16})且
+ELSEIF TALENT:76 == 1
+;欲望が精液中毒＋１レベルでないといけない([淫乱]がある場合)
+	PRINTFORML %ABLNAME:11%LV{ABL:32 + 1}以上(现在LV{ABL:11})且
+ENDIF
+
+;精液经验多いバージョン
+PRINTFORM [0] - %PALAMNAME:5%点数×{JUEL:5}/{A} ……
+PRINTV GET_ABLUP_STATE(I)
+PRINTL 
+PRINTFORML 　　　%PALAMNAME:6%点数×{JUEL:6}/{B}
+PRINTFORML 　　　%EXPNAME:20%　{EXP:20}/{C}
+
+;精液经验少ないバージョン
+PRINTFORM [1] - %PALAMNAME:5%点数×{JUEL:5}/{A*3} ……
+PRINTV GET_ABLUP_STATE(J)
+PRINTL 
+PRINTFORML 　　　%PALAMNAME:6%点数×{JUEL:6}/{B*3}
+PRINTFORML 　　　%EXPNAME:20%　{EXP:20}/{C/2}
+
+PRINTL [100] - 停止
+
+INPUT
+IF (RESULT < 0 || RESULT > 1) && RESULT != 100
+	RESTART
+ELSEIF I != 0 && RESULT == 0
+	PRINTL 未满足条件
+	RESTART
+ELSEIF J != 0 && RESULT == 1
+	PRINTL 未满足条件
+	RESTART
+ELSEIF RESULT == 100
+	RETURN 0
+ENDIF
+
+ABL:32 += 1
+
+IF RESULT == 0
+	JUEL:5 -= A
+	JUEL:6 -= B
+ELSEIF RESULT == 1
+	JUEL:5 -= A*3
+	JUEL:6 -= B*3
+ENDIF
+
+PRINTFORML %ABLNAME:32%变为LV{ABL:32}。
+
+RETURN 0
+
+
+;-------------------------------------------------
+@CORE_ABLUP32
+;-------------------------------------------------
+ABL:32 ++
+
+IF I == 0
+	JUEL:5 -= A
+	JUEL:6 -= B
+ELSEIF J == 0
+	JUEL:5 -= A*3
+	JUEL:6 -= B*3
+ENDIF
+
+
+;-------------------------------------------------
+;精液中毒のLvUP可否判定
+;-------------------------------------------------
+@DECIDE_ABLUP32
+;精液中毒はLv5が上限
+;[淫乱][快速学习][不怕污臭][不怕脏][喜欢精液]が付いている場合はLv10まで开放
+SIF ABL:32 >= 10
+	RETURN 0
+SIF ABL:32 >= 5 && (TALENT:76 == 0 && TALENT:50 == 0 && TALENT:61 == 0 && TALENT:64 == 0 && TALENT:47 == 0)
+	RETURN 0
+;精液中毒＋百合中毒＋兽奸中毒は11以上にならない
+SIF ABL:32 + ABL:33 + ABL:39 >= 30
+	RETURN 0
+
+;判定変数を空に
+I = 0
+J = 0
+
+A = 0
+B = 0
+C = 0
+D = 0
+
+IF ABL:32 == 0
+	A = 3000
+	B = 10000
+	C = 10
+ELSEIF ABL:32 == 1
+	A = 8000
+	B = 20000
+	C = 25
+ELSEIF ABL:32 == 2
+	A = 15000
+	B = 35000
+	C = 40
+ELSEIF ABL:32 == 3
+	A = 30000
+	B = 60000
+	C = 80
+ELSEIF ABL:32 == 4
+	A = 50000
+	B = 130000
+	C = 200
+ELSEIF ABL:32 == 5
+	A = 65000
+	B = 190000
+	C = 500
+ELSEIF ABL:32 == 6
+	A = 90000
+	B = 300000
+	C = 800
+ELSEIF ABL:32 == 7
+	A = 120000
+	B = 500000
+	C = 1200
+ELSEIF ABL:32 == 8
+	A = 200000
+	B = 800000
+	C = 1500
+ELSEIF ABL:32 == 9
+	A = 500000
+	B = 1500000
+	C = 2000
+ENDIF
+
+IF ABL:32 + ABL:33 + ABL:39 >= 10
+	A = ABL:32 * ABL:32 * 4000
+	B = ABL:32 * ABL:32 * 19000
+ENDIF
+
+;戒备森严
+IF TALENT:27
+	IF ABL:32 == 3
+		TIMES A , 1.50
+		TIMES B , 1.50
+		TIMES C , 1.50
+	ELSEIF ABL:32 == 4
+		TIMES A , 2.00
+		TIMES B , 2.00
+		TIMES C , 2.00
+	ELSEIF ABL:32 == 5
+		TIMES A , 2.50
+		TIMES B , 2.50
+		TIMES C , 2.50
+	ELSEIF ABL:32 >= 6
+		TIMES A , 3.00
+		TIMES B , 3.00
+		TIMES C , 3.00
+	ENDIF
+ENDIF
+
+;ＬＶ２以上に上げるときは异常经验必要（素質：[不怕污臭][容易上瘾][倒錯的][疯狂][喜欢精液]なら無視できる）
+SIF ABL:32 >= 2 && (TALENT:61 == 0 && TALENT:72 == 0 && TALENT:80 == 0 && TALENT:123 == 0 && TALENT:47 == 0)
+	D = ABL:32 - 1
+
+;反抗心
+IF TALENT:11
+	TIMES A , 1.50
+	TIMES B , 1.50
+	TIMES C , 1.50
+ENDIF
+;感情淡薄
+IF TALENT:22
+	TIMES A , 0.95
+	TIMES B , 0.95
+	TIMES C , 0.95
+ENDIF
+;保守的
+IF TALENT:24
+	TIMES A , 1.20
+	TIMES B , 1.20
+	TIMES C , 1.20
+ENDIF
+
+;压抑
+IF TALENT:32
+	TIMES A , 1.20
+	TIMES B , 1.20
+	TIMES C , 1.20
+;开放
+ELSEIF TALENT:33
+	TIMES A , 0.80
+	TIMES B , 0.80
+	TIMES C , 0.80
+ENDIF
+
+;抵抗
+IF TALENT:34
+	TIMES A , 2.00
+	TIMES B , 2.00
+	TIMES C , 2.00
+ENDIF
+
+;喜欢精液
+IF TALENT:47
+	TIMES A , 0.50
+	TIMES B , 0.50
+	TIMES C , 0.50
+ENDIF
+
+;擅用舌头
+IF TALENT:52
+	TIMES A , 0.95
+	TIMES B , 0.95
+	TIMES C , 0.95
+ENDIF
+
+;不怕污臭
+IF TALENT:61
+	TIMES A , 0.90
+	TIMES B , 0.90
+	TIMES C , 0.90
+;反感污臭
+ELSEIF TALENT:62
+	TIMES A , 2.00
+	TIMES B , 2.00
+	TIMES C , 2.00
+ENDIF
+;不怕脏
+IF TALENT:64
+	TIMES A , 0.90
+	TIMES B , 0.90
+	TIMES C , 0.90
+ENDIF
+
+;容易上瘾
+IF TALENT:72
+	TIMES A , 0.50
+	TIMES B , 0.50
+	TIMES C , 0.50
+ENDIF
+;容易陷落
+IF TALENT:73
+	TIMES A , 0.50
+	TIMES B , 0.50
+	TIMES C , 0.50
+ENDIF
+;淫乱
+IF TALENT:76
+	TIMES A , 0.90
+	TIMES B , 0.90
+	TIMES C , 0.90
+ENDIF
+;倒錯的
+IF TALENT:80
+	TIMES A , 0.75
+	TIMES B , 0.75
+	TIMES C , 0.75
+ENDIF
+;小恶魔
+IF TALENT:87
+	TIMES A , 0.95
+	TIMES B , 0.95
+	TIMES C , 0.95
+ENDIF
+;疯狂
+IF TALENT:123
+	TIMES A , 0.90
+	TIMES B , 0.90
+	TIMES C , 0.90
+ENDIF
+;崩坏
+IF TALENT:9
+	TIMES A , 0.90
+	TIMES B , 0.90
+	TIMES C , 0.90
+ENDIF
+
+;最低でも1個か1回は必要
+SIF A < 1
+	A = 1
+SIF B < 1
+	B = 1
+SIF C < 1
+	C = 1
+
+IF D > EXP:50
+	;异常经验が不足
+	I |= 2
+	J |= 2
+ENDIF
+
+;侍奉精神が精液中毒＋１レベルでないといけない([淫乱]がない場合)
+IF TALENT:76 == 0
+	IF ABL:16 < ABL:32 + 1
+		I |= 4
+		J |= 4
+	ENDIF
+ELSEIF TALENT:76 == 1
+;欲望が精液中毒＋１レベルでないといけない([淫乱]がある場合)
+	IF ABL:11 < ABL:32 + 1
+		I |= 4
+		J |= 4
+	ENDIF
+ENDIF
+
+;精液经验多いバージョン
+;欲情点数が不足
+SIF JUEL:5 < A
+	I |= 1
+;屈服点数が不足
+SIF JUEL:6 < B
+	I |= 1
+;精液经验が不足
+SIF EXP:20 < C
+	I |= 2
+
+;精液经验少ないバージョン
+;欲情点数が不足
+SIF JUEL:5 < A*3
+	J |= 1
+;屈服点数が不足
+SIF JUEL:6 < B*3
+	J |= 1
+;精液经验が不足
+SIF EXP:20 < C/2
+	J |= 2
+
+IF I == 0 || J == 0
+	RETURN 1
+ELSE
+	RETURN 0
+ENDIF
+;
+;
+;

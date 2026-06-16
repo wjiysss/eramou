@@ -1,0 +1,1011 @@
+﻿;アイテム消耗品全般
+
+;----------------------------------------
+@USE_EX_ITEM,ARGS
+#DIM APPRAISE
+;----------------------------------------
+;条件を満たすとアイテムをひとつ使用する
+;ARGS = タイミング
+
+LOCAL = 560
+
+REPEAT 5
+	LOCAL:1 = CFLAG:A:LOCAL
+	APPRAISE = 0
+	
+	;未鑑定品チェック
+	IF LOCAL:1 > 1000
+		LOCAL:1 -= 1000
+		APPRAISE = 1
+	ENDIF
+	
+	;RESULTは使用チェック
+	RESULT = 0
+	
+	;HPが60%以下だと草药使用
+	IF BASE:A:0 < (MAXBASE:A:0 * 6) / 10 && LOCAL:1 == 400
+		CALL HARB_ITEM, APPRAISE
+	;気力が60%以下だと回复药水使用
+	ELSEIF BASE:A:1 < (MAXBASE:A:1 * 6) / 10 && LOCAL:1 == 401
+		CALL POTION_ITEM, APPRAISE
+	;HPが80%以下だと回复之杖使用
+	ELSEIF BASE:A:0 < (MAXBASE:A:0 * 8) / 10 && LOCAL:1 == 402
+		CALL HEAL_ROD_ITEM, APPRAISE
+	;気力が80%以下だと精神之杖使用
+	ELSEIF BASE:A:1 < (MAXBASE:A:1 * 8) / 10 && LOCAL:1 == 403
+		CALL MIND_ROD_ITEM, APPRAISE
+	ELSEIF LOCAL:1 == 404
+		CALL POWER_SEED_ITEM, APPRAISE
+	ELSEIF LOCAL:1 == 405
+		CALL DEF_SEED_ITEM, APPRAISE
+	ELSEIF LOCAL:1 == 406
+		CALL EXP_MEDAL_ITEM, APPRAISE
+	ELSEIF LOCAL:1 == 407
+		CALL HP_SEED_ITEM, APPRAISE
+	ELSEIF LOCAL:1 == 408
+		CALL MP_SEED_ITEM, APPRAISE
+	ELSEIF LOCAL:1 == 409
+		CALL EXP_SILVER_ITEM, APPRAISE
+	ELSEIF LOCAL:1 == 410
+		CALL DETOX_WORM_ITEM, APPRAISE
+	;宝石箱はランダム使用。USE HELIX FOSSIL
+	ELSEIF LOCAL:1 == 411 && RAND:5 == 0
+		CALL JUEL_BOX_ITEM, APPRAISE
+	ELSEIF LOCAL:1 == 412 && ARGS == "战斗中" && GETBIT(CFLAG:A:503,7) == 0
+		;戦闘中かつ透明化状態でない場合
+		CALL INVISIBLE_POTION_ITEM, APPRAISE
+	ELSEIF LOCAL:1 == 413 && ARGS == "战斗中" && GETBIT(CFLAG:A:503,8) == 0
+		;戦闘中かつ英雄状態でない場合
+		CALL HERO_POTION_ITEM, APPRAISE
+	ENDIF
+	
+	SIF RESULT != 0
+		CFLAG:A:LOCAL = 0
+	
+	LOCAL += 1
+REND
+
+
+
+
+RETURN 0
+
+;----------------------------------------
+@SELL_EX_ITEM,ARG
+#DIM SELL_FLAG
+#DIM SELL_ALL
+#DIM GET_MONEY
+;----------------------------------------
+;ランダムでアイテムをひとつ売る
+
+LOCAL = 560
+SELL_ALL = 0
+GET_MONEY = 0
+
+REPEAT 5
+	LOCAL:1 = CFLAG:ARG:LOCAL
+	SELL_FLAG = 0
+	
+	;未鑑定品は確定売却
+	IF LOCAL:1 > 1000
+		LOCAL:1 -= 1000
+		SELL_FLAG = 1
+	ENDIF
+	
+	;ランダムで売却
+	SIF RAND:10 == 0
+		SELL_FLAG = 1
+	
+	IF SELL_FLAG == 1
+		CFLAG:ARG:LOCAL = 0
+		SELL_ALL += 1
+		GET_MONEY += 200
+		IF LOCAL:1 == 411
+			;宝石箱は売却額が高い（合計1000）
+			GET_MONEY += 800
+		ENDIF
+		
+		;元商人の売却ボーナス
+		SIF TALENT:ARG:成为勇者前的生活 == 15
+			GET_MONEY += 100
+		
+	ENDIF
+	
+	
+	LOCAL += 1
+REND
+
+IF SELL_ALL > 0 && GET_MONEY > 0
+	PRINTFORML %SAVESTR:ARG%卖掉了{SELL_ALL}个道具，获得了{GET_MONEY}点资金。
+	CFLAG:ARG:580 += GET_MONEY
+ENDIF
+
+
+RETURN 0
+
+;---------------------------------------
+@ADD_EX_ITEM, ARG:0, ARG:1, ARG:2
+#DIM ITEM_MAX
+;---------------------------------------
+;アイテムを入手する。Xは入手するアイテムID。Aはキャラ
+;ARG:0 == -1のときはランダム
+;ARG:0 == -2のときは武器限定
+;ARG:0 == -3のときは消耗品限定
+
+;ARG:1 == 入手キャラ
+;ARG:2 == 0=未鑑定品あり 1=購入 2=下賜
+
+;アイテムを増やした時はここを増やす
+ITEM_MAX = 14
+SIF ARG:0 == -1
+	ARG:0 = RAND:ITEM_MAX + 400
+
+;ランダムで武器を入手する
+IF RAND:4 == 0 || ARG:0 == -2
+	;強度から見て更新の必要があるか判定
+	LOCAL:0 = CFLAG:(ARG:1):501
+	LOCAL:1 = CFLAG:(ARG:1):550 % 100000 / 1000
+	w:0 = CFLAG:(ARG:1):550
+	;显示现有武器情况
+	PRINTFORM 现持武器是
+	CALL PRINT_EQUIPTYPE_WEAPON
+	PRINTFORMDL ，等级{local:1}
+	;现有武器等级高于层数不更换
+	IF LOCAL:0 <= LOCAL:1
+		PRINTFORMDL 没有必要更换。
+		RETURN 0
+	ENDIF
+
+	;无法装备不更换	
+
+	;新しい武器を追加するときはこのランダム値を弄ること
+	W:8 = RAND:11 + 340
+	
+	;触手装備は除外
+	SIF W:8 == 349
+		W:8 = 340
+	
+	CALL GET_EQUIP_NUM
+
+;*****************************获得新装备，判断是否属于可以使用的装备**************************
+	W:1 = W:0 % 1000
+	IF USEABLE_EQUIPMENT(ARG:1,W:1) == 0
+		CALL PRINT_EQUIPTYPE_WEAPON
+		PRINTFORML 不是其趁手的装备
+		RETURN 0
+	ENDIF
+;**********************************************************************************************
+
+	;入手階層に応じた強度になる
+	W:0 += CFLAG:(ARG:1):501 * 1000
+	
+	;接頭語追加
+	;接頭語を拡張するときはこの値を弄ること
+	W:0 += RAND:10 * 100000
+	
+	CFLAG:(ARG:1):550 = W:0
+	;显示更换后武器
+
+	PRINTFORM 经过考虑，更换成
+	CALL PRINT_EQUIPTYPE_WEAPON
+	PRINTFORML 了
+	RETURN W:8
+ENDIF
+
+SIF ARG:0 == -3
+	ARG:0 = RAND:ITEM_MAX + 400
+
+;侵攻中の勇者の場合、未鑑定品を入手する可能性がある
+SIF CFLAG:(ARG:1):1 == 2 && RAND:4 == 0
+	ARG:0 += 1000
+
+;購入の場合、未鑑定品にならない
+SIF ARG:0 > 1000 && ARG:2 >= 1
+	ARG:0 -= 1000
+
+;即座に鑑定を行う。神官・盗贼は鑑定成功率が高い
+LOCAL:2 = 0
+IF ARG:0 > 1000
+	IF TALENT:(ARG:1):202 || TALENT:(ARG:1):203
+		LOCAL:2 = RAND:2
+	ELSE
+		LOCAL:2 = RAND:5
+	ENDIF
+ENDIF
+
+IF ARG:0 > 1000 && LOCAL:2 == 0
+	PRINT 【鉴定成功】
+	ARG:0 -= 1000
+ENDIF
+
+LOCAL = 560
+
+REPEAT 5
+	LOCAL:1 = CFLAG:(ARG:1):LOCAL
+	
+	IF LOCAL:1 <= 0
+		CFLAG:(ARG:1):LOCAL = ARG:0
+		PRINTFORM %SAVESTR:(ARG:1)%将
+		
+		CALL EX_ITEM_NAME,ARG:0
+		
+		IF ARG:2 == 1
+			PRINTW 买下了
+		ELSE
+			PRINTW 入手了
+		ENDIF
+		
+		RETURN ARG:0
+	ENDIF
+	
+	LOCAL += 1
+REND
+
+RETURN 0
+
+;*************************判断装备是否可以使用**********************
+@USEABLE_EQUIPMENT,ARG,ARG:1 
+#FUNCTION
+;--------------------------------------
+;戒指
+SIF ARG:1 >= 0 && ARG:1 <= 20
+	RETURNF 1
+
+;40剑
+;41法杖
+;42鞭子
+;43匕首
+;44手里剑
+;45弓箭
+;46权杖
+;47战锤
+;48镰刀
+;50细剑
+;51偃月刀
+;52指虎
+
+IF TALENT:ARG:200
+	IF ARG:1 == 40 || ARG:1 == 42 || ARG:1 == 43 || ARG:1 == 47 || ARG:1 == 48 || ARG:1 == 50 || ARG:1 == 51 || ARG:1 == 52
+		RETURNF 1
+	ELSE
+		RETURNF 0
+	ENDIF
+ENDIF
+
+IF TALENT:ARG:201
+	IF ARG:1 == 41 || ARG:1 == 46
+		RETURNF 1
+	ELSE
+		RETURNF 0
+	ENDIF
+ENDIF
+
+IF TALENT:ARG:202
+	IF ARG:1 == 41 || ARG:1 == 46
+		RETURNF 1
+	ELSE
+		RETURNF 0
+	ENDIF
+ENDIF
+
+IF TALENT:ARG:203
+	IF ARG:1 == 42 || ARG:1 == 43 || ARG:1 == 44 || ARG:1 == 50 || ARG:1 == 52
+		RETURNF 1
+	ELSE
+		RETURNF 0
+	ENDIF
+ENDIF
+
+IF TALENT:ARG:205
+	IF ARG:1 == 40 || ARG:1 == 42 || ARG:1 == 43 || ARG:1 == 47 || ARG:1 == 48 || ARG:1 == 50
+		RETURNF 1
+	ELSE
+		RETURNF 0
+	ENDIF
+ENDIF
+
+IF TALENT:ARG:206
+	IF ARG:1 == 40 || ARG:1 == 41 || ARG:1 == 42 || ARG:1 == 43 || ARG:1 == 44 || ARG:1 == 45 || ARG:1 == 46 || ARG:1 == 47 || ARG:1 == 48 || ARG:1 == 50 || ARG:1 == 51
+		RETURNF 1
+	ELSE
+		RETURNF 0
+	ENDIF
+ENDIF
+
+IF TALENT:ARG:207
+	IF ARG:1 == 43 || ARG:1 == 44 || ARG:1 == 50 || ARG:1 == 52
+		RETURNF 1
+	ELSE
+		RETURNF 0
+	ENDIF
+ENDIF
+
+IF TALENT:ARG:208
+	IF ARG:1 == 43 || ARG:1 == 45
+		RETURNF 1
+	ELSE
+		RETURNF 0
+	ENDIF
+ENDIF
+;--------------------------------------
+@HARB_ITEM, ARG:0
+;--------------------------------------
+;HP500回復。ID400
+
+LOCAL = 0
+
+;未鑑定品は1/2の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:2 == 0
+	LOCAL = 1
+
+IF LOCAL == 1
+	;欲情点数
+	JUEL:A:5 += 30
+ELSE
+	BASE:A:0 += 500
+	SIF BASE:A:0 > MAXBASE:A:0
+		BASE:A:0 = MAXBASE:A:0
+ENDIF
+
+	
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%把
+	
+	IF ARG:0 == 0
+		PRINT 草药
+	ELSE
+		PRINT 【谜之草】
+	ENDIF
+	
+	PRINT 吃掉了！
+	
+	IF LOCAL == 1
+		PRINTFORML 这是快乐草的叶片！(欲情点数+30)
+	ELSE
+		PRINTFORML (HP+500)
+	ENDIF
+	
+ENDIF
+
+RETURN 1
+
+;--------------------------------------
+@POTION_ITEM, ARG:0
+;--------------------------------------
+;気力500回復。ID401
+
+LOCAL = 0
+
+;未鑑定品は1/2の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:2 == 0
+	LOCAL = 1
+
+IF LOCAL == 1
+	;精液经验
+	EXP:A:20 += 1
+ELSE
+	BASE:A:1 += 500
+	SIF BASE:A:1 > MAXBASE:A:1
+		BASE:A:1 = MAXBASE:A:1
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%把
+	
+	IF ARG:0 == 0
+		PRINT 恢复药水
+	ELSE
+		PRINT 【谜之液体】
+	ENDIF
+	
+	PRINT 喝掉了！
+	
+	IF LOCAL == 1
+		PRINTFORML 呕，这是精液！(精液经验+1)
+	ELSE
+		PRINTFORML (气力+500)
+	ENDIF
+	
+ENDIF
+
+RETURN 1
+
+;--------------------------------------
+@HEAL_ROD_ITEM, ARG:0
+;--------------------------------------
+;HP200回復。たまに壊れる。ID402
+
+LOCAL = 0
+
+;未鑑定品は1/2の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:2 == 0
+	LOCAL = 1
+
+IF LOCAL == 1
+	;自慰经验
+	EXP:A:10 += 1
+	;阴核点数
+	JUEL:A:0 += 10
+	;欲情点数
+	JUEL:A:5 += 20
+ELSE
+	BASE:A:0 += 200
+	SIF BASE:A:0 > MAXBASE:A:0
+		BASE:A:0 = MAXBASE:A:0
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%把
+	
+	IF ARG:0 == 0
+		PRINT 回复之杖
+	ELSE
+		PRINT 【谜之杖】
+	ENDIF
+	
+	PRINT 挥动着！
+	
+	IF LOCAL == 1
+		PRINTFORML 这是被诅咒的振动杖！
+		PRINTFORML %SAVESTR:A%在催眠状态下开始自慰
+		PRINTL 自慰经验+1
+		PRINTL 欲情点数+20
+		PRINTL 阴核点数+10
+	ELSE
+		PRINTFORML (HP+200)
+	ENDIF
+	
+ENDIF
+
+;未鑑定品は確定で破壊
+SIF ARG:0 > 0
+	RETURN 1
+
+;杖は破壊されないことがある
+SIF RAND:3 > 0
+	RETURN 0
+
+RETURN 1
+
+;--------------------------------------
+@MIND_ROD_ITEM, ARG:0
+;--------------------------------------
+;気力200回復。たまに壊れる。ID403
+
+LOCAL = 0
+
+;未鑑定品は1/2の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:2 == 0
+	LOCAL = 1
+
+;A経験が無い場合無しに
+SIF EXP:A:1 == 0
+	LOCAL = 0
+
+IF LOCAL == 1
+	;自慰经验
+	EXP:A:10 += 1
+	;肛门经验
+	EXP:A:1 += 1
+	;肛门点数
+	JUEL:A:2 += 10
+	;欲情点数
+	JUEL:A:5 += 20
+ELSE
+	BASE:A:1 += 200
+	SIF BASE:A:1 > MAXBASE:A:1
+		BASE:A:1 = MAXBASE:A:1
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%把
+	
+	IF ARG:0 == 0
+		PRINT 精神之杖
+	ELSE
+		PRINT 【谜之杖】
+	ENDIF
+	
+	PRINT 挥动着！
+	
+	IF LOCAL == 1
+		PRINTFORML 这是被诅咒的肛门振动杖！
+		PRINTFORML %SAVESTR:A%在催眠状态下开始自慰
+		PRINTL 自慰经验+1
+		PRINTL 肛门经验+1
+		PRINTL 欲情点数+20
+		PRINTL 肛门点数+10
+	ELSE
+		PRINTFORML (气力+200)
+	ENDIF
+	
+ENDIF
+
+;未鑑定品は確定で破壊
+SIF ARG:0 > 0
+	RETURN 1
+
+;杖は破壊されないことがある
+SIF RAND:3 > 0
+	RETURN 0
+
+RETURN 1
+
+;-----------------------------------------
+@POWER_SEED_ITEM, ARG:0
+;-----------------------------------------
+;力之种子。ID404
+
+LOCAL = 0
+
+;未鑑定品は1/4の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:4 == 0
+	LOCAL = 1
+
+IF LOCAL == 1
+	;阴核感度上昇
+	IF TALENT:A:101 == 1
+		;C鈍感消去
+		TALENT:A:101 = 0
+	ELSEIF TALENT:A:101 == 0 && TALENT:A:102 == 0
+		;C敏感
+		TALENT:A:102 = 1
+	ELSE
+		;阴核点数
+		JUEL:A:0 += 10
+	ENDIF
+ELSE
+	CFLAG:A:13 += 1
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%把
+	
+	IF ARG:0 == 0
+		PRINT 力量种子
+	ELSE
+		PRINT 【谜之种子】
+	ENDIF
+	
+	PRINT 吃掉了！
+	
+	IF LOCAL == 1 &&  TALENT:A:122
+		PRINTFORML 吃掉的是阴茎敏感之种子！(阴茎感度上昇)
+	ELSEIF LOCAL == 1 &&  TALENT:A:121
+		PRINTFORML 吃掉的是阴茎敏感之种子！(阴茎感度上昇)
+	ELSEIF LOCAL == 1
+		PRINTFORML 吃掉的是阴蒂敏感之种子！(阴蒂感度上昇)
+	ELSE
+		PRINTFORML （攻击力+1）
+	ENDIF
+	
+ENDIF
+
+RETURN 1
+
+;-----------------------------------------
+@DEF_SEED_ITEM, ARG:0
+;-----------------------------------------
+;守之种子。ID405
+
+LOCAL = 0
+
+;未鑑定品は1/4の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:4 == 0
+	LOCAL = 1
+
+IF LOCAL == 1
+	;乳房感度上昇
+	IF TALENT:A:107 == 1
+		;B鈍感消去
+		TALENT:A:107 = 0
+	ELSEIF TALENT:A:107 == 0 && TALENT:A:108 == 0
+		;B敏感
+		TALENT:A:108 = 1
+	ELSE
+		;乳房点数
+		JUEL:A:14 += 10
+	ENDIF
+ELSE
+	CFLAG:A:14 += 1
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%把
+	
+	IF ARG:0 == 0
+		PRINT 守护种子
+	ELSE
+		PRINT 【谜之种子】
+	ENDIF
+	
+	PRINT 吃掉了！
+	
+	IF LOCAL == 1
+		PRINTFORML 吃掉的是乳头勃起之种子！(乳房感度上昇)
+	ELSE
+		PRINTFORML (防御力+1)
+	ENDIF
+	
+ENDIF
+
+RETURN 1
+
+;-----------------------------------------
+@EXP_MEDAL_ITEM, ARG:0
+;-----------------------------------------
+;经验硬币。ID406
+
+LOCAL = 0
+
+;未鑑定品は1/2の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:2 == 0
+	LOCAL = 1
+
+IF LOCAL == 1
+	;恭顺点数
+	JUEL:A:4 += 10
+ELSE
+	EXP:A:80 += 50
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%将
+	
+	IF ARG:0 == 0
+		PRINT 经验硬币
+	ELSE
+		PRINT 【谜之硬币】
+	ENDIF
+	
+	PRINT 使用了！
+	
+	IF LOCAL == 1
+		PRINTFORML 这个是魔鬼硬币！(恭顺点数+10)
+	ELSE
+		PRINTFORML （经验值+50）
+	ENDIF
+	
+ENDIF
+
+RETURN 1
+
+;-----------------------------------------
+@HP_SEED_ITEM, ARG:0
+;-----------------------------------------
+;命之种子。ID407
+
+LOCAL = 0
+
+;未鑑定品は1/4の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:4 == 0
+	LOCAL = 1
+
+;オトコはV感度上昇しない
+SIF TALENT:A:122
+	LOCAL = 0
+
+IF LOCAL == 1
+	;私处感度上昇
+	IF TALENT:A:103 == 1
+		;V鈍感消去
+		TALENT:A:103 = 0
+	ELSEIF TALENT:A:103 == 0 && TALENT:A:104 == 0
+		;V敏感
+		TALENT:A:104 = 1
+	ELSE
+		;欲情点数
+		JUEL:A:5 += 10
+	ENDIF
+ELSE
+	MAXBASE:A:0 += 10
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%把
+	
+	IF ARG:0 == 0
+		PRINT 生命种子
+	ELSE
+		PRINT 【谜之种子】
+	ENDIF
+	
+	PRINT 吃掉了！
+	
+	IF LOCAL == 1
+		PRINTFORML 吃掉的是私处成长之种子！(私处感度上昇)
+	ELSE
+		PRINTFORML （最大HP+10）
+	ENDIF
+	
+ENDIF
+
+
+RETURN 1
+
+;-----------------------------------------
+@MP_SEED_ITEM, ARG:0
+;-----------------------------------------
+;心之种子。ID408
+
+LOCAL = 0
+
+;未鑑定品は1/4の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:4 == 0
+	LOCAL = 1
+
+IF LOCAL == 1
+	;肛门感度上昇
+	IF TALENT:A:105 == 1
+		;A鈍感消去
+		TALENT:A:105 = 0
+	ELSEIF TALENT:A:105 == 0 && TALENT:A:106 == 0
+		;A敏感
+		TALENT:A:106 = 1
+	ELSE
+		;肛门点数
+		JUEL:A:2 += 10
+	ENDIF
+ELSE
+	MAXBASE:A:1 += 5
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%把
+	
+	IF ARG:0 == 0
+		PRINT 心之种子
+	ELSE
+		PRINT 【谜之种子】
+	ENDIF
+	
+	PRINT 吃掉了！
+	
+	IF LOCAL == 1
+		PRINTFORML 吃掉的是肛门柔化之种子！！(肛门感度上昇)
+	ELSE
+		PRINTFORML （最大气力+5）
+	ENDIF
+	
+ENDIF
+
+RETURN 1
+
+;-----------------------------------------
+@EXP_SILVER_ITEM, ARG:0
+;-----------------------------------------
+;经验银币。ID409
+
+LOCAL = 0
+
+;未鑑定品は1/2の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:2 == 0
+	LOCAL = 1
+
+IF LOCAL == 1
+	;屈服点数
+	JUEL:A:6 += 30
+ELSE
+	EXP:A:80 += 150
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%将
+	
+	IF ARG:0 == 0
+		PRINT 经验银币
+	ELSE
+		PRINT 【谜之银币】
+	ENDIF
+	
+	PRINT 使用了！
+	
+	IF LOCAL == 1
+		PRINTFORML 这是黑暗银币！(屈服点数+10)
+	ELSE
+		PRINTFORML （经验值+150）
+	ENDIF
+	
+ENDIF
+
+
+RETURN 1
+
+;-----------------------------------------
+@DETOX_WORM_ITEM,ARG
+;-----------------------------------------
+;聖水。ID410
+
+
+LOCAL = 0
+
+;未鑑定品は1/2の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:2 == 0
+	LOCAL = 1
+
+
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%将
+	
+	IF ARG:0 == 0
+		PRINT 圣水
+	ELSE
+		PRINT 【谜之液体】
+	ENDIF
+	
+	PRINT 喝掉了！
+	
+	IF LOCAL == 1
+		PRINTFORML 这是淫魔的小便！(欲情点数+15)
+	ENDIF
+	
+ENDIF
+
+
+IF LOCAL == 1
+	IF TALENT:A:成为勇者前的生活 == 12
+		;元聖女はさらに
+		SIF FLAG:5 & 32
+			PRINTFORML 圣女的力量受到了污染……（屈服の珠+10）
+		;屈服の珠
+		JUEL:A:6 += 10
+	ENDIF
+	;欲情の珠
+	JUEL:A:5 += 15
+ELSE
+	
+	IF TALENT:A:成为勇者前的生活 == 12
+		;元聖女は攻撃/防御強化の特殊ボーナス
+		SIF FLAG:5 & 32
+			PRINTFORML 圣水增强了圣女的力量……（攻撃+1/防御+1）
+		CFLAG:A:13 += 1
+		CFLAG:A:14 += 1
+	ENDIF
+	
+	CALL ITEM_DETOX,A
+	PRINTW (善恶值上升了:1)
+	CALL KARMA, A, 1
+ENDIF
+
+RETURN 1
+
+;-----------------------------------------
+@JUEL_BOX_ITEM,ARG
+;-----------------------------------------
+;堕落の宝石箱。ID411
+;未鑑定品も鑑定品も効果は同じ
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%は
+	
+	IF ARG:0 == 0
+		PRINT 堕落的宝石箱
+	ELSE
+		PRINT 【迷之箱子】
+	ENDIF
+	
+	PRINT を使用した！（屈服の珠+5）
+	
+ENDIF
+
+
+;屈服の珠
+JUEL:A:6 += 5
+
+;迎撃中の場合、捨てる
+SIF CFLAG:A:1 == 3
+	RETURN 1
+
+;壊れない
+RETURN 0
+
+;-----------------------------------------
+@INVISIBLE_POTION_ITEM,ARG
+;-----------------------------------------
+;透明化の薬。ID412
+
+LOCAL = 0
+
+;未鑑定品は1/3の確率でえっちなアイテム
+SIF ARG:0 == 1 && RAND:3 == 0
+	LOCAL = 1
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%将
+	
+	IF ARG:0 == 0
+		PRINT 透明化之药
+	ELSE
+		PRINT 【谜之液体】
+	ENDIF
+	
+	PRINT 喝掉了！
+	
+	IF LOCAL == 1
+		PRINTFORML 竟然是衣服透明化之药啊！
+		PRINTFORML %SAVESTR:A%变得赤身裸体了……(耻情点数+15)
+	ENDIF
+	
+ENDIF
+
+IF LOCAL == 1
+	IF TALENT:A:35
+		;恥じらいはさらに
+		SIF FLAG:5 & 32
+			PRINTFORML 脸像西红柿一样红透了……（屈服点数+10）
+		;屈服の珠
+		JUEL:A:6 += 10
+	ENDIF
+	;恥情の珠
+	JUEL:A:8 += 15
+ELSE
+	SIF FLAG:5 & 32
+		PRINTFORML *透明化使得回避力上升了*
+	;透明化ON（忍術相当）
+	SETBIT CFLAG:A:503,7
+	
+ENDIF
+
+;消耗品
+RETURN 1
+
+;-----------------------------------------
+@HERO_POTION_ITEM, ARG:0
+#DIM UP_VALUE
+;-----------------------------------------
+;英雄の薬。ID413
+
+LOCAL = 0
+UP_VALUE = CFLAG:A:9 / 10 + 10
+
+;未鑑定品は1/3の確率で呪われたアイテム
+SIF ARG:0 == 1 && RAND:3 == 0
+	LOCAL = 1
+
+IF LOCAL == 1
+	;恐怖の珠
+	JUEL:A:10 += 10
+ELSE
+	;攻撃防御UP
+	CFLAG:A:11 += UP_VALUE
+	CFLAG:A:12 += UP_VALUE
+	;英雄ON（回避小UP）
+	SETBIT CFLAG:A:503,8
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%将
+	
+	IF ARG:0 == 0
+		PRINT 英雄之药
+	ELSE
+		PRINT 【谜之液体】
+	ENDIF
+	
+	PRINT 喝掉了！
+	
+	IF LOCAL == 1
+		PRINTFORML 竟然是恐惧药水啊！(恐怖点数+10)
+	ELSE
+		PRINTFORML (攻击・防御+{UP_VALUE}、回避UP)
+	ENDIF
+	
+ENDIF
+
+RETURN 1
+
+;----------------------------------------
+@EX_ITEM_NAME,ARG:0
+;----------------------------------------
+;アイテムの名前を表示する
+;ARG:0 がアイテムナンバー
+
+IF ARG:0 > 1000
+	PRINT 【未鉴定品】
+ELSE
+	PRINTFORM %ITEMNAME:(ARG:0)%
+ENDIF
+
+RETURN 1
+

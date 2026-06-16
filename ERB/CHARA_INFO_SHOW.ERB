@@ -1,0 +1,1791 @@
+﻿;キャラの能力表示に使う関数群
+;eratohoAよりスクリプトを流用
+;eraIM@Sから導入しました(eramaou)
+;↑を更にeramaou開発者ではない者が編集
+
+;-----------------------------------------------
+@SHOW_CHARA_INFO(ARG,ARG:1 = -1)
+; ARG 角色编号， ARG:1 页码
+; ARG:1 == -1，调教时显示信息
+; ARG:1 == -2，贡品时显示信息
+;-----------------------------------------------
+;ARG番のキャラの個別情報を表示
+#DIM L_LCOUNT = 0
+
+;████修改点1████
+#DIMS typeNeed,6
+#DIM temp
+#DIM page
+#DIM shadow
+;████修改点1████
+
+L_LCOUNT = LINECOUNT
+
+;TARGETを差し替えておく
+LOCAL = TARGET, A
+TARGET = ARG
+
+CALL SHOW_INFO_TITLE(ARG)
+
+CUSTOMDRAWLINE ‥
+
+;召喚酔いの場合
+IF CFLAG:ARG:1 == 11
+	PRINTL 已献祭的肉便器数量
+	PRINTFORML 种族相同　　……{CFLAG:ARG:800}（%GET_LOOK_INFO(ARG, "种族")%）
+	PRINTFORML 性格相同　　……{CFLAG:ARG:801}（%GET_LOOK_INFO(ARG, "性格")%）
+	PRINTFORML 理由相同　　……{CFLAG:ARG:802}（%GET_LOOK_INFO(ARG, "成为勇者的契机")%）
+	PRINTFORML 生平相同　　……{CFLAG:ARG:803}（%GET_LOOK_INFO(ARG, "成为勇者前的生活")%）
+	PRINTFORML 发色相同　　……{CFLAG:ARG:804}（%GET_LOOK_INFO(ARG, "头发颜色")%）
+	PRINTFORML 瞳色相同　　……{CFLAG:ARG:805}（%GET_LOOK_INFO(ARG, "瞳色")%）
+	PRINTFORML 合计　　　　……{CFLAG:ARG:800 + CFLAG:ARG:801 + CFLAG:ARG:802 + CFLAG:ARG:803 + CFLAG:ARG:804 + CFLAG:ARG:805} / 30
+	
+	;████修改点2████
+	;WAIT
+	shadow = ARG
+	directToHomePage = 0
+	temp = CFLAG:shadow:800 + CFLAG:shadow:801 + CFLAG:shadow:802 + CFLAG:shadow:803 + CFLAG:shadow:804 + CFLAG:shadow:805
+	IF temp >= 30
+		PRINTS "\n"*2 + "————此刻正是献祭完成之时！"
+		WAIT
+		PRINTS "\n"*2 + "\s"*16 + "向这伟力的降临献上喝彩！"
+		WAIT
+		PRINTS "\n"*2 + "\s"*32 + "为至高无双的魔王尽瘁效忠！"
+		WAIT 
+		PRINTS "\n"*3 
+		GETBGCOLOR
+		temp = RESULT:0
+		CALL HEXtoDEC(temp,RESULT)
+		CALL ColorJudgmentWorB(RESULT)
+		SETCOLOR RESULT:1,RESULT:2,RESULT:3
+		FONTSTYLE 1
+		ALIGNMENT CENTER
+		PRINTS "-"*16
+		PRINTFORM  魔王之影 『 %SAVESTR:shadow% 』 
+		PRINTS "-"*16 + "\s"*2 + "\n"*2
+		PRINTS "-"*16
+		PRINTS "< 完 全 召 唤 >"
+		PRINTS "-"*16 + "\s"*2 + "\n"
+		ALIGNMENT LEFT
+		FONTSTYLE 0
+		RESETCOLOR
+		CFLAG:shadow:1 = 0
+		CFLAG:shadow:700 = 1
+		CFLAG:shadow:820 = 666666
+		WAIT
+		PRINTS "\n"*2
+		RESTART 
+	ELSE 
+		PRINTS "\n"*2 + " [ 10] 查看符合条件的奴隶或勇者 "
+		PRINTS "\n"*2 + " [100] 返回 "
+	ENDIF 
+	INPUT
+	SELECTCASE RESULT
+	CASE 100
+		ARG = shadow
+		directToHomePage = 1
+		RETURN 0
+	CASE 10
+		$SacrificeListRefresh
+		typeNeed '= "种族", "性格", "成为勇者的契机", "成为勇者前的生活", "头发颜色", "瞳色"
+		PRINTS "\n"*2
+		DRAWLINEFORM =
+		PRINTFORML 当前总祭品数： {CFLAG:shadow:800 + CFLAG:shadow:801 + CFLAG:shadow:802 + CFLAG:shadow:803 + CFLAG:shadow:804 + CFLAG:shadow:805} /30
+		PRINTS "\n"
+		temp = 1
+		ARG = shadow
+		WHILE temp < CHARANUM
+			IF GET_LOOK_INFO(temp, typeNeed:page) == GET_LOOK_INFO(shadow, typeNeed:page) && temp != shadow
+				SELECTCASE CFLAG:temp:1 
+				CASE 2
+					SETCOLOR 214,32,32
+				CASE 7
+					SETCOLOR 64,214,64
+				CASE 8
+					SETCOLOR 128,64,0
+				ENDSELECT
+				IF CFLAG:temp:700
+					SETCOLOR 255,200,0
+				ENDIF
+				PRINTFORM [{temp,3,RIGHT}] %SAVESTR:temp,12,LEFT% （%GET_LOOK_INFO(temp, typeNeed:page)%） %GET_JOB_NAME(temp),6,LEFT% LV{CFLAG:temp:9,3,RIGHT} 
+				IF CFLAG:temp:700
+					PRINTS "[☆]"
+				ENDIF
+				RESETCOLOR
+				PRINTS "\n"
+			ENDIF 
+			temp++
+		WEND
+		PRINTS "\n"*2 + "切换条件类型：" + "\n"*2
+		PRINTBUTTON "  [种族]  ",1000
+		PRINTBUTTON "  [性格]  ",1001
+		PRINTBUTTON "  [瞳色]  ",1005
+		PRINTBUTTON "  [头发颜色]  ",1004
+		PRINTS "\n"*2
+		PRINTBUTTON "  [成为勇者的契机]  ",1002
+		PRINTBUTTON "  [成为勇者前的生活]  ",1003
+		PRINTS "\n"*2 + " [100] 返回 "
+		$SacrificeListInputReacquisition
+		INPUT 
+		SELECTCASE RESULT
+		CASE 100
+			ARG = shadow
+			RESTART 
+		CASE 1000 TO 1005
+			page = (RESULT % 10)
+			GOTO SacrificeListRefresh
+		CASEELSE
+			IF RESULT >= 1 && RESULT < CHARANUM
+				IF CFLAG:(RESULT):1 == 2
+					CALL SHOW_CHARA_INFO(RESULT,-2)
+					GOTO SacrificeListRefresh
+				ELSEIF CFLAG:(RESULT):1 == 0 || CFLAG:(RESULT):1 == 7 || CFLAG:(RESULT):1 == 8
+					DRAWLINEFORM =
+					PRINTS "\n"
+					PRINTFORM 确定要将 %SAVESTR:RESULT% 献祭？（*将永远失去这个奴隶）
+					PRINTS "\n"*2 + " [1] 献祭 "
+					PRINTS "\n"*2 + " [0] 终止 "
+					RESULT:1 = RESULT:0
+					INPUT 
+					IF RESULT:0 == 1
+						RESULT:0 = RESULT:1
+						DRAWLINEFORM -
+						PRINTS "\n"*2
+						PRINTFORM %SAVESTR:RESULT% 成为了祭品之一
+						WAIT 
+						CFLAG:RESULT:1 = 0
+						CFLAG:shadow:(800+page) += 100
+							SIF RESULT < shadow
+							shadow--
+						
+						TARGET = RESULT
+						A = TARGET
+						W:0 = CFLAG:A:550
+						CALL EQUIP_GET
+						CFLAG:A:550 = -1
+						W:0 = CFLAG:A:551
+						CALL EQUIP_GET
+						CFLAG:A:551 = -1
+						W:0 = CFLAG:A:552
+						CALL EQUIP_GET
+						CFLAG:A:552 = -1
+						X = NO:A + 199
+						FLAG:X = 1
+							SIF FLAG:1 == TARGET
+							FLAG:1 = -1
+							SIF FLAG:2 == TARGET
+							FLAG:2 = -1
+							SIF FLAG:1 > TARGET
+							FLAG:1 -= 1
+							SIF FLAG:2 > TARGET
+							FLAG:2 -= 1
+						TARGET = FLAG:1
+						ASSI = FLAG:2
+						CALL PARTY_CHAR_DEL, A
+						DELCHARA A
+						CALL NAME_RESET
+						FLAG:80 += 1
+
+						GOTO SacrificeListRefresh
+					ELSE 
+						GOTO SacrificeListRefresh
+					ENDIF 
+				ELSE
+					IF CFLAG:(RESULT):1 == 2
+						CALL SHOW_CHARA_INFO(RESULT,-2)
+						GOTO SacrificeListRefresh
+					ELSE
+						PRINTS "该状态不可操作："
+						PRINTFORM {CFLAG:(RESULT):1}
+						GOTO SacrificeListRefresh
+					ENDIF 
+				ENDIF
+			ENDIF 
+		ENDSELECT
+		CLEARLINE 1
+		GOTO SacrificeListInputReacquisition
+	CASEELSE 
+		ARG = shadow
+		RESTART 
+	ENDSELECT
+	;████修改点2████
+	
+	RETURN 0
+ENDIF
+
+SELECTCASE ARG:1
+CASE -2
+; 显示贡品信息
+	;タレント
+	CALL SHOW_TALENT
+	CUSTOMDRAWLINE ‥
+	;能力一覧
+	CALL SHOW_INFO_ABL
+	CUSTOMDRAWLINE ‥
+	;刻印
+	CALL SHOW_INFO_EXP
+	CUSTOMDRAWLINE ‥
+	
+	CALL SHOW_INFO_MARK
+	CUSTOMDRAWLINE ‥
+	;外見関係
+	CALL SHOW_DATA(ARG)
+	CALL LOOK_INFO
+	CALL SHOW_APPEARACE
+	CUSTOMDRAWLINE ‥
+CASE -1
+; 显示调教信息
+	;タレント
+	CALL SHOW_TALENT
+	CUSTOMDRAWLINE ‥
+	;能力一覧
+	CALL SHOW_INFO_ABL
+	CUSTOMDRAWLINE ‥
+	;刻印
+	CALL SHOW_INFO_MARK
+	CUSTOMDRAWLINE ‥
+	WAIT
+	CALL SHOW_INFO_EXP
+	CALL SHOW_JUEL
+	WAIT
+	
+	CALL SHOW_TALENT_CONDITION
+	CUSTOMDRAWLINE ‥
+	
+	IF ITEM:37 && TARGET != 0
+		PRINTFORML 总计调教{CFLAG:10}次，好感度: {(CFLAG:2)/10}％
+		CUSTOMDRAWLINE ‥
+	ENDIF
+	
+CASE 0
+	CALL SHOW_BLOCK(ARG)
+	CUSTOMDRAWLINE ‥
+	;タレント
+	CALL SHOW_TALENT
+	CUSTOMDRAWLINE ‥
+	;能力一覧
+	CALL SHOW_INFO_ABL
+	CUSTOMDRAWLINE ‥
+	;刻印
+	CALL SHOW_INFO_MARK
+	CUSTOMDRAWLINE ‥
+
+CASE 1
+	CALL SHOW_BLOCK(ARG)
+	CUSTOMDRAWLINE ‥
+		
+	CALL SHOW_INFO_MARK
+	CUSTOMDRAWLINE ‥
+
+	;経験
+	CALL SHOW_INFO_EXP
+	CUSTOMDRAWLINE ‥
+	
+	IF TARGET != 0 && ITEM:37
+		PRINTFORML 总计调教{CFLAG:10}次，好感度: {(CFLAG:2)/10}％
+		CUSTOMDRAWLINE ‥
+	ENDIF
+	
+
+CASE 2
+	CALL SHOW_RING
+	CUSTOMDRAWLINE ‥
+	;外見関係
+	CALL SHOW_DATA(ARG)
+	CALL LOOK_INFO
+	CALL SHOW_APPEARACE
+	CUSTOMDRAWLINE ‥
+	
+CASE 3
+	CALL SHOW_TALENT_CONDITION
+	CUSTOMDRAWLINE ‥
+	PRINTFORML ※ %TALENTNAME:74%、%TALENTNAME:78%、%TALENTNAME:75%、%TALENTNAME:77%每获得一项，其他素质的获得要求便会上升，素质获得后条件将会隐藏；
+	PRINTFORML ※ 润滑与欲情每10000积蓄一点；【威压感】需要调教致死三人
+CASE 4
+	CALL SHOW_PERSONAL_INFO(ARG)
+	CUSTOMDRAWLINE ‥
+	
+ENDSELECT
+
+L_LCOUNT = LINECOUNT - L_LCOUNT
+IF L_LCOUNT < 27
+	FOR COUNT, L_LCOUNT, 27
+		PRINTL
+	NEXT
+ENDIF
+;CUSTOMDRAWLINE ‥
+;PRINTVL L_LCOUNT
+
+;保存しておいたTARGETを戻す
+TARGET = LOCAL
+A = LOCAL:1
+
+@SHOW_INFO_TITLE(ARG)
+#DIMS AGE_STR
+
+CUSTOMDRAWLINE =
+PRINTFORM NO.{ARG,3,LEFT} 
+;PRINTFORM \@ ARG == 0 ? %NAME:ARG% # %SAVESTR:ARG% \@
+
+;名前
+PRINTFORM \@ ARG == 0 ? %NAME:ARG, 12, LEFT% # %SAVESTR:ARG, 12, LEFT% \@
+IF TALENT:ARG:85
+	SETCOLOR 255,100,100
+	PRINT 　<爱慕>　
+	RESETCOLOR
+ELSEIF TALENT:ARG:淫乱
+	SETCOLOR 255,100,100
+	PRINT 　<淫乱>　
+	RESETCOLOR
+ELSE
+	PRINT 　　　　　
+ENDIF
+;PRINTL
+
+AGE_STR = 
+IF GETBIT(FLAG:5,12) && (ARG != MASTER || MASTER)
+
+	SIF CFLAG:ARG:451 == 0
+		CALL CHAR_BODY_GENERATE_WAPPED, ARG
+	
+	IF GETBIT(FLAG:5,13)
+		AGE_STR = {CFLAG:ARG:452} 岁
+	ELSE
+		AGE_STR = {CFLAG:ARG:451} 岁
+	ENDIF
+	SIF GETBIT(FLAG:5,13) && GETBIT(FLAG:5,14) && CFLAG:ARG:451 != CFLAG:ARG:452
+		AGE_STR = %AGE_STR% (换算人类{CFLAG:ARG:451, 3} 岁)
+	SIF TALENT:ARG:292
+		AGE_STR = %AGE_STR% [寿命还有{CFLAG:ARG:820, 3} 天]
+ENDIF
+PRINTFORML %AGE_STR, 48%
+
+
+
+
+@SHOW_BLOCK(ARG)
+IF (ARG != MASTER || MASTER)
+	PRINTPLAINFORM 一人称：%SELF_CALL(ARG),26,LEFT%
+	PRINTFORM [8] 一人称重設 
+ENDIF
+IF GETBIT(FLAG:5,15) && (ARG != MASTER || MASTER)
+	CALL CUP_SIZE, ARG
+	RESULTS = (%RESULTS%)
+	PRINTPLAINFORM   身高 {CFLAG:ARG:453 / 10, 3}.{CFLAG:ARG:453 % 10} cm　B {CFLAG:ARG:455 / 10, 3}.{CFLAG:ARG:455 % 10} cm
+	IF TALENT:ARG:122 ==0
+		PRINTFORM %RESULTS,7,LEFT%
+	ELSE
+		PRINTFORM        
+	ENDIF
+	SIF GETBIT(FLAG:8, 3)
+		PRINT ▌
+ENDIF
+
+;受注クエスト
+SIF CFLAG:ARG:534 == 1 && CFLAG:ARG:1 == 2 && GETBIT(FLAG:8, 3)
+	CALL QUEST_SELECT, ARG, "名前", 1
+
+
+SIF (ARG != MASTER || MASTER)
+	PRINTL
+
+;体力気力のバー
+CALL LIFE_BAR, ARG, 1
+SIF GETBIT(FLAG:5,15) && (ARG != MASTER || MASTER)
+	PRINTFORM \@ BASE:ARG:0 < 10000 ? %UNICODE(0xA0)% #  \@\@ MAXBASE:ARG:0 < 10000 ? %UNICODE(0xA0)%  #  \@体重 {CFLAG:ARG:454 / 10, 3}.{CFLAG:ARG:454 % 10} kg　W {CFLAG:ARG:456 / 10, 3}.{CFLAG:ARG:456 % 10} cm
+	SIF GETBIT(FLAG:8, 3)
+		PRINT        │
+;受注クエスト
+SIF CFLAG:ARG:534 == 1 && CFLAG:ARG:1 == 2 && GETBIT(FLAG:8, 3)
+	CALL QUEST_SELECT, ARG, "名前", 2
+	
+PRINTL
+
+CALL VITAL_BAR, ARG, 1
+SIF GETBIT(FLAG:5,15) && (ARG != MASTER || MASTER)
+	PRINTFORM 　　　　　　　\@ BASE:ARG:1 < 10000 ? %UNICODE(0xA0)% #  \@\@ MAXBASE:ARG:1 < 10000 ? %UNICODE(0xA0)% #  \@ H {CFLAG:ARG:457 / 10, 3}.{CFLAG:ARG:457 % 10} cm
+	SIF GETBIT(FLAG:8, 3)
+		PRINT        │
+;受注クエスト
+SIF CFLAG:ARG:534 == 1 && CFLAG:ARG:1 == 2 && GETBIT(FLAG:8, 3)
+	CALL QUEST_SELECT, ARG, "名前", 3
+	
+PRINTL
+
+
+
+
+;-------------------------------------------------
+;素質の表示 PRINT_TALENTと交換
+;引数 ARG:0 -1以外の場合、その数字のキャラ番号のキャラ能力を表示します
+;-------------------------------------------------
+@SHOW_TALENT (ARG:0 = -1)
+
+#DIM LCOUNT, 2
+
+;キャラ差し替え処理
+LOCAL:1 = -1
+IF ARG:0 >= 0 && ARG:0 < CHARANUM
+	LOCAL:1 = TARGET
+	TARGET = ARG:0
+ENDIF
+
+IF FLAG:5 & 256
+
+	PRINT 　性別：
+	IF TALENT:TARGET:122
+		PRINT [男]
+	ELSEIF TALENT:TARGET:121
+		PRINT [扶她]
+	ELSE
+		PRINT [女]
+	ENDIF
+	IF TALENT:TARGET:122 || TALENT:TARGET:121
+		SETCOLOR 161,216,230
+		SIF TALENT:TARGET:318 == 0
+			PRINT [普通阴茎]
+		SIF TALENT:TARGET:318 == 1
+			PRINT [巨根]
+		SIF TALENT:TARGET:318 == 2
+			PRINT [短小包茎]
+		SIF TALENT:TARGET:318 == 3
+			PRINT [包茎]
+		SIF TALENT:TARGET:318 == 4
+			PRINT [马阴茎]
+		RESETCOLOR
+	ENDIF
+	SIF TALENT:TARGET:0
+		PRINTFORM [%TALENTNAME:0%]
+	SIF TALENT:TARGET:1
+		PRINTFORM [%TALENTNAME:1%]
+	SIF TALENT:TARGET:273
+		PRINTFORM [%TALENTNAME:273%]
+	PRINTL 
+
+;性格
+	U = 0
+	PRINT 　性格：
+;口上用性格
+	SETCOLOR 255,215,0
+	FOR LCOUNT, 160, 180
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+	FOR LCOUNT, 100, 201
+		SIF EX_TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT, 2)
+	NEXT
+	RESETCOLOR
+;性への関心,,
+;乙女心,,
+	FOR LCOUNT, 10, 40
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+;潔癖度,,
+	FOR LCOUNT, 60, 70
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+;127,逆袭,;くれぐれも背後に気を付けてください
+	SIF TALENT:TARGET:127
+		CALL SHOW_TALENT_GROUP(127)
+;132,幼稚,;子供っぽい
+	SIF TALENT:TARGET:132
+		CALL SHOW_TALENT_GROUP(132)
+;134,软弱,;幼儿退行しやすい
+	SIF TALENT:TARGET:134
+		CALL SHOW_TALENT_GROUP(134)
+
+	FOR LCOUNT, 150, 157
+		SIF LCOUNT == 153 || LCOUNT == 154
+			CONTINUE
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+
+	SIF U != 0
+		PRINTFORML %TSTR%
+
+;体質
+	U = 0
+	PRINT 　体质：
+;体質
+	FOR LCOUNT, 40, 50
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+;56,抗药性,;コマンド「しあわせ草」「利尿剂」が実行不可
+	SIF TALENT:TARGET:56
+		CALL SHOW_TALENT_GROUP(56)
+;57,漏尿癖,;放尿コマンドが常に使えるようになる。絶頂時に放尿。
+	SIF TALENT:TARGET:57
+		CALL SHOW_TALENT_GROUP(57)
+;身体特徴,,
+	FOR LCOUNT, 99, 140
+		SELECTCASE LCOUNT
+			CASE 101 TO 108, 113, 117, 118, 121, 122, 123, 126, 127, 132, 133, 134, 136
+				CONTINUE
+		ENDSELECT
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+;153,妊娠,;子供を身ごもってる
+	SIF TALENT:TARGET:153
+		CALL SHOW_TALENT_GROUP(153)
+;341,乳内妊娠,;乳房に子供を身ごもってる
+	SIF TALENT:TARGET:341
+		CALL SHOW_TALENT_GROUP(341)
+;342,精巣妊娠,;精巣に子供を身ごもってる
+	SIF TALENT:TARGET:342
+		CALL SHOW_TALENT_GROUP(342)
+;158,同族妊娠できない,;モンスター・野良犬のみ妊娠
+	SIF TALENT:TARGET:158
+		CALL SHOW_TALENT_GROUP(158)
+;340,異常妊娠体質,;乳房や精巣で妊娠可
+	SIF TALENT:TARGET:340
+		CALL SHOW_TALENT_GROUP(340)
+;154,育儿中,;子供を育てている最中
+	SIF TALENT:TARGET:154
+		CALL SHOW_TALENT_GROUP(154)
+
+	FOR LCOUNT, 244, 249
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+;253,褐色肌肤,
+	SIF TALENT:TARGET:253
+		CALL SHOW_TALENT_GROUP(253)
+;255,白皙,;白い肌
+	SIF TALENT:TARGET:255
+		CALL SHOW_TALENT_GROUP(255)
+;256,虚弱,;HP回復量が低い
+	SIF TALENT:TARGET:256
+		CALL SHOW_TALENT_GROUP(256)
+;326,不思议之根,;助手化の際に扶她になる
+	SIF TALENT:TARGET:326
+		CALL SHOW_TALENT_GROUP(326)
+
+
+	SIF U != 0
+		PRINTFORML %TSTR%
+
+;技術,,
+	U = 0
+	PRINT 　技术：
+;技術,,
+	FOR LCOUNT, 50, 60
+		SIF LCOUNT == 56 || LCOUNT == 57
+			CONTINUE
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+;325,魔界知识,;秘密ラボに出入り可能になる
+	SIF TALENT:TARGET:325
+		CALL SHOW_TALENT_GROUP(325)
+;327,淫魔知识,;えっちな陷阱解禁
+	SIF TALENT:TARGET:327
+		CALL SHOW_TALENT_GROUP(327)
+;328,魔虫知识,;一部の陷阱を強化
+	SIF TALENT:TARGET:327
+		CALL SHOW_TALENT_GROUP(328)
+;329,【造型王】,;調度品タイムアタックの実績素質
+	SIF TALENT:TARGET:329
+		CALL SHOW_TALENT_GROUP(329)
+;魅了,,
+	FOR LCOUNT, 90, 99
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+
+	SIF TALENT:TARGET:113
+		CALL SHOW_TALENT_GROUP(113)
+
+;117,治疗,;助手として加わっていると全調教対象の回復量上昇。効果は累積しない
+	SIF TALENT:TARGET:117
+		CALL SHOW_TALENT_GROUP(117)
+;118,鼓舞,;助手の時にコマンドを実行しやすい。助手の時に調教終了後の自慰回数増加
+	SIF TALENT:TARGET:118
+		CALL SHOW_TALENT_GROUP(118)
+;126,高人气,;売却額増加
+	SIF TALENT:TARGET:126
+		CALL SHOW_TALENT_GROUP(126)
+;売春関係の素質（eraIm@sより流用）,,
+	FOR LCOUNT, 180, 190
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+
+	SIF !LINEISEMPTY()
+		PRINTL
+
+;性癖
+	U = 0
+	PRINT 　性癖：
+;正直度,,
+;特殊性癖,,
+;性癖,,
+	FOR LCOUNT, 70, 90
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+;	FOR LCOUNT, 101, 102
+;		IF TALENT:TARGET:(101) && TALENT:TARGET:122
+;			SIF U % 8 == 0 && U != 0
+;				PRINTL 
+;			SIF U % 8 == 0 && U != 0
+;				PRINTV "　　　　"
+;			SETCOLORBYNAME DarkSeaGreen
+;			PRINT [阴茎钝感]
+;		ELSEIF TALENT:TARGET:(102) && TALENT:TARGET:122
+;			SETCOLORBYNAME DarkSeaGreen
+;			PRINT [阴茎敏感]
+	FOR LCOUNT, 101, 109
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT, TALENT:TARGET:(LCOUNT) & 2)			
+;			CALL SHOW_TALENT_GROUP(LCOUNT)
+;			IF TALENT:TARGET:(LCOUNT) & 2
+;			SIF LCOUNT == 101
+;				TSTR = %TSTR%[Ｃ感覚封鎖]
+;			SIF LCOUNT == 103
+;				TSTR = %TSTR%[Ｖ感覚封鎖]
+;			SIF LCOUNT == 105
+;				TSTR = %TSTR%[Ａ感覚封鎖]
+;			SIF LCOUNT == 107
+;				TSTR = %TSTR%[Ｂ感覚封鎖]
+;			U += 1
+;			IF U % 6 == 0
+;				PRINTFORML %TSTR%
+;				TSTR = 　　　
+;				U = 0
+;			ENDIF
+;		ENDIF
+	NEXT
+	
+	;各種コンプレックス
+	FOR LCOUNT, 140, 144
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+	
+;136,牝犬,;兽奸コマンドの効果増大
+	SIF TALENT:TARGET:136
+		CALL SHOW_TALENT_GROUP(136)
+;230- 強化素質,,
+	FOR LCOUNT, 230, 240
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+;270- 特殊素質,,
+	FOR LCOUNT, 270, 273
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+;274,魂缚;悪堕ちしない。カルマが変動しない
+	SIF TALENT:TARGET:274
+		CALL SHOW_TALENT_GROUP(274)
+		
+;280,狂王俘虏;ダンジョン戦及び侵攻戦で戦意喪失しやすくなる
+	SIF TALENT:TARGET:280
+		CALL SHOW_TALENT_GROUP(280)
+
+;281,常识改变：战斗;ダンジョン戦がセックスバトルになる
+	SIF TALENT:TARGET:281
+		CALL SHOW_TALENT_GROUP(281)
+		
+;283,常識改変：日常;日々の活動が肉便器になる
+	SIF TALENT:TARGET:283
+		CALL SHOW_TALENT_GROUP(283)
+		
+;282,渎神者;以前信じていた神を冒涜する
+	SIF TALENT:TARGET:282
+		CALL SHOW_TALENT_GROUP(282)
+
+	SIF U != 0
+		PRINTFORML %TSTR%
+	;SIF !LINEISEMPTY()
+	;	PRINTL
+;後天
+	U = 0
+	PRINT 　后天：
+
+;9,崩坏,;売却額がかなり低下。営業で客の満足度激減
+	SIF TALENT:TARGET:9
+		CALL SHOW_TALENT_GROUP(9)
+;123,疯狂,;売却額がかなり低下。いるだけで全調教対象の回復量減少。効果は累積する
+	SIF TALENT:TARGET:123
+		CALL SHOW_TALENT_GROUP(123)
+;157,人妻,;結婚した証。欲望が上がりやすい
+	SIF TALENT:TARGET:157
+		CALL SHOW_TALENT_GROUP(157)
+;254,魔之刻印,;陥落しなくても迎撃できる
+	SIF TALENT:TARGET:254
+		CALL SHOW_TALENT_GROUP(254)
+;体調不良系,,
+	FOR LCOUNT, 190, 200
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+;境遇や肩書,,
+	FOR LCOUNT, 290, 300
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+
+;キャンペーン用
+	FOR LCOUNT, 360, 369
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+
+	SIF U != 0
+		PRINTFORML %TSTR%
+
+
+;戦闘
+	U = 0
+	PRINT 　战斗：
+
+	FOR LCOUNT, 200, 212
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+	
+	FOR LCOUNT, 240, 270
+		SIF INRANGE(LCOUNT,244,248) || INRANGE(LCOUNT,253,256)
+			CONTINUE
+		SIF TALENT:TARGET:(LCOUNT)
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+	
+	;精英魔物的技能
+	FOR LCOUNT, 470, 490
+		SIF TALENT:TARGET:LCOUNT
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+	NEXT
+	
+	;EX技能
+	FOR LCOUNT, 801, 900
+		SIF EX_TALENT:TARGET:LCOUNT
+			CALL SHOW_TALENT_GROUP(LCOUNT,2)
+	NEXT
+	
+	SIF !LINEISEMPTY()
+		PRINTL
+
+	;一応初期化
+	U = 0
+ELSE
+	U = 6
+	REPEAT 400
+		;SIF COUNT == 114 && TALENT:114 && (TALENT:251 || TALENT:252 || TALENT:253)
+		;	CONTINUE
+		SIF COUNT >= 300 && COUNT < 325
+			CONTINUE
+		IF TALENT:TARGET:COUNT
+			;133,早漏,;「ふたなり」か「オトコ」の時のみ表示
+			SIF COUNT == 133 && TALENT:TARGET:121 == 0 && TALENT:TARGET:122 == 0
+				CONTINUE
+			CALL SHOW_TALENT_GROUP(COUNT)
+		ENDIF
+	REND
+	;300-399は秘密能力なので、主人か助手経験者か【爱】以外は非表示
+	;IF TARGET == MASTER || ISASSI:TARGET || TALENT:TARGET:85
+	;	REPEAT 100
+	;		C = COUNT + 300
+	;		IF TALENT:TARGET:C
+	;			PRINTFORM  [%TALENTNAME:C%]
+	;			U += 1
+	;			IF U % 6 == 0
+	;				PRINTL 
+	;			ENDIF
+	;		ENDIF
+	;	REND
+	;ENDIF
+	
+	;精英魔物的技能
+	FOR LCOUNT, 470, 490
+		IF TALENT:TARGET:LCOUNT
+			CALL SHOW_TALENT_GROUP(LCOUNT)
+		ENDIF
+	NEXT
+	SIF !LINEISEMPTY()
+		PRINTL
+ENDIF
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+
+
+@SHOW_TALENT_GROUP(ARG, ARG:1 = 0)
+;ARG,TALENT番号
+;TSTR = %TSTR%[%TALENTNAME:(ARG)%]
+SIF U % 8 == 0 && U != 0
+	PRINTL 
+SIF U % 8 == 0 && U != 0
+	PRINTV "　　　　"
+SELECTCASE ARG
+;Ｃ敏感
+CASE 101,102,230,74
+	SETCOLORBYNAME DarkSeaGreen
+;Ｖ敏感
+CASE 103,104,232,75
+	SETCOLOR 255,165,0
+;Ａ鈍感
+CASE 105,106,233,77
+	SETCOLOR 219,112,147
+;Ｂ敏感
+CASE 107,108,231,78,109,110,114,116,119
+	SETCOLOR 102,179,255
+	;SETCOLOR 100,100,255
+; 妊娠,乳内妊娠,精巢妊娠
+;CASE 153,341,342
+	;SETCOLORBYNAME LightSalmon
+;育儿中
+CASE 154,130,153,341,342
+	SETCOLOR 100,255,100
+;淫乱
+CASE 85,76
+	SETCOLORBYNAME Salmon
+;职业
+CASE 200 TO 211
+	SETCOLOR 100,255,100
+ENDSELECT
+
+;SIF U % 6 == 0 && U != 0
+;	PRINTV "　"
+
+LOCALS = %TALENTNAME:(ARG)%
+IF TALENT:122
+	IF ARG == 101
+		LOCALS = 阴茎钝感
+	ELSEIF ARG == 102
+		LOCALS = 阴茎敏感
+	ELSEIF ARG == 230
+		LOCALS = 绝伦
+	ENDIF
+ENDIF
+IF ARG:1 == 1
+	IF ARG == 101 
+		LOCALS = 阴核感觉封锁
+		SIF TALENT:122
+			LOCALS = 阴茎感觉封锁
+	ELSEIF ARG == 103
+		LOCALS = 私处感觉封锁
+	ELSEIF ARG == 105
+		LOCALS = 肛门感觉封锁
+	ELSEIF ARG == 107
+		LOCALS = 乳房感觉封锁
+	ENDIF
+ELSEIF ARG:1 == 2
+	LOCALS = %EX_TALENTNAME:(ARG)%
+	SELECTCASE ARG
+		;EX性格
+		CASE 101 TO 200
+			SETCOLOR 255,215,0
+		;EX战斗
+		CASE 801 TO 900
+			RESETCOLOR
+		;EX职业
+		CASE 901 TO 999
+			SETCOLOR 100,255,100
+		CASEELSE
+			RESETCOLOR
+	ENDSELECT
+ENDIF
+
+PRINTFORM [%LOCALS%]
+RESETCOLOR
+U ++
+
+	
+
+RETURN 0
+
+;-------------------------------------------------
+;能力の表示 PRINT_ABLと交換
+;引数 ARG:0 -1以外の場合、その数字のキャラ番号のキャラ能力を表示します
+;-------------------------------------------------
+@SHOW_INFO_ABL (ARG:0 = -1)
+#DIM NUMBER_OF_ABL
+#DIM ELEMENT_COUNT
+#DIM TEMP_CHARA_ID
+NUMBER_OF_ABL = 0
+ELEMENT_COUNT = 0
+TEMP_CHARA_ID = -1
+
+;TARGET差し替え
+IF INRANGE(ARG:0, 0, CHARANUM - 1)
+	TEMP_CHARA_ID = TARGET
+	TARGET = ARG:0
+ENDIF
+
+FOR NUMBER_OF_ABL, 0, 41
+	;5-9, 18-19, 24-29, 34-36, 38は飛ばす
+	IF INRANGE(NUMBER_OF_ABL, 5, 9) || INRANGE(NUMBER_OF_ABL, 18, 19) || INRANGE(NUMBER_OF_ABL, 24, 29) || INRANGE(NUMBER_OF_ABL, 34, 36) || (NUMBER_OF_ABL == 38)
+		CONTINUE
+	ENDIF
+	
+	;性別による分岐
+	IF TALENT:122 && ( NUMBER_OF_ABL == 2 || NUMBER_OF_ABL == 22 || NUMBER_OF_ABL == 33 )
+		;男ならＶ感覚とレズっ気とレズ中毒は表示しない
+		CONTINUE
+	ELSEIF TALENT:122 == 0 && ( NUMBER_OF_ABL == 23 || NUMBER_OF_ABL == 34 )
+		;女ならホモっ気とホモ中毒は表示しない
+		CONTINUE
+	ENDIF
+	
+	;値ゼロの能力は表示しない
+	IF ABL:NUMBER_OF_ABL == 0
+		CONTINUE
+	ENDIF
+	
+	;能力名とレベルの表示
+	PRINTFORM   %ABLNAME:NUMBER_OF_ABL, 8, LEFT% - LV{ABL:NUMBER_OF_ABL}
+	
+	;レベルアップ可能か
+	X = NUMBER_OF_ABL
+	CALL DECIDE_ABLUP
+
+	;改行チェック
+	ELEMENT_COUNT += 1
+	IF (ELEMENT_COUNT % 4) == 0
+		PRINTL 
+	ENDIF
+NEXT
+
+;改行チェック
+IF (ELEMENT_COUNT % 4) != 0
+	PRINTL 
+ENDIF
+
+;TARGETを戻す
+IF TEMP_CHARA_ID != -1
+	TARGET = TEMP_CHARA_ID
+ENDIF
+
+;-------------------------------------------------
+;刻印の表示 PRINT_MARKと交換
+;引数 ARG:0 -1以外の場合、その数字のキャラ番号のキャラ能力を表示します
+;-------------------------------------------------
+@SHOW_INFO_MARK (ARG:0 = -1)
+
+;キャラ差し替え処理
+LOCAL:1 = -1
+IF ARG:0 >= 0 && ARG:0 < CHARANUM
+	LOCAL:1 = TARGET
+	TARGET = ARG:0
+ENDIF
+
+
+PRINTFORM  苦痛:LV{MARK:0} 
+BAR MARK:0, 3, 3
+PRINTFORM    快乐:LV{MARK:1} 
+BAR MARK:1, 3, 3
+PRINTFORM    屈服:LV{MARK:2} 
+BAR MARK:2, 3, 3
+PRINTFORM    反抗:LV{MARK:3} 
+BAR MARK:3, 3, 3
+CALL DECIDE_ABLUP99
+SIF RESULT == 1
+	PRINT  *
+PRINTL 
+
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+
+;-------------------------------------------------
+;経験の表示 PRINT_EXPと交換
+;引数 ARG:0 -1以外の場合、その数字のキャラ番号のキャラ能力を表示します
+;-------------------------------------------------
+@SHOW_INFO_EXP (ARG:0 = -1)
+
+;キャラ差し替え処理
+LOCAL:1 = -1
+IF ARG:0 >= 0 && ARG:0 < CHARANUM
+	LOCAL:1 = TARGET
+	TARGET = ARG:0
+ENDIF
+
+U = 0
+REPEAT 82
+	SIF EXP:COUNT == 0
+		CONTINUE
+	PRINTFORM 　%SUBSTRING(EXPNAME:COUNT, 0,8),8,LEFT%:{EXP:COUNT,6,RIGHT}
+	U += 1
+	IF U % 4 == 0
+		PRINTL 
+	ENDIF
+REND
+
+SIF !LINEISEMPTY()
+	PRINTL 
+
+IF TARGET == 0
+	X = CFLAG:9 * 100 + 10
+	X:1 = CFLAG:9 * CFLAG:9 * 50 - CFLAG:9 * 40 + EXP:80
+ELSEIF TALENT:220 == 1
+	X = CFLAG:9 * 20 + 10
+	X:1 = CFLAG:9 * CFLAG:9 * 10 - 10 + EXP:80
+ELSE
+	X = CFLAG:9 * 10 + 10
+	X:1 = CFLAG:9 * CFLAG:9 * 5 + CFLAG:9 * 5 - 10 + EXP:80
+ENDIF
+PRINTFORML 　%SAVESTR:TARGET%当前是Lv{CFLAG:TARGET:9}，战斗经验值总计{X:1}点，本级经验：{EXP:80}/{X}
+
+PRINT 　
+IF CFLAG:16 > -1
+	LOCAL = CFLAG:16 - 1
+	IF LOCAL == -1
+		PRINT [初吻对象：不明]
+	ELSEIF CFLAG:16 == 992
+		PRINTFORM [初吻对象：%CSTR:4%]	
+	ELSEIF CFLAG:16 == 993
+		PRINT [初吻对象：狂王]
+	ELSEIF CFLAG:16 == 994
+		PRINT [初吻对象：怪物]
+	ELSEIF CFLAG:16 == 995
+		PRINT [初吻对象：怪物的阴茎]
+	ELSEIF CFLAG:16 == 996
+		PRINT [初吻对象：野狗的肛门]
+	ELSEIF CFLAG:16 == 997
+		PRINT [初吻对象：野狗的阴茎]
+	ELSEIF CFLAG:16 == 998
+		PRINT [初吻对象：野狗的嘴]
+	ELSEIF CFLAG:16 == 999
+		PRINT [初吻对象：触手]
+	ELSE
+		PRINTFORM [初吻对象：%CSTR:4%的
+		IF CFLAG:16 < 100
+			PRINT 唇]
+		ELSEIF CFLAG:16 < 300
+			PRINT 阴茎]
+		ELSEIF CFLAG:16 < 400
+			PRINT 私处]
+		ELSEIF CFLAG:16 < 500
+			PRINT 肛门]
+		ENDIF
+	ENDIF
+ENDIF
+
+IF CFLAG:15 > 0
+	LOCAL = CFLAG:15 - 1
+	;初体験がバイブの場合
+	IF CFLAG:15 == 101
+		PRINT [初体验对象：蠕虫]
+	;初体験が触手生物の場合
+	ELSEIF CFLAG:15 == 102
+		PRINT [初体验对象：触手生物]
+	;初体験が犬の場合
+	ELSEIF CFLAG:15 == 103
+		PRINT [初体验对象：野狗]
+	;初体験が怪物の場合
+	ELSEIF CFLAG:15 == 104
+		PRINT [初体验对象：怪物]
+	ELSEIF CFLAG:15 == 105
+		PRINT [初体验对象：狂王]
+	ELSEIF LOCAL == 0
+		PRINTFORM [初体验对象：%SAVESTR:LOCAL%]
+	ELSE
+		PRINTFORM [初体验对象：%CSTR:3%]
+	ENDIF
+ENDIF
+
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+
+PRINTL
+IF CFLAG:16 > -1 || CFLAG:15 > 0
+ELSE
+	CLEARLINE 1
+ENDIF
+
+;-------------------------------------------------
+;现在のターゲットの体力バーを表示
+;引数 ARG:0 -1以外の場合、その数字のキャラ番号のキャラ能力を表示します
+;引数 ARG:1 0以外の場合、末尾改行無し
+;-------------------------------------------------
+@LIFE_BAR (ARG:0 = -1, ARG:1 = 0)
+;キャラ差し替え処理
+LOCAL:1 = -1
+IF ARG:0 >= 0 && ARG:0 < CHARANUM
+	LOCAL:1 = TARGET
+	TARGET = ARG:0
+ENDIF
+
+IF MAXBASE:0 <= 0
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+	RETURN 0
+ENDIF
+
+PRINT 体力
+IF BASE:0 < 0
+	BAR 0,MAXBASE:0,32
+	PRINTFORM (   0/{MAXBASE:0})
+ELSE
+	BAR BASE:0,MAXBASE:0,32
+	PRINTFORM ({BASE:0, 4}/{MAXBASE:0})
+ENDIF
+IF BASE:0 < 0
+	PRINT ★死亡★
+ELSEIF BASE:0 < 500
+	PRINT ★濒死★
+ENDIF
+SIF ARG:1 == 0
+	PRINTL 
+
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+
+;-------------------------------------------------
+;现在のターゲットの気力バーを表示
+;引数 ARG:0 -1以外の場合、その数字のキャラ番号のキャラ能力を表示します
+;引数 ARG:1 0以外の場合、末尾改行無し
+;-------------------------------------------------
+@VITAL_BAR (ARG:0 = -1, ARG:1 = 0)
+;キャラ差し替え処理
+LOCAL:1 = -1
+IF ARG:0 >= 0 && ARG:0 < CHARANUM
+	LOCAL:1 = TARGET
+	TARGET = ARG:0
+ENDIF
+
+IF MAXBASE:1 <= 0
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+	RETURN 0
+ENDIF
+
+PRINT 气力
+IF BASE:1 < 0
+	BAR 0,MAXBASE:1,32
+	PRINTFORM (　 0/{MAXBASE:1})
+ELSE
+	BAR BASE:1,MAXBASE:1,32
+	PRINTFORM ({BASE:1, 4}/{MAXBASE:1})
+ENDIF
+
+SIF BASE:1 <= 0
+	PRINT ★气力０★
+SIF ARG:1 == 0
+	PRINTL 
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+
+;-------------------------------------------------
+;现在のターゲットの外見情報を表示
+;引数 ARG:0 -1以外の場合、その数字のキャラ番号のキャラ能力を表示します
+;-------------------------------------------------
+@SHOW_APPEARACE (ARG:0 = -1)
+
+;キャラ差し替え処理
+LOCAL:1 = -1
+IF ARG:0 >= 0 && ARG:0 < CHARANUM
+	LOCAL:1 = TARGET
+	TARGET = ARG:0
+ENDIF
+
+;顔の刺青
+SIF CSTR:10 != ""
+	PRINTFORML  脸上刻着『%CSTR:10%』样的刺青。
+
+;现在の格好
+IF FLAG:37
+	PRINTFORM  %SAVESTR:TARGET%现在的样子是
+	CALL PRINT_CLOTHTYPE
+	PRINTL 。
+ENDIF
+
+;ズーコの着ぐるみを着ていたらここで終了
+IF CFLAG:42 == 11 && (CFLAG:40 & 64)
+	SIF CFLAG:40 == 64
+		PRINTL  貌似，里面是真空的。
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+
+	RETURN 1
+ENDIF
+
+;上半身裸なら、胸と背中と下腹部の刺青
+IF !(CFLAG:40 & 6)
+	;胸の刺青
+	SIF CSTR:11 != ""
+		PRINTFORML  胸部上刻着『%CSTR:11%』样的刺青。
+	;背中の刺青
+	SIF CSTR:12 != ""
+		PRINTFORML  背上刻着『%CSTR:12%』样的刺青。
+	;下腹部の刺青
+	SIF CSTR:13 != ""
+		PRINTFORML  下腹处刻着『%CSTR:13%』样的刺青。
+	
+ENDIF
+
+SIF (CFLAG:40 & 8) && (CFLAG:40 & 1) == 0
+	PRINTL  貌似没穿内裤。
+
+;性器周辺が確認できない状況ならここで終了
+IF CFLAG:40 & 17
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+	RETURN 0
+ENDIF
+;オムツ着用中でも終了
+IF (CFLAG:40 & 64) && CFLAG:42 == 69
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+	RETURN 0
+ENDIF
+;スカートタイプ着用で顺从＋露出度が３未満でもここで終了
+IF (CFLAG:40 & 8) && ABL:10 + ABL:17 < 3
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+	RETURN 0
+ENDIF
+
+PRINT  
+IF CFLAG:40 & 8
+	PRINT 掀起
+	CALL PRINT_CLOTHTYPE_MAIN2
+	PRINT 的下摆，
+ENDIF
+
+;阴毛状态
+SIF NO:TARGET != 0
+	PRINTFORM %SAVESTR:TARGET%
+IF TALENT:125 == 1
+	PRINTL 露出了永久脱毛的陰部。
+ELSEIF TALENT:310 == 1
+	PRINTL 的性器完全没有長毛。
+ELSEIF TALENT:310 > 1 && TALENT:310 <= 20
+	PRINTL 的陰部覆盖着剛剛長出的陰毛。
+ELSEIF TALENT:310 > 20 && TALENT:310 <= 50
+	PRINTL 的陰部覆盖着薄薄的陰毛。
+ELSEIF TALENT:310 > 50 && TALENT:310 <= 100
+	PRINTL 的耻丘長着整斉的陰毛。
+ELSEIF TALENT:310 > 100 && TALENT:310 <= 200
+	PRINTL 的股間長着茂盛的陰毛。
+ELSEIF TALENT:310 > 200
+	PRINTL 从阴阜到肛门都被茂密的阴毛所覆盖。
+ENDIF
+;穿环
+S = 0
+IF (CFLAG:7 & 8)
+	IF TALENT:122 || TALENT:121
+		PRINT  阴茎
+	ELSE
+		PRINT  阴蒂
+	ENDIF
+	S++
+ENDIF
+IF (CFLAG:7 & 64)
+	IF S
+		PRINT 、
+	ELSE
+		PRINT  
+	ENDIF
+	PRINT 鼻子
+	S++
+ENDIF
+IF (CFLAG:7 & 32)
+	IF S
+		PRINT 、
+	ELSE
+		PRINT  
+	ENDIF
+	PRINT 嘴唇
+	S++
+ENDIF
+IF (CFLAG:7 & 4)
+	IF S
+		PRINT 、
+	ELSE
+		PRINT  
+	ENDIF
+	PRINT 阴唇
+	S++
+ENDIF
+IF (CFLAG:40 & 6) == 0
+	IF (CFLAG:7 & 1)
+		IF S
+			PRINT 、
+		ELSE
+			PRINT  
+		ENDIF
+		PRINT 乳头
+		S++
+	ENDIF
+ENDIF
+IF (CFLAG:7 & 2)
+	IF S
+		PRINT 、
+	ELSE
+		PRINT  
+	ENDIF
+	PRINT 肚脐
+	S++
+ENDIF
+IF (CFLAG:7 & 16)
+	IF S
+		PRINT 、
+	ELSE
+		PRINT  
+	ENDIF
+	PRINT 舌头
+	S++
+ENDIF
+IF S > 1
+	PRINTL 都被穿环了。
+ELSEIF S == 1
+	PRINTL 被穿环了。
+ENDIF
+S = 0
+
+;尻の刺青
+SIF CSTR:14 != ""
+	PRINTFORML  屁股上刻着『%CSTR:14%』样的刺青。
+;性器の刺青
+SIF CSTR:15 != ""
+	PRINTFORML  性器上刻着『%CSTR:15%』样的刺青。
+;肛門の刺青
+SIF CSTR:16 != ""
+	PRINTFORML  肛门上刻着『%CSTR:16%』样的刺青。
+;太股の刺青
+SIF CSTR:17 != ""
+	PRINTFORML  大腿上刻着『%CSTR:17%』样的刺青。
+
+
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+
+;-------------------------------------------------
+;魔法装備
+;-------------------------------------------------
+@SHOW_RING (ARG:0 = -1)
+;キャラ差し替え処理
+LOCAL:1 = -1
+IF ARG:0 >= 0 && ARG:0 < CHARANUM
+	LOCAL:1 = TARGET
+	TARGET = ARG:0
+ENDIF
+
+W:0 = CFLAG:TARGET:550
+PRINTFORM  【武器】: 
+IF W:0 <= -1
+	PRINT 空手
+ELSE
+	CALL PRINT_EQUIPTYPE_WEAPON
+ENDIF
+
+PRINT 　
+
+W:0 = CFLAG:TARGET:551
+PRINTFORM  【装饰A】: 
+IF W:0 <= -1
+	PRINT 无
+ELSE
+	CALL PRINT_EQUIPTYPE_RING
+ENDIF
+
+PRINT 　
+
+W:0 = CFLAG:TARGET:552
+PRINTFORM  【装饰B】: 
+IF W:0 <= -1
+	PRINTL 无
+ELSE
+	CALL PRINT_EQUIPTYPE_RING
+	PRINTL  
+ENDIF
+	SIF LOCAL:1 != -1
+		TARGET = LOCAL:1;終わるときにはTARGETを戻す
+
+;-------------------------------------------------
+;汚れ状況を表示
+;-------------------------------------------------
+@STAIN_INFO
+
+SWAP TARGET, TARGET:1
+SWAP ASSI, ASSI:1
+
+REPEAT 6
+	SIF COUNT == 2 && TALENT:MASTER:121 == 0 && TALENT:MASTER:122 == 0
+		CONTINUE
+	SIF COUNT == 3 && TALENT:MASTER:122
+		CONTINUE
+	SIF COUNT == 5 && TALENT:MASTER:122
+		CONTINUE
+	PRINTS NAME:MASTER
+	IF COUNT == 0
+		PRINT 的嘴巴：
+	ELSEIF COUNT == 1
+		PRINT 的双手：
+	ELSEIF COUNT == 2
+		PRINT 的阴茎：
+	ELSEIF COUNT == 3
+		PRINT 的私处：
+	ELSEIF COUNT == 4
+		PRINT 的肛门：
+	ELSEIF COUNT == 5
+		PRINT 的乳房：
+	ENDIF
+	SIF STAIN:MASTER:COUNT & 1
+		PRINT <爱液>
+	SIF STAIN:MASTER:COUNT & 2
+		PRINT <前液>
+	SIF STAIN:MASTER:COUNT & 4
+		PRINT <精液>
+	SIF STAIN:MASTER:COUNT & 8
+		PRINT <肠液>
+	SIF STAIN:MASTER:COUNT & 16
+		PRINT <乳汁>
+	SIF STAIN:MASTER:COUNT & 32
+		PRINT <尿液>
+	PRINTL 
+REND
+
+REPEAT 6
+	SIF COUNT == 2 && TALENT:121 == 0 && TALENT:122 == 0
+		CONTINUE
+	SIF COUNT == 3 && TALENT:122
+		CONTINUE
+	SIF COUNT == 5 && TALENT:122
+		CONTINUE
+	PRINTS SAVESTR:TARGET
+	IF COUNT == 0
+		PRINT 的嘴巴：
+	ELSEIF COUNT == 1
+		PRINT 的双手：
+	ELSEIF COUNT == 2
+		PRINT 的阴茎：
+	ELSEIF COUNT == 3
+		PRINT 的私处：
+	ELSEIF COUNT == 4
+		PRINT 的肛门：
+	ELSEIF COUNT == 5
+		PRINT 的乳房：
+	ENDIF
+	
+	SIF STAIN:TARGET:COUNT & 1
+		PRINT <爱液>
+	SIF STAIN:TARGET:COUNT & 2
+		PRINT <前液>
+	SIF STAIN:TARGET:COUNT & 4
+		PRINT <精液>
+	SIF STAIN:TARGET:COUNT & 8
+		PRINT <肠液>
+	SIF STAIN:TARGET:COUNT & 16
+		PRINT <乳汁>
+	SIF STAIN:TARGET:COUNT & 32
+		PRINT <尿液>
+	PRINTL 
+REND
+
+REPEAT 6
+	SIF ASSI < 0
+		BREAK
+	SIF COUNT == 2 && TALENT:ASSI:121 == 0 && TALENT:ASSI:122 == 0
+		CONTINUE
+	SIF COUNT == 3 && TALENT:ASSI:122
+		CONTINUE
+	SIF COUNT == 5 && TALENT:ASSI:122
+		CONTINUE
+	PRINTS SAVESTR:ASSI
+	IF COUNT == 0
+		PRINT 的嘴巴：
+	ELSEIF COUNT == 1
+		PRINT 的双手：
+	ELSEIF COUNT == 2
+		PRINT 的阴茎：
+	ELSEIF COUNT == 3
+		PRINT 的私处：
+	ELSEIF COUNT == 4
+		PRINT 的肛门：
+	ELSEIF COUNT == 5
+		PRINT 的乳房：
+	ENDIF
+	
+	SIF STAIN:ASSI:COUNT & 1
+		PRINT <爱液>
+	SIF STAIN:ASSI:COUNT & 2
+		PRINT <前液>
+	SIF STAIN:ASSI:COUNT & 4
+		PRINT <精液>
+	SIF STAIN:ASSI:COUNT & 8
+		PRINT <肠液>
+	SIF STAIN:ASSI:COUNT & 16
+		PRINT <乳汁>
+	SIF STAIN:ASSI:COUNT & 32
+		PRINT <尿液>
+	PRINTL 
+REND
+
+SWAP TARGET, TARGET:1
+SWAP ASSI, ASSI:1
+WAIT
+
+RETURN 1
+
+;-------------------------------------------------
+;状況の表示
+;-------------------------------------------------
+;調教対象には使わない、特殊な着脱式の道具を追加した場合はここに追加をしてください
+;（場所変更、マスターや助手が使用する道具等）
+;-------------------------------------------------
+@SHOW_EQUIP_2
+SETCOLOR 0xff1493
+IF TEQUIP:53
+	LOCAL = 10 + 4 * CFLAG:499 - CFLAG:491 + 1
+	PRINTFORM [摄影中(剩{LOCAL}次)]
+ENDIF
+SIF TEQUIP:54
+	PRINT  [野外PLAY中]
+SIF TEQUIP:57
+	PRINT  [羞耻（大镜子）PLAY中]
+SIF TEQUIP:58
+	PRINT  [浴室PLAY中]
+SIF TEQUIP:59
+	PRINT  [新妻PLAY中]
+SIF TEQUIP:89
+	PRINT  [兽奸PLAY中]
+SIF TEQUIP:90
+	PRINT  [触手召喚中] 
+SIF TEQUIP:55
+	PRINT  [死斗场决斗中] 
+PRINTL  
+RESETCOLOR
+
+;-------------------------------------------------
+;使用中の道具を表示する
+;-------------------------------------------------
+;一度使用したら解除するまで止まらない道具や調教を
+;追加した場合はここに追加をしてください
+;-------------------------------------------------
+@SHOW_EQUIP_1
+
+IF TEQUIP:11 || TEQUIP:13 || TEQUIP:14 || TEQUIP:15 || TEQUIP:16 || TEQUIP:17 || TEQUIP:18 || TEQUIP:19 || TEQUIP:21 || TEQUIP:22 || TEQUIP:43 || TEQUIP:44 || TEQUIP:45 || TEQUIP:46 || TEQUIP:47 || TEQUIP:48 || TEQUIP:49 || TEQUIP:98 || TFLAG:60 || TFLAG:899 >= 1
+	PRINTFORM 使用中(%SAVESTR:TARGET%) 
+
+SETCOLOR 0xff1493
+SIF TEQUIP:21
+	PRINT [媚药效果发挥中]
+SIF TEQUIP:22
+	PRINT [利尿剂效果发挥中]
+IF TEQUIP:11 && TEQUIP:90
+	PRINT [触手插入]
+ELSEIF TEQUIP:11
+	PRINT [蠕虫]
+ENDIF
+
+IF TEQUIP:13 && TEQUIP:90
+	PRINT [触手肛门插入]
+ELSEIF TEQUIP:13
+	PRINT [肛门虫]
+ENDIF
+
+IF TEQUIP:14 && TEQUIP:90
+	PRINT [触手蹂躏阴蒂]
+ELSEIF TEQUIP:14
+	PRINT [阴蒂夹]
+ENDIF
+
+IF TEQUIP:15 && TEQUIP:90
+	PRINT [触手蹂躏乳头]
+ELSEIF TEQUIP:15
+	PRINT [乳头夹]
+ENDIF
+
+IF TEQUIP:16 && TEQUIP:90
+	PRINT [触手榨乳]
+ELSEIF TEQUIP:16
+	PRINT [搾乳器]
+ENDIF
+
+IF TEQUIP:17 && TEQUIP:90
+	PRINT [触手蹂躏阴茎]
+ELSEIF TEQUIP:17
+	PRINT [飞机杯]
+ENDIF
+
+IF TEQUIP:44 && TEQUIP:90
+	PRINT [触手束缚]
+ELSEIF TEQUIP:44
+	PRINT [绳子束缚]
+ENDIF
+
+IF TEQUIP:46 && TEQUIP:90
+	PRINT [触手灌肠]
+ELSEIF TEQUIP:46
+	PRINT [灌肠＋肛门塞]
+ENDIF
+SIF TEQUIP:98
+	PRINT [触手口辱]
+
+SIF TEQUIP:43
+	PRINT [眼罩]
+SIF TEQUIP:45
+	PRINT [口塞]
+SIF TEQUIP:18
+	PRINT [淋浴]
+SIF TEQUIP:19
+	PRINT [肛珠]
+SIF TEQUIP:49
+	PRINT [肛门电极]
+SIF TFLAG:60 == 1 && PREVCOM != 56
+	PRINT [插入中]
+SIF TFLAG:899 >= 1
+	PRINT [失神中]
+RESETCOLOR
+
+;ココより↑にTEQUIPに登録したものを書き込む
+PRINTL  
+ENDIF
+
+;===========================================================
+;その他のデータ
+;===========================================================
+@SHOW_DATA(ARG)
+#DIM LOVE_ID
+
+IF CFLAG:ARG:130 > 0 && CFLAG:131 > 5
+	PRINT [凌辱隶属:
+ELSEIF CFLAG:ARG:130 > 0
+	PRINT [凌辱畏惧:
+ENDIF
+
+IF CFLAG:ARG:130 > 0
+	LOCAL = CFLAG:ARG:130
+	CALL MONSTER_NAME,LOCAL,0
+	PRINT ]
+ENDIF
+
+PRINT [结婚对象:
+IF CFLAG:ARG:601 == 900
+	PRINT 野狗
+ELSEIF CFLAG:ARG:601 == 901
+	PRINTFORM %SAVESTR:MASTER%
+ELSEIF CFLAG:ARG:601 == 902
+    IF CFLAG:606 == 200
+		CALL SEARCH_FAMILY,TARGET,"LOVE"
+		IF RESULT > 0
+			PRINTFORM %SAVESTR:RESULT%
+		ELSE
+			PRINT 恋人
+		ENDIF
+	ELSE
+		CALL NAME_LOVER, CFLAG:606, 1
+	ENDIF
+ELSEIF CFLAG:ARG:601 == 0 && !EX_TALENT:ARG:2
+	PRINTFORM %GET_LOOK_INFO(ARG, "婚史")%
+ELSEIF CFLAG:ARG:601 == 0 && EX_TALENT:ARG:2
+	PRINTFORM 无
+ELSEIF CFLAG:601 != 0
+	LOCAL = CFLAG:ARG:601
+	LOCAL %= 10
+	IF LOCAL == 9
+		CALL SEARCH_FAMILY,ARG,"MARRIAGE"
+		IF RESULT > 0
+			PRINTFORM %SAVESTR:RESULT%
+		ELSE
+			PRINT 无
+		ENDIF
+	ELSE
+		PRINTFORM %ITEMNAME:(CFLAG:ARG:601)%
+	ENDIF
+ENDIF
+
+PRINT ]
+
+PRINT [善恶值:
+PRINTV CFLAG:ARG:151
+
+IF CFLAG:ARG:151 > 150
+	PRINT |纯洁
+ELSEIF CFLAG:ARG:151 > 100
+	PRINT |正义
+ELSEIF CFLAG:ARG:151 > 50
+	PRINT |秩序
+ELSEIF CFLAG:ARG:151 > -50
+	PRINT |中立
+ELSEIF CFLAG:ARG:151 > -100
+	PRINT |混沌
+ELSEIF CFLAG:ARG:151 > -150
+	PRINT |堕落
+ELSE
+	PRINT |邪恶
+ENDIF
+
+PRINTL ]　
+
+;
+
+;████修改点3████
+@HEXtoDEC(hex,dec)
+#DIM REF hex
+#DIMS hexS
+#DIMS disassembleS,6
+#DIM disassemble,6
+#DIM REF dec,0
+#DIM temp
+
+TOSTR hex,hexS
+temp = 0
+WHILE temp < 6
+	SUBSTRING hexS,temp,1
+	disassembleS:temp = RESULT
+	temp++
+WEND
+temp = 0
+WHILE temp < 6
+	SELECTCASE disassembleS:temp
+	CASE "0"
+		disassemble:temp = 0
+	CASE "1"
+		disassemble:temp = 1
+	CASE "2"
+		disassemble:temp = 2
+	CASE "3"
+		disassemble:temp = 3
+	CASE "4"
+		disassemble:temp = 4
+	CASE "5"
+		disassemble:temp = 5
+	CASE "6"
+		disassemble:temp = 6
+	CASE "7"
+		disassemble:temp = 7
+	CASE "8"
+		disassemble:temp = 8
+	CASE "9"
+		disassemble:temp = 9
+	CASE "A"
+		disassemble:temp = 10
+	CASE "B"
+		disassemble:temp = 11
+	CASE "C"
+		disassemble:temp = 12
+	CASE "D"
+		disassemble:temp = 13
+	CASE "E"
+		disassemble:temp = 14
+	CASE "F"
+		disassemble:temp = 15
+	ENDSELECT
+	temp++
+WEND
+dec:0 = disassemble:0 * 15 + disassemble:1
+dec:1 = disassemble:2 * 15 + disassemble:3
+dec:2 = disassemble:4 * 15 + disassemble:5
+
+RETURN 0
+
+@ColorJudgmentWorB(colorValue)
+#DIM REF colorValue,0
+
+IF (colorValue:0 + colorValue:1 + colorValue:2) / 3 <= 128
+	colorValue:1 = 255,255,255
+ELSE 
+	colorValue:1 = 0,0,0
+ENDIF 
+
+RETURN 0
+;████修改点3████

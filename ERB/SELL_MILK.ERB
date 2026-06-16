@@ -1,0 +1,57 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;母乳売却
+;-------------------------------------------------
+@SELL_MILK
+
+SIF TARGET < 0 || TARGET > CHARANUM
+	RETURN 0
+
+A = TFLAG:35 * 10
+
+IF A > 600
+	A = 600
+ENDIF
+
+O = A * 50
+
+IF A > 0
+	DRAWLINE
+
+	IF EXP:54 <= EXPLV:3
+		TIMES O , 1.00
+	ELSEIF EXP:54 <= EXPLV:4
+		TIMES O , 1.20
+	ELSEIF EXP:54 <= EXPLV:5
+		TIMES O , 1.50
+	ELSE
+		TIMES O , 2.00
+	ENDIF
+
+	;处女なら売却額三倍
+	SIF TALENT:0
+		O = O * 3
+	;弄乳狂なら売却額ニ倍
+	SIF TALENT:78
+		O = O * 2
+
+	PRINTFORML 使用挤奶器从%SAVESTR:TARGET%身上榨出了{A}cc的母乳。
+	IF ASSI > 0
+		IF ABL:ASSI:15
+			PRINTFORML %SAVESTR:ASSI%巧妙地推销，使%SAVESTR:TARGET%的母乳卖得比平常更贵了。
+			O *= 100 + ABL:ASSI:15 * 5
+			O /= 100
+		ENDIF
+	ENDIF
+	IF O > 40000
+	O = 40000
+	ENDIF
+	PRINTFORML %SAVESTR:TARGET%的母乳价值{O}点。
+	MONEY += O
+	EX_FLAG:4444 += O
+	PRINTFORML 所持金增加了{O}点。
+	WAIT
+ENDIF
+
+RETURN 0

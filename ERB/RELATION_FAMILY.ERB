@@ -1,0 +1,1012 @@
+﻿;所有函数的参数L_A >= 0
+;--------------------------------------------------
+;
+; C_RELATION =	家庭关系 （0~32）
+;		1,兄 2,姊 3,弟 4,妹 5,父 6,母 7,儿 8,娘（1,3,5,7は半実装）
+;
+; TALENT:320 =	家族構成
+;		X,			[1]有无设定
+;		X0,			[2]
+;		X00,		[3]女儿
+;		X000,		[4]儿子
+;		X0000,		[5]婚姻 1结婚 2离婚 3复婚 4重婚 5死别
+;		X00000,		[6]姐姐
+;		X000000,	[7]哥哥
+;		X0000000,	[8]妹妹
+;		X00000000,	[9]弟弟
+;		
+;
+;==================================================
+
+;==================================================
+;	家族：新登录的角色注册家族
+;--------------------------------------------------
+@FAMILY_REGISTER(L_A)
+#DIM L_A
+
+IF L_A == MASTER
+	RETURN
+
+;新生儿在NINSIN.ERB注册家族
+ELSEIF TALENT:L_A:220
+	RETURN
+
+;村娘A
+ELSEIF TALENT:L_A:村娘Ａ
+	LOCAL = FINDCHARA(TALENT:0:村娘Ｂ,1)
+	SIF LOCAL >= 0
+		CALL FAMILY_SETBOTH(L_A,LOCAL,2)
+	RETURN LOCAL,2
+	
+;村娘B
+ELSEIF TALENT:L_A:村娘Ｂ
+	LOCAL = FINDCHARA(TALENT:0:村娘Ａ,1)
+	SIF LOCAL >= 0
+		CALL FAMILY_SETBOTH(L_A,LOCAL,4)
+	RETURN LOCAL,4
+	
+;特殊角色
+ELSEIF INRANGE(NO:L_A, 17, 40)
+	RETURN
+ENDIF
+
+CALL RELATION_REBUILD
+;当前角色已经注册家族信息
+IF RF_COUNT(L_A) > 0
+	RETURN
+
+;勇者、奴隶、精英部下
+ELSE
+	JUMP FAMILY_REGISTER_SLAVE(L_A)
+ENDIF
+
+
+
+;==================================================
+;	家族：新登录的勇者/精英部下建立家庭关系
+;--------------------------------------------------
+@FAMILY_REGISTER_SLAVE(L_A)
+#DIM L_I
+#DIM L_A
+#DIM L_B
+#DIM L_CHARAS, 100
+#DIM L_RELEVS, 100
+#DIM L_EXP_AGE
+#DIM L_EXP_AGE2
+
+VARSET L_CHARAS,-1
+VARSET L_RELEVS,-1
+
+;获取当前角色的相对年龄(-12,+14)
+L_EXP_AGE = CHAR_AGE_EXPECT(L_A)
+
+CALL RELATION_REBUILD
+
+L_I = 0
+;寻找任何可能具有家族关系的角色
+FOR L_B, 0, CHARANUM
+	
+	SIF L_B == L_A || MASTER == L_B
+		CONTINUE
+	
+	;忽略魔王或奴隶生下的孩子
+	SIF TALENT:L_B:220
+		CONTINUE
+	
+	;忽略村娘A B
+	SIF TALENT:L_B:村娘Ａ || TALENT:L_B:村娘Ｂ
+		CONTINUE
+	;(stick增加)忽略特殊角色
+	SIF INRANGE(NO:L_B, 17, 40)
+	    CONTINUE
+
+	;忽略不同种族\勇者前经历差异较大的角色
+	CALL F_CHECK_RELEVANT(L_A,L_B)
+	SIF RESULT == 0
+		CONTINUE
+	
+	;忽略已经建立的家庭关系多于2个
+	SIF RF_COUNT(L_B) >= 2
+		CONTINUE
+	
+	;比较两个角色的相对年龄	;-15  +18(31)
+	L_EXP_AGE2 = CHAR_AGE_EXPECT(L_B)
+	LOCAL = L_EXP_AGE2 - L_EXP_AGE
+	
+	;B-A>10, B生育 >>B是A的母亲
+	IF LOCAL > 10 &&  EXP:L_B:60 && L_EXP_AGE < 0
+		;B有女儿且A是女孩或B有兒子且A是男孩嗎？
+		IF TALENT:L_A:122
+			SIF RF_COUNT(L_B, 7) > 0
+				CONTINUE
+		ELSEIF TALENT:L_A:122 == 0
+			SIF RF_COUNT(L_B, 8) > 0
+				CONTINUE
+		ENDIF
+		
+		;A的母亲是B
+		CALL RF_JOINTO(L_A, L_B, 6)
+		RETURN L_B,6
+		
+	;B-A>10, B為男性 B有性交經驗 >>B可能是A的父亲
+	ELSEIF LOCAL > 10 && TALENT:L_B:122 && L_EXP_AGE < 0 && EXP:L_B:5
+		;B有女儿且A是女孩或B有兒子且A是男孩嗎？
+		IF RAND:4
+			IF TALENT:L_A:122
+				SIF RF_COUNT(L_B, 7) > 0
+					CONTINUE
+			ELSEIF TALENT:L_A:122 == 0
+				SIF RF_COUNT(L_B, 8) > 0
+					CONTINUE
+			ENDIF
+		ENDIF
+		
+		;A的父親是B
+		CALL RF_JOINTO(L_A, L_B, 5)
+		RETURN L_B,5
+		
+	;B-A>-10, A生育	>>B是A的女儿
+	ELSEIF LOCAL < -10 && EXP:L_A:60 && L_EXP_AGE2 < 0
+		;B有母亲么？
+		SIF RF_COUNT(L_B, 6) > 0
+			CONTINUE
+			
+		;A的女儿是B
+		CALL RF_JOINTO(L_A, L_B, 8)
+		RETURN L_B,8
+
+	;B-A>-10, A生育	B為男性 >>B是A的兒子
+	ELSEIF LOCAL < -10 && EXP:L_A:60 && L_EXP_AGE2 < 0 && TALENT:L_B:122
+		;B有母亲么？
+		SIF RF_COUNT(L_B, 6) > 0
+			CONTINUE
+			
+		;A的兒子是B
+		CALL RF_JOINTO(L_A, L_B, 7)
+		RETURN L_B,7
+
+	;B-A>-10, A為男性 A有性交經驗 >>B可能是A的女儿
+	ELSEIF LOCAL < -10 && EXP:L_A:5 && L_EXP_AGE2 < 0 && TALENT:L_A:122
+		;B有父親么？
+		SIF RF_COUNT(L_B, 5) > 0 && RAND:4
+			CONTINUE
+			
+		;A的女儿是B
+		CALL RF_JOINTO(L_A, L_B, 8)
+		RETURN L_B,8
+
+	;B-A>-10, A為男性 A有性交經驗 B為男性 >>B可能是A的兒子
+	ELSEIF LOCAL < -10 && EXP:L_A:5 && L_EXP_AGE2 < 0 && TALENT:L_B:122 && TALENT:L_A:122 
+		;B有父親么？
+		SIF RF_COUNT(L_B, 5) > 0 && RAND:4
+			CONTINUE
+			
+		;A的兒子是B
+		CALL RF_JOINTO(L_A, L_B, 7)
+		RETURN L_B,7
+				
+	ELSEIF LOCAL > 1	;B是A的姐姐
+		;B有妹妹且A是女孩或B有弟弟且A是男孩么？
+		IF TALENT:L_A:122
+			SIF RF_COUNT(L_B, 3) > 0
+				CONTINUE
+		ELSEIF TALENT:L_A:122 == 0
+			SIF RF_COUNT(L_B, 4) > 0
+				CONTINUE
+		ENDIF		
+		
+		;A的姐姐是B
+		CALL RF_JOINTO(L_A, L_B, 2)
+		RETURN L_B,2
+		
+	ELSEIF LOCAL > 1 && TALENT:L_B:122	;B是A的哥哥
+		;B有妹妹且A是女孩或B有弟弟且A是男孩么？
+		IF TALENT:L_A:122
+			SIF RF_COUNT(L_B, 3) > 0
+				CONTINUE
+		ELSEIF TALENT:L_A:122 == 0
+			SIF RF_COUNT(L_B, 4) > 0
+				CONTINUE
+		ENDIF		
+		
+		;A的姐姐是B
+		CALL RF_JOINTO(L_A, L_B, 1)
+		RETURN L_B,2
+		
+	ELSEIF LOCAL < -1	;B是A的妹妹
+		;B有姐姐且A是女孩或B有哥哥且A是男孩么？
+		IF TALENT:L_A:122
+			SIF RF_COUNT(L_B, 1) > 0
+				CONTINUE
+		ELSEIF TALENT:L_A:122 == 0
+			SIF RF_COUNT(L_B, 2) > 0
+				CONTINUE
+		ENDIF		
+		
+		;A的妹妹是B
+		CALL RF_JOINTO(L_A, L_B, 4)
+		RETURN L_B,4
+		
+	ELSEIF LOCAL < -1 && TALENT:L_B:122	;B是A的弟弟
+		;B有姐姐且A是女孩或B有哥哥且A是男孩么？
+		IF TALENT:L_A:122
+			SIF RF_COUNT(L_B, 1) > 0
+				CONTINUE
+		ELSEIF TALENT:L_A:122 == 0
+			SIF RF_COUNT(L_B, 2) > 0
+				CONTINUE
+		ENDIF		
+		
+		;A的弟弟是B
+		CALL RF_JOINTO(L_A, L_B, 3)
+		RETURN L_B,3
+		
+	ELSEIF INRANGE(LOCAL,1,-1)			;说不清是姐姐还是妹妹
+		;B有姐姐么？
+		IF RF_COUNT(L_B, 2) <= 0 && CFLAG:L_A:451 >= CFLAG:L_B:451
+			;A的妹妹是B
+			CALL RF_JOINTO(L_A, L_B, 4)
+			RETURN L_B,4
+		;B有妹妹么？
+		ELSEIF RF_COUNT(L_B, 4) <= 0 && CFLAG:L_A:451 <= CFLAG:L_B:451
+			;A的姐姐是B
+			CALL RF_JOINTO(L_A, L_B, 2)
+			RETURN L_B,2
+		ENDIF
+	ELSEIF INRANGE(LOCAL,1,-1) && TALENT:L_B:122			;说不清是哥哥还是弟弟
+		;B有哥哥么？
+		IF RF_COUNT(L_B, 2) <= 0 && CFLAG:L_A:451 >= CFLAG:L_B:451
+			;A的弟弟是B
+			CALL RF_JOINTO(L_A, L_B, 4)
+			RETURN L_B,4
+		;B有弟弟么？
+		ELSEIF RF_COUNT(L_B, 4) <= 0 && CFLAG:L_A:451 <= CFLAG:L_B:451
+			;A的哥哥是B
+			CALL RF_JOINTO(L_A, L_B, 2)
+			RETURN L_B,2
+		ENDIF
+	ENDIF
+NEXT
+RETURN 0,0
+; IF L_I > 0
+	; L_I = RAND:L_I
+	; L_B = L_CHARAS:L_I
+	; LOCAL = L_RELEVS:L_I
+	; CALL RF_JOINTO(L_A,L_B,LOCAL)
+	; RETURN L_B, LOCAL
+; ENDIF
+
+
+;==================================================
+;	家族：获取两个角色之间的家族关系
+;--------------------------------------------------
+@FAMILY_GET(L_A, L_B)
+#DIM L_A
+#DIM L_B
+
+CALL RELATION_GET(L_A,L_B)
+
+LOCAL = RESULT % 10
+RESULTS '= F_TYPE_TO_STR(LOCAL)
+RETURN LOCAL
+
+;==================================================
+;	家族：设置两个角色之间的家族关系
+;--------------------------------------------------
+@FAMILY_SETBOTH(L_A, L_B, L_TYPE)
+#DIM L_A
+#DIM L_B
+#DIM L_TYPE
+
+IF L_B >= 0
+	CALL RELATION_GET(L_A,L_B)
+	CALL R_SET(L_A,L_B,RESULT/10*10 + L_TYPE%10)
+	L_TYPE = F_TYPE_REVERSE(L_TYPE)
+	RESULT = R_GET(L_B,L_A)
+	CALL R_SET(L_B,L_A,RESULT/10*10 + L_TYPE%10)
+ELSE
+	CALL RELATION_GET(L_A,L_B)
+	CALL R_SET(L_A,L_B,RESULT/10*10 + L_TYPE%10)
+ENDIF
+
+
+;==================================================
+;	家族：将A加入到B所在的家庭
+;--------------------------------------------------
+@FAMILY_JOINTO(L_A, L_B, L_TYPE)
+#DIM L_A
+#DIM L_B
+#DIM L_TYPE
+;#DIM A_IS_FATHER
+
+CALL RELATION_REBUILD
+JUMP RF_JOINTO(L_A, L_B, L_TYPE)
+
+;==================================================
+;	家族：A出生到母亲B所在的家庭
+;--------------------------------------------------
+@FAMILY_BIRTHTO_MOM(L_A, L_B)
+#DIM L_A
+#DIM L_B
+
+IF L_B < 0
+	THROW 无效操作：FAMILY_BIRTHTO_MOM({L_A},{L_B}) 狂王良犬等（L_B<0）不可能作为母亲
+ENDIF
+
+CALL RELATION_REBUILD
+JUMP RF_JOINTO(L_A, L_B, 6)
+
+;==================================================
+;	家族：A出生到父亲B所在的家庭
+;		  若L_B为狂王良犬等则只记录家族关系（狂王良犬等没有家庭）
+;--------------------------------------------------
+@FAMILY_BIRTHTO_DAD(L_A, L_B)
+#DIM L_A
+#DIM L_B
+
+IF L_B < 0
+	CALL RF_SETBOTH(L_A,L_B,5)
+	RETURN
+ENDIF
+
+CALL RELATION_REBUILD
+JUMP RF_JOINTO(L_A, L_B, 5)
+
+
+;==================================================
+;	家族：输出家庭成员
+;--------------------------------------------------
+@FAMILY_PRINT_INFO(L_A)
+#DIM L_A
+#DIM L_I
+#DIM L_RET
+#DIM L_COUNT
+
+CALL RELATION_REBUILD
+L_COUNT = 0
+
+;1,兄 2,姉 3,弟 4,妹 5,父 6,母 7,息子 8,娘
+
+;列出父母，带type
+CALL RF_ALL(L_A, 6, LOCAL,1)
+IF RESULT > 0
+	L_RET += RESULT
+	FOR L_I, 0, RESULT
+		PRINT [
+		PRINTV F_TYPE_TO_STR(LOCAL:(L_I*2+1))
+		PRINT ：
+		PRINTBUTTON R_CHARA_TO_NAME(LOCAL:(L_I*2)), 15000+LOCAL:(L_I*2)
+		PRINT ]
+		L_COUNT ++
+	NEXT
+ENDIF
+
+;列出兄弟姐妹，不带type，忽略长幼
+CALL RF_ALL(L_A, 2, LOCAL,,,1)
+IF RESULT > 0
+	L_RET += RESULT
+	PRINT [姐妹：
+	FOR L_I, 0, RESULT
+		IF L_I == 0
+		ELSEIF L_COUNT >= 6
+			PRINT 等
+			BREAK
+		ELSE
+			PRINTV " "
+		ENDIF
+		PRINTBUTTON R_CHARA_TO_NAME(LOCAL:(L_I)), 15000+LOCAL:(L_I)
+		L_COUNT ++
+	NEXT
+	PRINT ]
+ENDIF
+
+;列出所有孩子
+CALL RF_ALL(L_A, 8, LOCAL)
+IF RESULT > 0
+	L_RET += RESULT
+	PRINT [子女：
+	FOR L_I, 0, RESULT
+		IF L_I == 0
+		ELSEIF L_COUNT >= 6
+			PRINT 等
+			BREAK
+		ELSE
+			PRINTV " "
+		ENDIF
+		PRINTBUTTON R_CHARA_TO_NAME(LOCAL:(L_I)), 15000+LOCAL:(L_I)
+		L_COUNT ++
+	NEXT
+	PRINT ]
+ENDIF
+
+SIF !LINEISEMPTY()
+	PRINTL
+
+RESULT:1 = L_RET
+RETURN L_COUNT
+
+;==================================================
+;	家族：输出家庭成员
+;--------------------------------------------------
+@FAMILY_INFO(L_A)
+#DIM L_A
+#DIM L_T
+#DIM L_TA
+
+CALL RELATION_REBUILD
+
+LOCALS =
+L_T = TALENT:L_A:320
+L_TA = L_T % 10 != 0
+
+
+
+;--------------------------------------------------
+;	家族：统计某个角色的指定家族成员的数量（检查）
+;
+;	L_A		查找家庭关系的角色
+;	L_TYPE	家庭关系（-1,任意 1,兄 2,姉 3,弟 4,妹 5,父 6,母 7,息子 8,娘（1,3,5,7は未実装）
+;--------------------------------------------------
+@RF_COUNT(L_A, L_TYPE = -1, IGNORE_GENDER = 1, IGNORE_OLDYOUNG = 0)
+#FUNCTION
+#DIM L_I
+#DIM L_A
+#DIM L_B
+#DIM L_TYPE
+#DIM IGNORE_GENDER	;忽略性别的不同
+#DIM IGNORE_OLDYOUNG
+
+L_I = 0
+
+FOR L_B, 0, CHARANUM
+	
+	SIF L_A == L_B
+		CONTINUE
+		
+	LOCAL = R_GET(L_A, L_B) % 10
+{
+	IF (L_TYPE < 0 && LOCAL > 0) 
+	|| LOCAL == L_TYPE 
+	|| (L_TYPE > 0 && IGNORE_GENDER && (LOCAL+1)/2 == (L_TYPE+1)/2)
+	|| (L_TYPE > 0 && IGNORE_OLDYOUNG && (LOCAL+3)/4 == (L_TYPE+3)/4)
+}
+		L_I ++
+	ENDIF
+NEXT
+
+FOR L_B, 1, 10
+	LOCAL = R_GET(L_A, L_B * -1) % 10
+{
+	IF (L_TYPE < 0 && LOCAL > 0) 
+	|| LOCAL == L_TYPE 
+	|| (L_TYPE > 0 && IGNORE_GENDER && (LOCAL+1)/2 == (L_TYPE+1)/2)
+	|| (L_TYPE > 0 && IGNORE_OLDYOUNG && (LOCAL+3)/4 == (L_TYPE+3)/4)
+}
+		L_I ++
+	ENDIF
+NEXT
+
+RETURNF L_I
+
+
+;--------------------------------------------------
+;	家族：返回某个角色首个符合指定条件的家族成员（！部分检查）
+;--------------------------------------------------
+@RF_FIRST(L_A, L_TYPE = -1, IGNORE_GENDER = 1, IGNORE_OLDYOUNG = 0)
+#FUNCTION
+#DIM L_A
+#DIM L_B
+#DIM L_TYPE
+#DIM RETURN_TYPE	;同时返回关系类型数字
+#DIM IGNORE_GENDER	;忽略性别的不同
+#DIM IGNORE_OLDYOUNG
+
+FOR L_B, 0, CHARANUM
+
+	SIF L_A == L_B
+		CONTINUE
+		
+	LOCAL = R_GET(L_A, L_B) % 10
+{
+	IF (L_TYPE < 0 && LOCAL > 0) 
+	|| LOCAL == L_TYPE 
+	|| (L_TYPE > 0 && IGNORE_GENDER && (LOCAL+1)/2 == (L_TYPE+1)/2)
+	|| (L_TYPE > 0 && IGNORE_OLDYOUNG && (LOCAL+3)/4 == (L_TYPE+3)/4)
+}
+		RETURNF L_B
+	ENDIF
+NEXT
+
+FOR L_B, 01, 10
+	LOCAL = R_GET(L_A, L_B * -1) % 10
+{
+	IF (L_TYPE < 0 && LOCAL > 0) 
+	|| LOCAL == L_TYPE 
+	|| (L_TYPE > 0 && IGNORE_GENDER && (LOCAL+1)/2 == (L_TYPE+1)/2)
+	|| (L_TYPE > 0 && IGNORE_OLDYOUNG && (LOCAL+3)/4 == (L_TYPE+3)/4)
+}
+		RETURNF L_B
+	ENDIF
+NEXT
+
+RETURNF -99
+
+;--------------------------------------------------
+;	家族：查找某个角色的指定家族成员（检查）
+;--------------------------------------------------
+@RF_ALL(L_A, L_TYPE = -1, L_DATA, RETURN_TYPE = 0, IGNORE_GENDER = 1, IGNORE_OLDYOUNG = 0)
+#DIM L_I
+#DIM L_A
+#DIM L_B
+#DIM L_TYPE
+#DIM REF L_DATA,0	;返回数据
+#DIM RETURN_TYPE	;同时返回关系类型数字
+#DIM IGNORE_GENDER	;忽略性别的不同
+#DIM IGNORE_OLDYOUNG ;忽略兄弟姐妹的不同
+
+VARSET L_DATA,-99
+
+L_I = 0
+
+FOR L_B, 0, CHARANUM
+
+	IF C_RELATION:L_B:L_B != NID(L_B)
+		CALL RELATION_REBUILD
+		RESTART
+	ENDIF
+	
+	SIF L_A == L_B
+		CONTINUE
+		
+	LOCAL = R_GET(L_A, L_B) % 10
+{
+	IF (L_TYPE < 0 && LOCAL > 0) 
+	|| LOCAL == L_TYPE 
+	|| (L_TYPE > 0 && IGNORE_GENDER && (LOCAL+1)/2 == (L_TYPE+1)/2)
+	|| (L_TYPE > 0 && IGNORE_OLDYOUNG && (LOCAL+3)/4 == (L_TYPE+3)/4)
+}
+		L_DATA:L_I = L_B
+		L_I ++
+		IF RETURN_TYPE
+			L_DATA:L_I = LOCAL
+			L_I ++
+		ENDIF
+	ENDIF
+NEXT
+
+FOR L_B, 1, 10
+
+	SIF L_A == L_B * -1
+		CONTINUE
+		
+	LOCAL = R_GET(L_A, L_B * -1) % 10
+{
+	IF (L_TYPE < 0 && LOCAL > 0) 
+	|| LOCAL == L_TYPE 
+	|| (L_TYPE > 0 && IGNORE_GENDER && (LOCAL+1)/2 == (L_TYPE+1)/2)
+	|| (L_TYPE > 0 && IGNORE_OLDYOUNG && (LOCAL+3)/4 == (L_TYPE+3)/4)
+}
+		L_DATA:L_I = L_B * -1
+		L_I ++
+		IF RETURN_TYPE
+			L_DATA:L_I = LOCAL
+			L_I ++
+		ENDIF
+	ENDIF
+NEXT
+
+SIF RETURN_TYPE
+	RETURN L_I/2
+
+RETURN L_I
+
+
+;--------------------------------------------------
+;	家族：获取两个角色之间的家族关系（不检查）
+;--------------------------------------------------
+@RF_GET(L_A, L_B)
+#FUNCTION
+#DIM L_A
+#DIM L_B
+RETURNF R_GET(L_A,L_B) % 10
+
+
+;--------------------------------------------------
+;	家族：设置两个角色之间的家族关系（不检查）
+;--------------------------------------------------
+@RF_SETBOTH(L_A, L_B, L_TYPE)
+#DIM L_A
+#DIM L_B
+#DIM L_TYPE
+
+
+SIF L_A == L_B
+	THROW 无效的操作：RF_SETBOTH({L_A},{L_B},{L_TYPE}) 不能对角色自己设置家族关系
+
+IF L_B >= 0
+	RESULT = R_GET(L_A,L_B)
+	CALL R_SET(L_A,L_B,RESULT/10*10 + L_TYPE%10)
+	L_TYPE = F_TYPE_REVERSE(L_TYPE)
+	RESULT = R_GET(L_B,L_A)
+	CALL R_SET(L_B,L_A,RESULT/10*10 + L_TYPE%10)
+ELSE
+	RESULT = R_GET(L_A,L_B)
+	CALL R_SET(L_A,L_B,RESULT/10*10 + L_TYPE%10)
+ENDIF
+
+
+;--------------------------------------------------
+;	家族：将A加入到B所在的家庭（不检查）（L_B > 0）（狂王良犬等没有家庭）
+;--------------------------------------------------
+@RF_JOINTO(L_A, L_B, L_TYPE, IS_FATHER = 0)
+#DIM L_I
+#DIM L_A
+#DIM L_B
+#DIM L_C
+#DIM L_TYPE
+#DIM IS_FATHER	;L_A是父亲？
+#DIM L_COUNT
+
+
+
+SIF L_A < 0
+	THROW 无效的操作：RF_JOINTO({L_A},{L_B},{L_TYPE}) 狂王良犬等不能加入其它家庭
+SIF L_B < 0
+	THROW 无效的操作：RF_JOINTO({L_A},{L_B},{L_TYPE}) 不能加入狂王良犬等的家庭
+	
+;生下的孩子加入父母的族谱
+;组成家族，B是父母
+IF (L_TYPE == 5||L_TYPE == 6)
+		
+	;列出L_B所有女儿
+	CALL RF_ALL(L_B, 8, LOCAL)
+	
+	FOR L_I, 0, RESULT
+		L_C = LOCAL:L_I
+		;跳过L_A本人
+		SIF L_C == L_A
+			CONTINUE
+		;A的年龄没有初始化或两人年龄相同
+		IF CFLAG:L_A:451 == 0 || CFLAG:L_A:451 == CFLAG:L_C:451
+			CALL RF_SETBOTH(L_A, L_C, RAND:2*2 +2) 
+		;A的年龄比C大，A的妹妹是C
+		ELSEIF CFLAG:L_A:451 > CFLAG:L_C:451
+			CALL RF_SETBOTH(L_A, L_C, 4)
+		;A的年龄比C小，A的姐姐是C
+		ELSE 
+			CALL RF_SETBOTH(L_A, L_C, 2)
+		ENDIF
+	NEXT
+	
+	CALL RF_SETBOTH(L_A,L_B,L_TYPE)
+	
+	RETURN L_I + 1
+
+;其他对生下的孩子的操作
+ELSEIF TALENT:L_A:220
+	THROW 无效的操作：RF_JOINTO({L_A},{L_B},{L_TYPE}) 只能将生下的孩子加入到父母所在家族
+
+;组成家族，B是兄妹
+ELSEIF GROUPMATCH(L_TYPE, 1,2,3,4)
+
+	;列出L_B所有父母（列出是父还是母）
+	CALL RF_ALL(L_B, 6, LOCAL, 1)
+	
+	FOR L_I, 0, RESULT
+		L_C = LOCAL:(L_I*2)
+		;跳过L_A本人
+		SIF L_C == L_A
+			CONTINUE
+		;A的[父,母]是C
+		CALL RF_SETBOTH(L_A,L_C,LOCAL:(L_I*2+1))
+	NEXT
+	L_COUNT += L_I/2
+	
+	;列出所有兄弟姐妹
+	CALL RF_ALL(L_B, 2, LOCAL,,,1)
+	
+	FOR L_I, 0, RESULT
+		L_C = LOCAL:L_I
+		;跳过L_A本人
+		SIF L_C == L_A
+			CONTINUE
+		;A的年龄没有初始化或两人年龄相同
+		IF CFLAG:L_A:451 == 0 || CFLAG:L_A:451 == CFLAG:L_C:451
+			CALL RF_SETBOTH(L_A, L_C, RAND:2*2 +2) 
+		;A的年龄比C大，A的妹妹是C
+		ELSEIF CFLAG:L_A:451 > CFLAG:L_C:451
+			CALL RF_SETBOTH(L_A, L_C, 4)
+		;A的年龄比C小，A的姐姐是C
+		ELSE 
+			CALL RF_SETBOTH(L_A, L_C, 2)
+		ENDIF
+	NEXT
+	L_COUNT += L_I
+	
+	CALL RF_SETBOTH(L_A,L_B,L_TYPE)
+	L_COUNT ++
+	
+	RETURN L_COUNT
+	
+;组成家族，B是孩子，A是父母
+ELSEIF L_TYPE == 7 || L_TYPE == 8
+	;A是父亲
+	IS_FATHER = IS_FATHER % 2
+		
+	;列出所有兄弟姐妹
+	CALL RF_ALL(L_B, 2, LOCAL,,,1)
+		
+	FOR L_I, 0, RESULT
+		L_C = LOCAL:L_I
+		;跳过L_A本人
+		SIF L_C == L_A
+			CONTINUE
+		;A的孩子是C
+		CALL RF_SETBOTH(L_A, L_C, 8)
+	NEXT
+	
+	CALL RF_SETBOTH(L_A,L_B,L_TYPE)
+	
+	RETURN L_I + 1
+	
+ENDIF
+
+
+;--------------------------------------------------
+;	家族：翻转家族关系
+;--------------------------------------------------
+;1,兄 2,姉 3,弟 4,妹 5,父 6,母 7,息子 8,娘（1,3,5,7は未実装）
+;--------------------------------------------------
+@F_TYPE_REVERSE(L_TYPE, IS_MALE = 0)
+#DIM L_TYPE
+#DIM IS_MALE
+#FUNCTION
+SELECTCASE L_TYPE
+CASE 1,2	; 兄 姉
+	LOCAL = 4
+CASE 3,4	; 弟 妹
+	LOCAL = 2
+CASE 5,6	; 父 母
+	LOCAL = 8
+CASE 7,8	; 息子 娘
+	LOCAL = 6
+CASEELSE
+	RETURNF 0
+ENDSELECT
+
+SIF IS_MALE
+	LOCAL -= 1
+
+RETURNF LOCAL
+
+
+@F_TYPE_TO_STR(L_TYPE)
+#DIM L_TYPE
+#FUNCTIONS
+SELECTCASE L_TYPE
+CASE 0
+	LOCALS = 无
+CASE 1
+	LOCALS = 兄
+CASE 2
+	LOCALS = 姊
+CASE 3
+	LOCALS = 弟
+CASE 4
+	LOCALS = 妹
+CASE 5
+	LOCALS = 父
+CASE 6
+	LOCALS = 母
+CASE 7
+	LOCALS = 儿
+CASE 8
+	LOCALS = 娘
+CASEELSE
+	LOCALS = 不明
+	;!;LOCALS = {L_TYPE}
+ENDSELECT
+RETURNF LOCALS
+
+@F_TYPE_TO_STR2(L_TYPE)
+#DIM L_TYPE
+#FUNCTIONS
+SELECTCASE L_TYPE
+CASE 0
+	LOCALS = 无
+CASE 1
+	LOCALS = 哥哥
+CASE 2
+	LOCALS = 姐姐
+CASE 3
+	LOCALS = 弟弟
+CASE 4
+	LOCALS = 妹妹
+CASE 5
+	LOCALS = 父亲
+CASE 6
+	LOCALS = 母亲
+CASE 7
+	LOCALS = 儿子
+CASE 8
+	LOCALS = 女儿
+CASEELSE
+	LOCALS = 不明
+	;!;LOCALS = {L_TYPE}
+ENDSELECT
+RETURNF LOCALS
+
+
+;--------------------------------------------------
+;	检查A是否与B的家族位于同一社会阶层
+;--------------------------------------------------
+@F_CHECK_RELEVANT(L_A, L_B)
+#DIM L_A
+#DIM L_B
+#DIM L_I
+#DIM L_RET
+
+SIF !F_IS_SAME_RACE(L_A,L_B)
+	RETURN 0
+
+SIF !LIMIT(NID_GET_TYPE(NID(L_A)),0,1) == LIMIT(NID_GET_TYPE(NID(L_B)),0,1)
+	RETURN 0
+
+SIF !F_IS_CLOSE_EXPERIENCE(TALENT:L_A:315,TALENT:L_B:315)
+	RETURN 0
+	
+CALL RF_ALL(L_A,-1,LOCAL)
+FOR L_I, 0, RESULT
+	SIF !F_IS_CLOSE_EXPERIENCE(TALENT:L_A:315,TALENT:(LOCAL:L_I):315)
+		RETURN 0
+NEXT
+
+
+RETURN 1
+
+
+;--------------------------------------------------
+;	检查两个角色的成为勇者前的经历是否相近
+;--------------------------------------------------
+@F_IS_CLOSE_EXPERIENCE(L_EXP_A,L_EXP_B)
+#FUNCTION
+#DIM L_EXP_A
+#DIM L_EXP_B
+
+SIF L_EXP_A == L_EXP_B
+	RETURNF 1
+
+SIF L_EXP_A == 0 || L_EXP_B == 0
+	RETURNF 1
+
+;修女与巫女、预言家、占卜师的宗教冲突
+SIF (L_EXP_A == 2||L_EXP_B == 2) && (GROUPMATCH(L_EXP_A, 11,13,14)||GROUPMATCH(L_EXP_B, 11,13,14))
+	RETURNF 0
+	
+;贵族 圣女 
+IF GROUPMATCH(L_EXP_A, 8, 12)
+	;贵族 圣女 
+	SIF GROUPMATCH(L_EXP_B, 8, 12)
+		RETURNF 1
+	;学生 修女 军人
+	SIF GROUPMATCH(L_EXP_B, 1, 2, 19)
+		RETURNF 1
+	;巫女 预言家 占卜师 商人 隐士
+	;SIF GROUPMATCH(L_EXP_B, 11, 13, 14, 15)
+	;	RETURNF 1
+;学生 修女 军人
+ELSEIF GROUPMATCH(L_EXP_A, 1, 2, 19)
+	;学生 修女 军人
+	SIF GROUPMATCH(L_EXP_B, 1, 2, 19)
+		RETURNF 1
+	;巫女 预言家 占卜师 商人 隐士
+	SIF GROUPMATCH(L_EXP_B, 11, 13, 14, 15)
+		RETURNF 1
+	;农民 渔民 守墓人 采药人 面包师 主妇 
+	SIF GROUPMATCH(L_EXP_B, 3, 4, 10, 16, 18, 21)
+		RETURNF 1
+;巫女 预言家 占卜师 商人 隐士
+ELSEIF GROUPMATCH(L_EXP_A, 11, 13, 14, 15)
+	;巫女 预言家 占卜师 商人 隐士
+	SIF GROUPMATCH(L_EXP_B, 11, 13, 14, 15)
+		RETURNF 1
+	;农民 渔民 守墓人 采药人 面包师 主妇 
+	SIF GROUPMATCH(L_EXP_B, 3, 4, 10, 16, 18, 21)
+		RETURNF 1
+;农民 渔民 守墓人 采药人 面包师 主妇 
+ELSEIF GROUPMATCH(L_EXP_A, 3, 4, 10, 16, 18, 21)
+	;农民 渔民 守墓人 采药人 面包师 主妇 
+	SIF GROUPMATCH(L_EXP_B, 3, 4, 10, 16, 18, 21)
+		RETURNF 1
+	;妓女 小偷 乞丐 贫民 奴隶
+	; SIF GROUPMATCH(L_EXP_B, 5, 6, 7, 9, 20)
+		; RETURNF 1
+;妓女 小偷 乞丐 贫民 奴隶
+ELSEIF GROUPMATCH(L_EXP_A, 5, 6, 7, 9, 20)
+	;妓女 小偷 乞丐 贫民 奴隶
+	SIF GROUPMATCH(L_EXP_B, 5, 6, 7, 9, 20)
+		RETURNF 1
+ELSE
+	;不应当到达这里
+ENDIF
+
+RETURNF 0
+
+
+;==================================================
+;	种族：检查两个角色是否是相同先天种族
+;--------------------------------------------------
+@F_IS_SAME_RACE(L_A,L_B)
+#FUNCTION
+#DIM L_A
+#DIM L_B
+
+;精英魔族
+IF INRANGE(NO:L_A,201,210) && INRANGE(NO:L_B,201,210)
+	SIF NO:L_A == NO:L_B
+		RETURNF 1
+	RETURNF 0
+ELSEIF INRANGE(NO:L_A,201,210) || INRANGE(NO:L_B,201,210)
+	RETURNF 0
+ENDIF
+
+LOCAL:1 = TALENT:L_A:种族
+LOCAL:2 = TALENT:L_B:种族
+
+;魔族以外种族
+IF LOCAL:1 != 9 && LOCAL:2 != 9
+	SIF TALENT:L_A:种族 == TALENT:L_B:种族
+		RETURNF 1
+	RETURNF 0
+ENDIF
+
+;被魔化的奴隶，比较原种族
+SIF TALENT:L_A:种族 == 9
+	LOCAL:1 = TALENT:L_A:原种族
+SIF TALENT:L_B:种族 == 9
+	LOCAL:2 = TALENT:L_B:原种族
+
+SIF LOCAL:1 == LOCAL:2
+	RETURNF 1
+
+RETURNF 0
+
+
+;==================================================
+;	十进制：十进制数位相关操作
+;--------------------------------------------------
+@DEC_GETBIT(L_NUM, L_BIT)
+#FUNCTION
+#DIM L_NUM
+#DIM L_BIT
+
+RETURNF L_NUM / POWER(10,L_BIT-1) % 10
+
+
+@DEC_SETBIT(L_NUM, L_BIT, L_VALUE)
+#DIM REF L_NUM
+#DIM L_BIT
+#DIM L_VALUE
+
+LOCAL = POWER(10,L_BIT-1)
+
+L_NUM = L_NUM/LOCAL/10 + L_VALUE%10*LOCAL + L_NUM%LOCAL
+
+RETURN L_VALUE
+
+
+@DEC_BITADD(L_NUM, L_BIT, L_VALUE)
+#DIM REF L_NUM
+#DIM L_BIT
+#DIM L_VALUE
+
+LOCAL = POWER(10,L_BIT-1)
+L_VALUE += L_NUM / LOCAL % 10
+
+SIF !INRANGE(L_VALUE, 0,9)
+	RETURN L_VALUE
+
+L_NUM = L_NUM/LOCAL/10 + L_VALUE%10*LOCAL + L_NUM%LOCAL
+
+RETURN L_VALUE
+

@@ -1,0 +1,44 @@
+;===========================================================
+; 调试输出 MOD - 用于捕获游戏内部信息流
+; 将此文件复制到 ERB/SYSTEM_DEBUG_OUT.ERB
+;===========================================================
+
+; 游戏主循环钩子 - 每次主菜单刷新时输出状态
+@DEBUG_PRINT_SYSTEM_STATE
+#FUNCTIONS
+; 输出当前游戏状态到日志文件
+LOCALS = 【系统状态】Day={DAY}, Time={TIME}, MONEY={MONEY}
+PRINTFORML {LOCALS}
+
+; 输出主要 FLAG 状态
+;PRINTFORML FLAG:9(税金)={FLAG:9}, FLAG:26={FLAG:26}
+;PRINTFORML CFLAG:0:1(贩卖)={CFLAG:0:1}, CFLAG:0:700={CFLAG:0:700}
+
+; 输出角色数量
+;PRINTFORML 角色数量: {CHARANUM}
+
+RETURN RESULT
+
+; 调教开始时输出
+@DEBUG_TRAIN_START
+#FUNCTIONS
+PRINTFORML 【调教开始】TARGET={TARGET}, ASSI={ASSI}
+IF TARGET >= 0
+    PRINTFORML  角色: %CALLNAME:TARGET%, LV={BASE:TARGET:0}
+    PRINTFORML  顺从={ABL:TARGET:10}, 欲望={ABL:TARGET:11}, 技巧={ABL:TARGET:12}
+ENDIF
+RETURN RESULT
+
+; 调教指令执行前
+@DEBUG_BEFORE_COMMAND
+#FUNCTION
+SIF TCOUNT > 0
+    PRINTFORML 【指令执行】指令={TCOM}, TARGET={TARGET}, TCOUNT={TCOUNT}
+RETURN RESULT
+
+; 回合结束时输出
+@DEBUG_TURN_END
+#FUNCTIONS
+PRINTFORML 【回合结束】Day={DAY}, Time={TIME}
+PRINTFORML 金钱变化: {MONEY}
+RETURN RESULT

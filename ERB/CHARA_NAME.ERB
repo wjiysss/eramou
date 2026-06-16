@@ -1,0 +1,605 @@
+﻿;--------------------------------------------------
+;
+;	LIST_CHARA_NAME		固定名列表
+;
+;	CFLAG:6				固定名ID（用于命名和识别角色）
+;
+;
+;==================================================
+
+;--------------------------------------------------
+;	角色名：对一个角色随机命名 
+;	（TYPE：0,和名;1,洋名;2,组合名;-1,不指定）
+;--------------------------------------------------
+@CHARA_NAME_RANDOM_DEFINE(L_A, L_TYPE = -1)
+#DIM L_A
+#DIM L_TYPE
+#DIM L_NID
+#DIM FAMILY_ID
+
+; [IF_DEBUG]
+; ;家族の名前の種類を継承
+; IF L_TYPE == -1
+	; LOCAL = CFLAG:L_A:605
+	; LOCAL:1 = LOCAL % 10
+	; CALL SEARCH_FAMILY, L_A
+	; FAMILY_ID = RESULT
+
+	; IF RAND:5 != 0 && FAMILY_ID > 0
+		; ;家族が洋名
+		; IF CFLAG:FAMILY_ID:6 < 200
+			; L_TYPE = 1
+		; ;家族が生成名(洋名)
+		; ELSEIF CFLAG:FAMILY_ID:6 > 1000000000
+			; L_TYPE = 1
+		; ;家族が和名
+		; ELSE
+			; L_TYPE = 0
+		; ENDIF
+	; ENDIF
+; ENDIF
+; [ENDIF]
+
+
+;職業によって名前の種類に偏りを持たせる
+IF L_TYPE == -1
+	IF TALENT:L_A:骑士 && RAND:10 != 0
+		L_TYPE = 1
+	ELSEIF (TALENT:L_A:巫女 || TALENT:L_A:忍者) && RAND:10 != 0
+		L_TYPE = 0
+	ENDIF
+ENDIF
+
+
+;種族によって名前の種類に偏りを持たせる
+IF L_TYPE == -1
+	;人間	指定なし
+	IF CFLAG:L_A:314 == 0
+	;エルフ	洋名
+	ELSEIF CFLAG:L_A:314 == 1
+		L_TYPE = 1
+	;人狼	和名
+	ELSEIF CFLAG:L_A:314 == 2
+		L_TYPE = 0
+	;吸血鬼	洋名
+	ELSEIF CFLAG:L_A:314 == 3
+		L_TYPE = 1
+	;デュラハン	洋名
+	ELSEIF CFLAG:L_A:314 == 4
+		L_TYPE = 1
+	;ドラゴン	生成名
+	ELSEIF CFLAG:L_A:314 == 5
+		L_TYPE = 1
+	;天使	洋名
+	ELSEIF CFLAG:L_A:314 == 6
+		L_TYPE = 1
+	;ダークエルフ	洋名
+	ELSEIF CFLAG:L_A:314 == 7
+		L_TYPE = 1
+	;堕天使	洋名
+	ELSEIF CFLAG:L_A:314 == 8
+		L_TYPE = 1
+	;魔族	指定なし
+	ELSEIF CFLAG:L_A:314 == 9
+	;ホビット	生成名
+	ELSEIF CFLAG:L_A:314 == 10
+		L_TYPE = 1
+	;ドワーフ	生成名
+	ELSEIF CFLAG:L_A:314 == 11
+		L_TYPE = 1
+	;その他　必要ないと思うけど指定なし
+	ELSE
+	ENDIF
+ENDIF
+
+SIF L_TYPE == 0
+	L_TYPE = RAND:5 % 2 
+
+$SPAN_NAME_NUM
+
+IF L_TYPE == 0
+	; 生成固定和名编号
+	L_NID = RAND:JAPEN_NAME_COUNT + 200
+	; 生成男性固定和名编号
+	SIF TALENT:L_A:122
+		L_NID = RAND:JAPEN_MALE_NAME_COUNT + 3000
+ELSEIF L_TYPE == 2
+	; 生成组合名编号
+	L_NID = RAND:CHINA_NAME_COUNT + 4500
+	;CN_SPAN_COMBINE_NAME_NUM()
+ELSE
+	L_TYPE = 1
+	; 生成固定洋名编号
+	L_NID = RAND:WEST_NAME_COUNT
+	SIF L_NID >= 200
+		L_NID += 1000
+	; 生成男性固定洋名编号
+	SIF TALENT:L_A:122
+		L_NID = RAND:WEST_MALE_NAME_COUNT + 2000
+ENDIF
+
+;检查重复
+CFLAG:L_A:6 = -1
+LOCAL = FINDCHARA(CFLAG:0:6,L_NID)
+
+IF LOCAL > 0
+	IF L_TYPE == 0 && CHARANUM*4/10 > JAPEN_NAME_COUNT
+		L_TYPE = 1
+	ELSEIF L_TYPE == 1 && CHARANUM > WEST_NAME_COUNT*8/10
+		L_TYPE = 0
+	ELSEIF L_TYPE == 0 && TALENT:L_A:122 && CHARANUM*4/10 > JAPEN_MALE_NAME_COUNT
+		L_TYPE = 1
+	ELSEIF L_TYPE == 1 && TALENT:L_A:122 && CHARANUM > WEST_MALE_NAME_COUNT*8/10
+		L_TYPE = 0
+	ELSE
+		L_TYPE = 2
+	ENDIF
+	
+	GOTO SPAN_NAME_NUM
+ENDIF
+
+JUMP CHARA_NAME_DEFINE(L_A,L_NID)
+
+;--------------------------------------------------
+;	角色名：对一个角色初始命名 
+;	（仅用于角色初始化）
+;--------------------------------------------------
+@CHARA_NAME_DEFINE(L_A, L_NID = -1)
+#DIM L_A
+#DIM L_NID
+
+
+; 特殊角色使用特定名字
+IF INRANGE(NO:L_A, 17,40) || NO:L_A == 0
+	NAME:L_A '= CSVNAME(NO:L_A)
+	CALLNAME:L_A '= CSVCALLNAME(NO:L_A)
+	SAVESTR:L_A '= CSVCALLNAME(NO:L_A)
+	
+	;定义NID
+	CFLAG:L_A:6 = 10000 + NO:L_A
+	CALL RELATION_RENAME_REBUILD(L_A)
+	RETURN 0
+ENDIF
+
+
+IF L_NID < 0
+	L_NID = CFLAG:L_A:6
+ELSE	
+	CFLAG:L_A:6 = L_NID
+	CALL RELATION_RENAME_REBUILD(L_A)
+ENDIF
+
+; 使用固定名
+IF L_NID < 1000000000
+	; 固定名列表
+	IF L_NID < VARSIZE("LIST_CHARA_NAME")
+		LOCALS '= LIST_CHARA_NAME:L_NID
+		
+		IF STRLENS(LOCALS) > 0
+			NAME:L_A '= LOCALS
+			CALLNAME:L_A '= LOCALS
+			SAVESTR:L_A '= LOCALS
+		ELSE
+			;名字没有被记录
+			NAME:L_A = 佳奈美
+			CALLNAME:L_A = 佳奈美
+			SAVESTR:L_A = 佳奈美
+		ENDIF
+	ELSE
+		; 无效的NID
+		NAME:L_A = 佳奈美
+		CALLNAME:L_A = 佳奈美
+		SAVESTR:L_A = 佳奈美
+		L_NID = VARSIZE("LIST_CHARA_NAME")
+	ENDIF
+
+; 使用随机名
+ELSE
+	CALL CN_SPAN_COMBINE_NAME, L_NID
+	NAME:L_A '= RESULTS
+	CALLNAME:L_A '= RESULTS
+	SAVESTR:L_A '= RESULTS
+ENDIF
+
+
+;--------------------------------------------------
+;	角色名：将一个角色的名字重置为初始值
+;	（NAME应该且只应该在角色初始化时赋值）
+;--------------------------------------------------
+@CHARA_NAME_RESET(L_A)
+#DIM L_A
+
+IF INRANGE(NO:L_A, 17,40)
+	CALLNAME:L_A '= CSVCALLNAME(NO:L_A)
+ELSE
+	CALLNAME:L_A '= NAME:L_A
+ENDIF
+
+SAVESTR:L_A '= CALLNAME:L_A
+
+
+
+;--------------------------------------------------
+;	角色名：对SAVESTR系统重构
+;--------------------------------------------------
+@CN_REBUILD
+FOR LOCAL, 0, CHARANUM
+	SIF LOCAL == 0
+		CONTINUE
+	SAVESTR:LOCAL '= CALLNAME:LOCAL
+NEXT
+
+
+;--------------------------------------------------
+;	角色名：从NID匹配登录的角色
+;--------------------------------------------------
+@NID_FINDCHARAS(L_NID)
+#DIM L_NID
+#DIM L_I
+
+L_I = 0
+VARSET RESULT
+FOR LOCAL, 0, CHARANUM
+	IF CFLAG:LOCAL:6 == L_NID
+		RESULT:L_I = LOCAL
+		L_I += 1
+	ENDIF
+NEXT
+
+RESULT:L_I = -1
+RETURN RESULT:0
+
+;--------------------------------------------------
+;	返回NID对应名字的类型，0 - 和名，1 - 洋名，2 - 组合名
+;--------------------------------------------------
+@NID_GET_TYPE(L_NID)
+#FUNCTION
+#DIM L_NID
+SIF L_NID > 1000000000
+	RETURNF 2
+SIF L_NID < 200 || L_NID >= 2000
+	RETURNF 1
+SIF L_NID < 1000 || L_NID >= 3000
+	RETURNF 0
+	
+RETURNF 1
+	
+;--------------------------------------------------
+;	角色名：从角色序号返回NID//从NID返回角色序号
+;--------------------------------------------------
+@NID(ARG)
+#FUNCTION
+IF INRANGE(NO:ARG, 17,40) || NO:ARG == 0
+	CFLAG:ARG:6 = 10000 + NO:ARG
+ENDIF
+
+RETURNF CFLAG:ARG:6
+
+@NID_R(ARG)
+#FUNCTION
+FOR LOCAL, 0, CHARANUM
+	IF CFLAG:LOCAL:6 == ARG
+		RETURNF LOCAL
+	ENDIF
+NEXT
+RETURNF -1
+
+
+;--------------------------------------------------
+;	角色名：生成随机假名组成的组合名的NID
+;--------------------------------------------------
+@CN_SPAN_COMBINE_NAME_NUM
+#FUNCTION
+#DIM L_I
+#DIM L_L
+#DIM L_M
+#DIM L_N
+#DIM L_RET
+L_RET = 0
+L_L = 3 - RAND:2 - RAND:3 % 2
+; 3, 2, 1
+L_RET = 0
+FOR L_I, 0, L_L
+	L_RET *= 1000
+	;0000 0000 0000
+	IF L_I == 0 && L_L > 1 && RAND:5 != 0
+		; 80% 第一次循环
+		L_M = 2
+	ELSE
+		L_M = 1
+	ENDIF
+
+	IF L_M == 1
+		;第一次循环 
+		IF (RAND:3 == 0 && L_L != 1) || (RAND:2 == 0 && L_L == 3)
+			L_N = RAND:9 + 300
+		ELSE
+			L_N = RAND:30 + 200
+		ENDIF
+	ELSE
+		IF RAND:8 == 0 && L_L != 1
+			L_N = RAND:2 + 500
+		ELSE
+			L_N = RAND:27 + 400
+		ENDIF
+	ENDIF
+	L_RET += L_N
+	SIF L_I < 0
+		BREAK
+	SIF L_L == 1 && (L_N == 200 || L_N == 201 || L_N == 204 || L_N == 205 || L_N == 207 || L_N == 208 || L_N == 210 || L_N == 215 || L_N == 217 || L_N == 218 || L_N == 219 || L_N == 227)
+		L_I -= 10
+NEXT
+L_RET += 2000000000
+RETURNF L_RET
+
+
+;--------------------------------------------------
+;	角色名：生成随机假名组成的组合名
+;--------------------------------------------------
+@CN_SPAN_COMBINE_NAME, ARG
+LOCALS:9 =
+
+N = ARG % 1000000000
+;ランダム名ver0.2
+IF ARG > 2000000000
+	WHILE N > 1
+		N:1 = N % 1000
+;汎用
+		IF N:1 == 200
+			LOCALS = アー
+		ELSEIF N:1 == 201
+			LOCALS = アム
+		ELSEIF N:1 == 202
+			LOCALS = アル
+		ELSEIF N:1 == 203
+			LOCALS = アン
+		ELSEIF N:1 == 204
+			LOCALS = イア
+		ELSEIF N:1 == 205
+			LOCALS = ウル
+		ELSEIF N:1 == 206
+			LOCALS = エア
+		ELSEIF N:1 == 207
+			LOCALS = カル
+		ELSEIF N:1 == 208
+			LOCALS = シー
+		ELSEIF N:1 == 209
+			LOCALS = シア
+		ELSEIF N:1 == 210
+			LOCALS = スト
+		ELSEIF N:1 == 211
+			LOCALS = ナル
+		ELSEIF N:1 == 212
+			LOCALS = ネア
+		ELSEIF N:1 == 213
+			LOCALS = フィル
+		ELSEIF N:1 == 214
+			LOCALS = フォル
+		ELSEIF N:1 == 215
+			LOCALS = ミス
+		ELSEIF N:1 == 216
+			LOCALS = メイ
+		ELSEIF N:1 == 217
+			LOCALS = メティ
+		ELSEIF N:1 == 218
+			LOCALS = ラオ
+		ELSEIF N:1 == 219
+			LOCALS = ラナ
+		ELSEIF N:1 == 220
+			LOCALS = リー
+		ELSEIF N:1 == 221
+			LOCALS = リィ
+		ELSEIF N:1 == 222
+			LOCALS = リズ
+		ELSEIF N:1 == 223
+			LOCALS = リュー
+		ELSEIF N:1 == 224
+			LOCALS = ルー
+		ELSEIF N:1 == 225
+			LOCALS = ルク
+		ELSEIF N:1 == 226
+			LOCALS = レイ
+		ELSEIF N:1 == 227
+			LOCALS = レセ
+		ELSEIF N:1 == 228
+			LOCALS = レラ
+		ELSEIF N:1 == 229
+			LOCALS = レン
+;汎用一音
+		ELSEIF N:1 == 300
+			LOCALS = ヴェ
+		ELSEIF N:1 == 301
+			LOCALS = シ
+		ELSEIF N:1 == 302
+			LOCALS = シェ
+		ELSEIF N:1 == 303
+			LOCALS = シャ
+		ELSEIF N:1 == 304
+			LOCALS = ティ
+		ELSEIF N:1 == 305
+			LOCALS = トゥ
+		ELSEIF N:1 == 306
+			LOCALS = リ
+		ELSEIF N:1 == 307
+			LOCALS = ル
+		ELSEIF N:1 == 308
+			LOCALS = レ
+;終端
+		ELSEIF N:1 == 400
+			LOCALS = ヴィア
+		ELSEIF N:1 == 400
+			LOCALS = オン
+		ELSEIF N:1 == 402
+			LOCALS = キア
+		ELSEIF N:1 == 403
+			LOCALS = シア
+		ELSEIF N:1 == 404
+			LOCALS = タ
+		ELSEIF N:1 == 405
+			LOCALS = タリア
+		ELSEIF N:1 == 406
+			LOCALS = ティア
+		ELSEIF N:1 == 407
+			LOCALS = ディア
+		ELSEIF N:1 == 408
+			LOCALS = ティス
+		ELSEIF N:1 == 409
+			LOCALS = ニア
+		ELSEIF N:1 == 410
+			LOCALS = ファ
+		ELSEIF N:1 == 411
+			LOCALS = フィア
+		ELSEIF N:1 == 412
+			LOCALS = フラ
+		ELSEIF N:1 == 413
+			LOCALS = ミア
+		ELSEIF N:1 == 414
+			LOCALS = リア
+		ELSEIF N:1 == 415
+			LOCALS = リカ
+		ELSEIF N:1 == 416
+			LOCALS = リス
+		ELSEIF N:1 == 417
+			LOCALS = リゼ
+		ELSEIF N:1 == 418
+			LOCALS = リマ
+		ELSEIF N:1 == 419
+			LOCALS = リル
+		ELSEIF N:1 == 420
+			LOCALS = ーズ
+		ELSEIF N:1 == 421
+			LOCALS = ーゼ
+		ELSEIF N:1 == 422
+			LOCALS = ーナ
+		ELSEIF N:1 == 423
+			LOCALS = ーファ
+		ELSEIF N:1 == 424
+			LOCALS = ーマ
+		ELSEIF N:1 == 425
+			LOCALS = ーラ
+		ELSEIF N:1 == 426
+			LOCALS = ッラ
+;終端一音
+		ELSEIF N:1 == 500
+			LOCALS = ー
+		ELSEIF N:1 == 501
+			LOCALS = ン
+;使用しない
+		ELSEIF N:1 == 900
+			LOCALS = サン
+		ELSEIF N:1 == 901
+			LOCALS = シフ
+		ELSEIF N:1 == 902
+			LOCALS = ソラ
+		ELSEIF N:1 == 903
+			LOCALS = ミロ
+
+		ENDIF
+		STRLENS LOCALS
+		SUBSTRING LOCALS, 0, 1
+		IF LOCALS:1 == RESULTS && (LOCALS:1 == "ア" || LOCALS:1 == "イ" || LOCALS:1 == "ウ" || LOCALS:1 == "エ" || LOCALS:1 == "オ" || LOCALS:1 == "ン" || LOCALS:1 == "ー")
+			SUBSTRING LOCALS, 2, RESULT - 1
+			LOCALS '= RESULTS
+		ENDIF
+		IF RESULTS == "ッ" && LOCALS:1 == "ー"
+			STRLENS LOCALS:9
+			SUBSTRING LOCALS:9, 0, RESULT - 2
+			LOCALS:9 '= RESULTS
+		ENDIF
+		SUBSTRING LOCALS, RESULT - 2, RESULT - 1
+		LOCALS:1 '= RESULTS
+		LOCALS:9 += LOCALS
+		N /= 1000
+	WEND
+;ランダム名ver0.1
+ELSEIF B > 1000000000
+	WHILE N > 1
+		N:1 = N % 1000
+		IF N:1 == 100
+			LOCALS:9 = %LOCALS:9%アー
+		ELSEIF N:1 == 101
+			LOCALS:9 = %LOCALS:9%アム
+		ELSEIF N:1 == 102
+			LOCALS:9 = %LOCALS:9%アル
+		ELSEIF N:1 == 103
+			LOCALS:9 = %LOCALS:9%アン
+		ELSEIF N:1 == 104
+			LOCALS:9 = %LOCALS:9%イア
+		ELSEIF N:1 == 105
+			LOCALS:9 = %LOCALS:9%ヴェ
+		ELSEIF N:1 == 106
+			LOCALS:9 = %LOCALS:9%ウル
+		ELSEIF N:1 == 107
+			LOCALS:9 = %LOCALS:9%カル
+		ELSEIF N:1 == 108
+			LOCALS:9 = %LOCALS:9%サン
+		ELSEIF N:1 == 109
+			LOCALS:9 = %LOCALS:9%シ
+		ELSEIF N:1 == 110
+			LOCALS:9 = %LOCALS:9%シー
+		ELSEIF N:1 == 111
+			LOCALS:9 = %LOCALS:9%シェ
+		ELSEIF N:1 == 112
+			LOCALS:9 = %LOCALS:9%シフ
+		ELSEIF N:1 == 113
+			LOCALS:9 = %LOCALS:9%シャ
+		ELSEIF N:1 == 114
+			LOCALS:9 = %LOCALS:9%ソラ
+		ELSEIF N:1 == 115
+			LOCALS:9 = %LOCALS:9%ティ
+		ELSEIF N:1 == 116
+			LOCALS:9 = %LOCALS:9%トゥ
+		ELSEIF N:1 == 117
+			LOCALS:9 = %LOCALS:9%ネア
+		ELSEIF N:1 == 118
+			LOCALS:9 = %LOCALS:9%フィル
+		ELSEIF N:1 == 119
+			LOCALS:9 = %LOCALS:9%フォル
+		ELSEIF N:1 == 120
+			LOCALS:9 = %LOCALS:9%ミロ
+		ELSEIF N:1 == 121
+			LOCALS:9 = %LOCALS:9%リ
+		ELSEIF N:1 == 122
+			LOCALS:9 = %LOCALS:9%リー
+		ELSEIF N:1 == 123
+			LOCALS:9 = %LOCALS:9%リィ
+		ELSEIF N:1 == 124
+			LOCALS:9 = %LOCALS:9%リズ
+		ELSEIF N:1 == 125
+			LOCALS:9 = %LOCALS:9%リュー
+		ELSEIF N:1 == 126
+			LOCALS:9 = %LOCALS:9%レイ
+		ELSEIF N:1 == 127
+			LOCALS:9 = %LOCALS:9%レラ
+		ELSEIF N:1 == 128
+			LOCALS:9 = %LOCALS:9%レン
+		ELSEIF N:1 == 200
+			LOCALS:9 = %LOCALS:9%ー
+		ELSEIF N:1 == 201
+			LOCALS:9 = %LOCALS:9%ヴィア
+		ELSEIF N:1 == 202
+			LOCALS:9 = %LOCALS:9%シア
+		ELSEIF N:1 == 203
+			LOCALS:9 = %LOCALS:9%タリア
+		ELSEIF N:1 == 204
+			LOCALS:9 = %LOCALS:9%ティア
+		ELSEIF N:1 == 205
+			LOCALS:9 = %LOCALS:9%ディア
+		ELSEIF N:1 == 206
+			LOCALS:9 = %LOCALS:9%ニア
+		ELSEIF N:1 == 207
+			LOCALS:9 = %LOCALS:9%フィア
+		ELSEIF N:1 == 208
+			LOCALS:9 = %LOCALS:9%ミア
+		ELSEIF N:1 == 209
+			LOCALS:9 = %LOCALS:9%リア
+		ELSEIF N:1 == 210
+			LOCALS:9 = %LOCALS:9%リカ
+		ENDIF
+		N /= 1000
+	WEND
+ENDIF
+
+RESULTS '= LOCALS:9
+RETURN
+

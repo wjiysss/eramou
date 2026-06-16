@@ -1,0 +1,240 @@
+﻿;私处感觉のLvUP処理とその可否判定
+;eratohoA ver1,204のスクリプトをベースに処理を簡略化
+;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;私处感觉のLvUP
+;-------------------------------------------------
+@ABLUP2
+#DIM CALC
+;各部位感覚封鎖
+CALC = 0
+SIF TALENT:101 & 2
+	CALC ++
+SIF TALENT:105 & 2
+	CALC ++
+SIF TALENT:107 & 2
+	CALC ++
+;男人は却下
+SIF TALENT:122
+	RETURN 0
+
+DRAWLINE
+;PRINTL 私处的感度提升了。
+;PRINTL 私处感觉越高，越容易在振动、性爱等行为得到更大的快感。
+;CUSTOMDRAWLINE ‥
+;最大Lvは5、[性爱狂]が付いている場合はLv10まで开放
+IF ABL:2 >= 5 && TALENT:75 == 0
+	PRINTW 需要特殊素质才能继续提升
+	RETURN 0
+ELSEIF TALENT:103 & 2
+	PRINTW 私处感觉已经被封锁了
+	RETURN 0
+ELSEIF ABL:2 >= CALC * 5 + 10
+	PRINTW 已达最高级
+	RETURN 0
+ENDIF
+
+;必要な私处感觉点数
+A = 0
+;必要な私处经验
+B = 0
+
+;条件別にＯＫかダメかを記録する
+;私处感觉点数による可否（I=0:可、I&1:点数不足、I&2:経験不足）
+I = 0
+
+CALL DECIDE_ABLUP2
+
+PRINTFORM [0] - %PALAMNAME:1%点数×{JUEL:1}/{A} ……
+PRINTV GET_ABLUP_STATE(I)
+PRINTL 
+;私处经验
+PRINTFORML       %EXPNAME:0%　　{EXP:0}/{B}
+
+PRINTL [100] - 停止
+
+INPUT
+IF (RESULT < 0 || RESULT > 0) && RESULT != 100
+	RESTART
+ELSEIF I != 0 && RESULT == 0
+	PRINTL 未满足条件
+	RESTART
+ELSEIF RESULT == 100
+	RETURN 0
+ENDIF
+
+ABL:2 += 1
+
+IF RESULT == 0
+	JUEL:1 -= A
+ENDIF
+
+PRINTFORML %ABLNAME:2%变为LV{ABL:2}。
+
+RETURN 0
+
+
+;-------------------------------------------------
+@CORE_ABLUP2
+;-------------------------------------------------
+ABL:2 ++
+
+IF I == 0
+	JUEL:1 -= A
+ENDIF
+
+
+;-------------------------------------------------
+;私处感觉のLvUP可否判定
+;-------------------------------------------------
+@DECIDE_ABLUP2
+#DIM CALC
+#DIM LCOUNT
+;各部位感覚封鎖
+CALC = 0
+SIF TALENT:101 & 2
+	CALC ++
+SIF TALENT:105 & 2
+	CALC ++
+SIF TALENT:107 & 2
+	CALC ++
+;男人は却下
+SIF TALENT:122
+	RETURN 0
+;私处感觉はLv5が上限、[性爱狂]が付いている場合はLv10まで开放
+SIF ABL:2 >= 5 && TALENT:75 == 0
+	RETURN 0
+SIF ABL:2 >= CALC * 5 + 10
+	RETURN 0
+;感覚封鎖されている場合は不可
+SIF TALENT:103 & 2
+	RETURN 0
+
+;判定変数を空に
+A = 0
+B = 0
+I = 0
+
+IF ABL:2 == 0
+	A = 1
+	B = 2
+ELSEIF ABL:2 == 1
+	A = 20
+	B = 10
+ELSEIF ABL:2 == 2
+	A = 400
+	B = 30
+ELSEIF ABL:2 == 3
+	A = 8000
+	B = 75
+ELSEIF ABL:2 == 4
+	A = 20000
+	B = 150
+ELSEIF ABL:2 == 5
+	A = 40000
+	B = 180
+ELSEIF ABL:2 == 6
+	A = 60000
+	B = 250
+ELSEIF ABL:2 == 7
+	A = 90000
+	B = 350
+ELSEIF ABL:2 == 8
+	A = 120000
+	B = 500
+ELSEIF ABL:2 == 9
+	A = 180000
+	B = 600
+ELSEIF ABL:2 < 15
+	A = 180000
+	B = 600
+	FOR LCOUNT, 0, (ABL:2 - 9)
+		A = A * 125 / 100
+		B = B * 115 / 100
+	NEXT
+ELSEIF ABL:2 < 20
+	A = 362000
+	B = 966
+	FOR LCOUNT, 0, (ABL:2 - 14)
+		A = A * 120 / 100
+		B = B * 120 / 100
+	NEXT
+ELSEIF ABL:2 < 25
+	A = 583000
+	B = 1942
+	FOR LCOUNT, 0, (ABL:2 - 19)
+		A = A * 115 / 100
+		B = B * 125 / 100
+	NEXT
+ENDIF
+
+;戒备森严
+IF TALENT:27
+	IF ABL:2 == 4
+		TIMES A , 2.00
+		TIMES B , 2.00
+	ELSEIF ABL:2 == 5
+		TIMES A , 2.50
+		TIMES B , 2.50
+	ELSEIF ABL:2 >= 6
+		TIMES A , 3.00
+		TIMES B , 3.00
+	ENDIF
+ENDIF
+
+;私处钝感
+IF TALENT:103
+	TIMES A , 1.20
+	TIMES B , 1.10
+ENDIF
+
+;他部位の封鎖数
+IF ABL:2 > 5 && ABL:2 <= 10 && CALC > 0
+	A = A * (15 - CALC) / 15
+	B = B * (20 - CALC) / 20
+ELSEIF ABL:2 <= 15 && CALC > 1
+	A = A * (16 - CALC) / 15
+	B = B * (21 - CALC) / 20
+ELSEIF ABL:2 <= 20 && CALC > 2
+	A = A * (17 - CALC) / 15
+	B = B * (22 - CALC) / 20
+ENDIF
+
+;淫乱
+IF TALENT:76
+	TIMES A , 0.80
+	TIMES B , 0.80
+ENDIF
+;性爱狂
+IF TALENT:75
+	TIMES A , 0.80
+	TIMES B , 0.80
+ENDIF
+;私处敏感
+IF TALENT:104
+	TIMES A , 0.80
+	TIMES B , 0.80
+ENDIF
+
+;最低でも1個は必要
+SIF A < 1
+	A = 1
+SIF B < 1
+	B = 1
+
+;私处点数は足りている？
+SIF JUEL:1 < A
+	I |= 1
+;性交经验は足りている？
+SIF EXP:0 < B
+	I |= 2
+
+IF I == 0
+	RETURN 1
+ELSE
+	RETURN 0
+ENDIF
+;
+;
+;

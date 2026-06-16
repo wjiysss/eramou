@@ -1,0 +1,1552 @@
+﻿;-------------------------------
+@DUNGEON_TRAP
+#DIM TRAP_COUNT
+#DIM TRAP_NUM
+#DIM TRAP_ID
+#DIM TRAP_NOUSE
+#DIM TRAP_MISS
+;------------------------------
+;ダンジョンで発動する陷阱です
+;TRAP_COUNT = 陷阱試行回数カウンター
+;TRAP_NUM   = 陷阱のFLAG上のID
+;TRAP_ID    = 陷阱のアイテム番号
+;TRAP_NOUSE = 罠が作動しなかった時に立てるフラグ
+
+SIF D:4 <= 0
+	D:4 = 1
+
+FOR TRAP_COUNT, 0, D:4
+	;迎撃中？
+	SIF CFLAG:A:1 == 3
+		CALL SLAVE_TRAP_SET
+	
+	;侵攻中の勇者？
+	SIF CFLAG:A:1 != 2 && CFLAG:A:1 != 12
+		RETURN 0
+	
+	;FLAG:TRAP_NUMは各階層の陷阱ABCに何の陷阱が設置されているかのフラグになる
+	;FLAG:300～FLAG:308 = 階層設置陷阱A
+	;FLAG:310～FLAG:318 = 階層設置陷阱B
+	;FLAG:320～FLAG:328 = 階層設置陷阱C
+	;CFLAG:A:501は现在の階層数
+
+	;陷阱がＡにあるか？
+	TRAP_NUM = CFLAG:A:501 + 299
+	TRAP_ID = FLAG:TRAP_NUM
+	IF CFLAG:A:1 == 12
+		CALL CAMPAIGN_TRAP,TRAP_NUM
+		TRAP_ID = RESULT
+	ENDIF
+
+	;Ａになければ陷阱がＢにあるか？
+	IF TRAP_ID < 0
+		TRAP_NUM = CFLAG:A:501 + 309
+		TRAP_ID = FLAG:TRAP_NUM
+		IF CFLAG:A:1 == 12
+			CALL CAMPAIGN_TRAP,TRAP_NUM
+			TRAP_ID = RESULT
+		ENDIF
+	ENDIF
+
+	$TRAP_LOOP
+	
+	TRAP_ID = FLAG:TRAP_NUM
+	IF CFLAG:A:1 == 12
+		CALL CAMPAIGN_TRAP,TRAP_NUM
+		TRAP_ID = RESULT
+	ENDIF
+	
+	;陷阱がＣにあるか？
+	IF TRAP_ID < 0
+		TRAP_NUM = CFLAG:A:501 + 319
+		TRAP_ID = FLAG:TRAP_NUM
+		IF CFLAG:A:1 == 12
+			CALL CAMPAIGN_TRAP,TRAP_NUM
+			TRAP_ID = RESULT
+		ENDIF
+		SIF TRAP_ID < 0
+			RETURN 0
+	ENDIF
+	
+	;後にTRAP_NOUSEにRESULTを代入する際、想定外の結果にならないための保険
+	;（在庫なしやTRAP_IDの値が異常な場合に起こり得る）
+	RESULT = 0
+	
+	;同一罠発動による回避率上昇
+	SIF CFLAG:A:513 == TRAP_ID
+		CFLAG:A:512 += 1
+	;罠回避率の減少
+	SIF CFLAG:A:513 == 0
+		CFLAG:A:512 -= 1
+	
+	;記憶リセット
+	;罠の回避や失敗で連鎖が途切れるように
+	CFLAG:A:513 = 0
+	
+	;回避率は負にはならない
+	SIF CFLAG:A:512 < 0
+		CFLAG:A:512 = 0
+	
+	;同一罠発動失敗判定
+	TRAP_MISS = 20 -  CFLAG:A:512
+	
+	;在庫なしの場合は何もしません。
+	IF ITEM:TRAP_ID < 1
+		CFLAG:A:512 -= 1
+	ELSEIF TRAP_MISS < RAND:20
+		PRINT ≪同一陷阱发动限制≫
+		PRINTL 勇者回避了陷阱……
+		;罠回避率の減少
+		CFLAG:A:512 -= 1
+	ELSEIF TRAP_ID == 60
+		CALL PIT_TRAP
+	ELSEIF TRAP_ID == 61
+		CALL ARROW_TRAP
+	ELSEIF TRAP_ID == 62
+		CALL TELEPORT_TRAP
+	ELSEIF TRAP_ID == 63
+		CALL ONE_WAY_TRAP
+	ELSEIF TRAP_ID == 64
+		CALL LOVE_GAS_TRAP
+	ELSEIF TRAP_ID == 65
+		CALL SYOKUSYU_FLOOR_TRAP
+	ELSEIF TRAP_ID == 66
+		CALL LOVE_BATH_TRAP
+	ELSEIF TRAP_ID == 67
+		CALL SELF_SAIMIN_TRAP
+	ELSEIF TRAP_ID == 68
+		CALL IMITATER_TRAP
+	ELSEIF TRAP_ID == 69
+		CALL SUMMON_TRAP
+	ELSEIF TRAP_ID == 70
+		CALL SUCCUBUS_TRAP
+	ELSEIF TRAP_ID == 71
+		CALL SLIME_ROOM_TRAP
+	ELSEIF TRAP_ID == 72
+		CALL NET_TRAP
+	ELSEIF TRAP_ID == 73
+		CALL SHOP_TRAP
+	ELSEIF TRAP_ID == 74
+		CALL BLACKOUT_TRAP
+	ELSEIF TRAP_ID == 75
+		CALL SHOOT_TRAP
+	ELSEIF TRAP_ID == 76
+		CALL DISPELL_TRAP
+	ELSEIF TRAP_ID == 77
+		CALL OIL_TRAP
+	ELSEIF TRAP_ID == 78
+		CALL FIRE_TRAP
+	ELSEIF TRAP_ID == 79
+		CALL A_WORM_TRAP
+	ELSEIF TRAP_ID == 80
+		CALL LOVE_BUG_TRAP
+	ELSEIF TRAP_ID == 81
+		CALL DARK_JUEL_TRAP
+	ELSEIF TRAP_ID == 82
+		CALL DEF_DOWN_TRAP
+	ELSEIF TRAP_ID == 83
+		CALL ATK_DOWN_TRAP
+	ELSEIF TRAP_ID == 84
+		CALL MAG_DOWN_TRAP
+	ELSEIF TRAP_ID == 85
+		CALL ALL_DOWN_TRAP
+	ELSEIF TRAP_ID == 86
+		CALL HUANJING_DOWN_TRAP
+	ENDIF
+	
+	;罠が作動したかどうかをRETURNの値をTRAP_NOUSEに格納することで判断
+	;これにより未作動時に下の罠消費と自動補充を素通りするように
+	;（現状では一方通行とシュートでのみRETURNで1が返る可能性あり）
+	TRAP_NOUSE = RESULT
+	
+	SIF TRAP_ID >= 60 && TRAP_ID <= 89 && ITEM:TRAP_ID > 0 && TRAP_NOUSE == 0 && CFLAG:A:1 == 2
+		ITEM:TRAP_ID -= 1
+	
+	;陷阱発動記憶
+	SIF TRAP_NOUSE == 0
+		CFLAG:A:513 = TRAP_ID
+	
+	;陷阱自動補充
+	IF FLAG:5 & 64 && TRAP_NOUSE == 0 && CFLAG:A:1 == 2
+		P = TRAP_ID
+		CALL TRAP_PRICE
+		IF MONEY >= RESULT && ITEM:TRAP_ID < 99 && TRAP_ID >=60 && TRAP_ID <= 89
+			ITEM:TRAP_ID += 1
+			MONEY -= RESULT
+			EX_FLAG:4444 -= RESULT
+		ENDIF
+	ENDIF
+	
+	TRAP_NUM += 10
+	
+	
+	SIF TRAP_NUM < 330
+		GOTO TRAP_LOOP
+	
+	;ABCのループが終わり、D:4の試行回数が残っているなら
+	;またAから陷阱を回していく
+	
+NEXT
+
+WAIT
+
+RETURN 0
+
+;------------------------------
+@PIT_TRAP
+#DIM DICE
+;------------------------------
+;落穴 
+
+IF CFLAG:A:503 & 64
+	SIF FLAG:5 & 32
+		PRINTFORM 连续落下！（气力-10） 
+	BASE:A:1 -= 10
+ELSE
+	SIF FLAG:5 & 32
+		PRINT 地板打开了！ 
+	;落下フラグON
+	CFLAG:A:503 += 64
+ENDIF
+
+DICE = RAND:100
+
+IF TALENT:A:314 == 6
+	;天使
+	SIF FLAG:5 & 32
+		PRINTFORML 天使族的%SAVESTR:A%及时地飞起来，避开了落穴… 
+	RETURN 1
+ELSEIF TALENT:A:314 == 8
+	;堕天使
+	SIF FLAG:5 & 32
+		PRINTFORML 堕天使族的%SAVESTR:A%及时地飞起来，避开了落穴… 
+	RETURN 1
+ENDIF
+
+IF DICE < 10
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%敏捷地避开了落穴… 
+	RETURN 1
+ELSEIF DICE >= 80
+	DICE = RAND:40 + FLAG:85 * 10 + 1
+	DICE *= 2
+	IF TALENT:0:328
+		;魔蟲知識によってダメージ1.5倍に
+		DICE += DICE / 2
+		SIF FLAG:5 & 32
+			PRINTFORM 穴底有毒虫群！
+	ENDIF
+	SIF FLAG:5 & 32
+		PRINTFORM %SAVESTR:A%掉下去的时候扭到脚了！受到{DICE}点伤害！ 
+ELSE
+	DICE = RAND:40 + FLAG:85 * 10 + 1
+	IF TALENT:0:328
+		;魔蟲知識によってダメージ1.5倍に
+		DICE += DICE / 2
+		SIF FLAG:5 & 32
+			PRINTFORM 穴底有毒虫群！
+	ENDIF
+	SIF FLAG:5 & 32
+		PRINTFORM %SAVESTR:A%受到{DICE}点伤害！
+ENDIF
+BASE:A:0 -= DICE
+IF TALENT:A:10 == 1
+	SIF FLAG:5 & 32
+		PRINTFORM 胆小的%SAVESTR:A%吓得要死…（气力-10） 
+	BASE:A:1 -= 10
+ENDIF
+
+SIF FLAG:5 & 32
+	PRINTL  
+
+RETURN 0
+
+;------------------------------
+@ARROW_TRAP
+#DIM DICE
+;------------------------------
+;射箭陷阱
+
+SIF FLAG:5 & 32
+	PRINT 有射箭陷阱！ 
+
+Z = RAND:100
+DICE = Z
+
+IF Z < 30
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%敏捷地躲开了箭矢… 
+	RETURN 1
+ELSEIF DICE >= 80
+	DICE *= 2
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%的要害被射中了，受到{DICE}点伤害！ 
+	DICE += FLAG:85 * 10
+	SIF FLAG:5 & 32 && FLAG:85 > 0
+		PRINTFORML 箭矢插的很深，%SAVESTR:A%被追加了{DICE}点的伤害！ 
+	BASE:A:0 -= DICE
+	IF TALENT:A:40 == 1
+		SIF FLAG:5 & 32
+			PRINTFORML 对怕痛的%SAVESTR:A%来说，这简直无法忍受…（气力-30） 
+		BASE:A:1 -= 30
+	ENDIF
+ELSE
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%受到{DICE}点的伤害！
+	DICE += FLAG:85 * 10
+	SIF FLAG:5 & 32 && FLAG:85 > 0
+		PRINTFORML 箭矢插的很深，%SAVESTR:A%被追加了{FLAG:85 * 10}点的伤害！
+	BASE:A:0 -= DICE
+	IF TALENT:A:40 == 1
+		SIF FLAG:5 & 32
+			PRINTFORML 对怕痛的%SAVESTR:A%来说，这简直无法忍受…（气力-30） 
+		BASE:A:1 -= 30
+	ENDIF
+ENDIF
+
+; SIF FLAG:5 & 32
+	; PRINTL  
+
+RETURN 0
+
+;---------------------
+@TELEPORT_TRAP
+;---------------------
+;传送陷阱
+
+
+SIF FLAG:5 & 32
+	PRINT 哎呀！突然出现了个传送阵！ 
+
+Z = RAND:100
+
+IF Z > 70
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%敏捷地躲开了传送… 
+	RETURN 1
+ELSEIF Z < 20
+	SIF FLAG:5 & 32
+		PRINTFORM %SAVESTR:A%被传送到这一层的起点了！ 
+	D:20 = 1
+	D:1 = 1
+ELSE
+	SIF FLAG:5 & 32
+		PRINTFORM %SAVESTR:A%被传送走了！ 
+	D:20 = RAND:100
+	D:1 = 1
+ENDIF
+
+IF TALENT:A:10 == 1
+	SIF FLAG:5 & 32
+		PRINTFORM 胆小的%SAVESTR:A%吓得要死…（气力-10） 
+	BASE:A:1 -= 10
+ENDIF
+
+IF FLAG:85 > 0
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%被突然地瞬间移动弄得头昏脑胀…（气力-{FLAG:85}）
+	BASE:A:1 -= FLAG:85
+ENDIF
+
+SIF FLAG:5 & 32
+	PRINTL  
+
+RETURN 0
+
+;---------------------
+@ONE_WAY_TRAP
+;---------------------
+;单向通行陷阱
+
+IF D:20 < 40
+	;個数増加による帳尻合わせではなくRETURNの戻り値を変えることで、そもそもの個数を減少させないように
+	;ITEM:63 += 1
+	RETURN 1
+ENDIF
+
+;落下フラグ
+IF CFLAG:A:503 & 64
+	SIF FLAG:5 & 32
+		PRINTFORM 突然落下的大门把刚才走过的路给封住了，不可能爬回上去（气力-20） 
+	BASE:A:1 -= 20
+ELSE
+	SIF FLAG:5 & 32
+		PRINT 门后面听到钥匙锁门的声音！ 
+ENDIF
+
+
+Z = RAND:3
+
+IF Z > 1
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%敏锐地找到了返回的路… 
+	RETURN 0
+ELSE
+	SIF FLAG:5 & 32
+		PRINTFORM %SAVESTR:A%迷路了… 
+	CFLAG:A:509 = 1
+	D:1 = 1
+	SIF FLAG:5 & 32
+		PRINTFORM %SAVESTR:A%心急如焚 （气力-{20 + FLAG:85}） 
+	BASE:A:1 -= (20 + FLAG:85)
+ENDIF
+
+IF TALENT:A:10 == 1
+	SIF FLAG:5 & 32
+		PRINTFORM 胆小的%SAVESTR:A%吓得要死…（气力-10） 
+	BASE:A:1 -= 10
+ENDIF
+
+SIF FLAG:5 & 32
+	PRINTL  
+
+RETURN 0
+
+;---------------------
+@LOVE_GAS_TRAP
+;---------------------
+;催淫陷阱
+
+
+SIF FLAG:5 & 32
+	PRINT 墙壁的缝隙中突然喷出了甘甜的气体…… 
+
+Z = RAND:100
+
+IF Z > 60
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%屏息捂嘴跑开了… 
+	RETURN 0
+ELSEIF Z < 10
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%吸入了大量的催情气体，开始思春了…
+		PRINTFORML 欲情点数+{40 + FLAG:85}
+	ENDIF
+	JUEL:A:5 += (40 + FLAG:85)
+	SIF FLAG:5 & 32
+		PRINTFORM %SAVESTR:A%气息慌乱了（气力-{40 + FLAG:85 * 2}）
+	BASE:A:1 -= (40 + FLAG:85 * 2)
+ELSE
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%在思春着…
+		PRINTFORML 欲情点数+{20 + FLAG:85}
+	ENDIF
+	JUEL:A:5 += (20 + FLAG:85)
+	SIF FLAG:5 & 32
+		PRINTFORM %SAVESTR:A%气息慌乱了（气力-{20 + FLAG:85 * 2}）
+	BASE:A:1 -= (20 + FLAG:85 * 2)
+ENDIF
+
+IF TALENT:A:60 == 1
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%身不由己地开始自慰了。
+		PRINTL 自慰经验+1
+		PRINTL 欲情点数+20
+		PRINTL 阴核点数+10
+	ENDIF
+	EXP:A:10 += 1
+	JUEL:A:0 += 20
+	BASE:A:1 -= 10
+	JUEL:A:5 += 20
+ENDIF
+
+SIF FLAG:5 & 32
+	PRINTL  
+
+;欲情フラグ
+SETBIT CFLAG:A:503, 9
+
+RETURN 0
+
+;----------------------------
+@SYOKUSYU_FLOOR_TRAP
+;----------------------------
+;触手地板陷阱
+
+
+;落下フラグ
+IF CFLAG:A:503 & 64
+	SIF FLAG:5 & 32
+		PRINTFORM 突然掉到了触手的巢穴！！（气力-20） 
+	BASE:A:1 -= 20
+ELSE
+	SIF FLAG:5 & 32
+		PRINT 一地的触手，一起袭来！！ 
+ENDIF
+
+
+Z = RAND:100
+
+IF Z > 70
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%拔出武器击退触手，逃脱了…
+	RETURN 1
+ELSEIF Z < 15
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%被触手抓住了，大量的催情体液，被灌入了嘴里…
+		PRINTL 触手经验+1
+		PRINTFORML 欲情点数+{100 + FLAG:85 * 2}
+	ENDIF
+	EXP:A:55 += 1
+	JUEL:A:5 += 120 + FLAG:85 * 2
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%拼命挣扎着，消耗了大量的体力（气力-200）
+	BASE:A:1 -= 200
+ELSE
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%被触手抓住了，催情的体液涂在身上…
+		PRINTL 触手经验+1
+		PRINTFORML 欲情点数+{60 + FLAG:85 * 2}
+	ENDIF
+	EXP:A:55 += 1
+	JUEL:A:5 += 60 + FLAG:85 * 2
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%拼命挣扎着，消耗了相当的体力（气力-100）
+	BASE:A:1 -= 100
+ENDIF
+
+IF TALENT:A:60 == 1
+	IF FLAG:5 & 32
+		PRINTFORML 催情功效发挥了，%SAVESTR:A%情不自禁地自慰着
+		PRINTL 自慰经验+1
+		PRINTL 欲情点数+10
+		PRINTL 阴核点数+10
+	ENDIF
+	EXP:A:10 += 1
+	JUEL:A:0 += 20
+	BASE:A:1 -= 10
+	JUEL:A:5 += 20
+ENDIF
+
+RETURN 0
+
+
+;----------------------------
+@LOVE_BATH_TRAP
+;----------------------------
+;媚药泥沼陷阱
+
+;落下フラグ
+IF CFLAG:A:503 & 64
+	SIF FLAG:5 & 32
+		PRINTFORM 掉入了装满媚药的水坑里！！（气力-20） 
+	BASE:A:1 -= 20
+ELSE
+	SIF FLAG:5 & 32
+		PRINT 地板突然打开，掉入了装满媚药的水池里！ 
+ENDIF
+
+
+IF RAND:10 < 2
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%被淹没在媚药里了！
+		PRINTL 药物经验+1
+		PRINTFORML 欲情点数+{200 + FLAG:85 * 5}
+	ENDIF
+	EXP:A:57 += 1
+	JUEL:A:5 += 200 + FLAG:85 * 5
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%拼命地挣扎，消耗了相当的体力和精力。（体力-200 气力-200）
+	BASE:A:0 -= 200
+	BASE:A:1 -= 200
+ELSE
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%被大量的媚药沾满全身，走路摇摇晃晃了。
+		PRINTL 药物经验+1
+		PRINTFORML 欲情点数+{100 + FLAG:85 * 5}
+	ENDIF
+	EXP:A:57 += 1
+	JUEL:A:5 += 100 + FLAG:85 * 5
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%拼命地挣扎，消耗了相当的精力。（气力-100）
+	BASE:A:1 -= 100
+ENDIF
+
+IF TALENT:A:60 == 1
+	IF FLAG:5 & 32
+		PRINTFORML 媚药令思维都变得奇怪了，%SAVESTR:A%情不自禁地自慰了起来。
+		PRINTL 自慰经验+1
+		PRINTL 欲情点数+10
+		PRINTL 阴核点数+10
+	ENDIF
+	EXP:A:10 += 1
+	JUEL:A:0 += 20
+	BASE:A:1 -= 10
+	JUEL:A:5 += 20
+ENDIF
+
+;欲情フラグ
+SETBIT CFLAG:A:503, 9
+
+RETURN 0
+
+
+;----------------------------
+@SELF_SAIMIN_TRAP
+#DIM DICE
+;----------------------------
+;自慰催眠陷阱
+
+SIF FLAG:5 & 32
+	PRINT 突然头晕目眩，身体失去自由了… 
+
+DICE = RAND:100
+TARGET = A
+
+;欲情フラグ
+SIF GETBIT(CFLAG:A:503, 9)
+	TIMES DICE, 0.80
+
+IF DICE > 60
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%狠狠地捏着自己的脸，清醒了过来。
+	RETURN 1
+ELSEIF DICE < 10
+	IF FLAG:5 & 32
+		SIF GETBIT(CFLAG:A:503, 9)
+			PRINT 发情了的
+		PRINTFORML %SAVESTR:A%被催眠了，将装备一件一件地脱了下来，一心一意地开始自慰。	
+	ENDIF
+	CALL BEFORE_AUTOTRAIN
+	CALL COM3_AUTO
+	CALL SOURCE_CHECK_AUTO
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%连怪物跑到面前的声音都听不到了。（攻撃力和防御力降为0！）
+	CFLAG:A:11 = 0
+	CFLAG:A:12 = 0
+ELSE
+	IF FLAG:5 & 32
+		SIF GETBIT(CFLAG:A:503, 9)
+			PRINT 发情了的
+		PRINTFORML %SAVESTR:A%被催眠了，将护甲解开，一心一意地开始自慰了。	
+	ENDIF
+	CALL BEFORE_AUTOTRAIN
+	CALL COM3_AUTO
+	CALL SOURCE_CHECK_AUTO
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%连怪物跑到面前的声音都听不到了。（攻击力和防御力下降一半！）
+	CFLAG:A:11 /= 2
+	CFLAG:A:12 /= 2
+ENDIF
+
+RETURN 0
+
+;------------------------------
+@IMITATER_TRAP
+;------------------------------
+;拟态房间陷阱
+
+Z = RAND:100
+
+;落下フラグ
+IF CFLAG:A:503 & 64
+	SIF FLAG:5 & 32
+		PRINTFORM 掉入了什么奇怪生物的体内！！
+	Z -= 10
+ELSE
+	IF FLAG:5 & 32
+		PRINTL 房间四面八方的墙壁突然一起压迫过来！
+		PRINTL 旁边有只拟态生物，只能逃到它里面了吗？
+	ENDIF
+ENDIF
+
+IF Z > 60
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%赶紧逃了出来。
+	RETURN 1
+ELSEIF Z < 10
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%被整个包围着，扣住了四肢。
+		PRINTFORML 触手灵活地解开装备，将全身都涂满了媚药。
+		PRINTFORML 强烈的兴奋，让%SAVESTR:A%连怪物跑到面前的声音都听不到了。
+		PRINTFORML 欲情点数+{50 + FLAG:85 * 10}
+		PRINTFORML 屈服点数+{50 + FLAG:85 * 10}
+		PRINTFORML 耻情点数+{50 + FLAG:85 * 10}
+		PRINTFORML 乳房点数+{50 + FLAG:85 * 10}
+		PRINTFORML 阴核点数+{50 + FLAG:85 * 10}
+	ENDIF
+	JUEL:A:6 += 50 + FLAG:85 * 10
+	JUEL:A:8 += 50 + FLAG:85 * 10
+	JUEL:A:14 += 50 + FLAG:85 * 10
+	JUEL:A:0 += 50 + FLAG:85 * 10
+	BASE:A:1 -= 50 + FLAG:85 * 10
+	JUEL:A:5 += 50 + FLAG:85 * 10
+	IF FLAG:5 & 32
+		PRINTFORML 全裸的%SAVESTR:A%被媚药所控制，在战斗中居然忘我地绝顶了。（攻击力和防御力降为0！）
+		PRINTL 绝顶经验+1
+	ENDIF
+	EXP:A:2 += 1
+	CFLAG:A:11 = 0
+	CFLAG:A:12 = 0
+ELSE
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%被整个包围着，扣住了四肢。
+		PRINTFORML 触手灵活地滑进装备里，将全身都涂满了媚药。
+		PRINTFORML 强烈的兴奋，让%SAVESTR:A%连怪物跑到面前的声音都听不到了。
+		PRINTFORML 欲情点数+{30 + FLAG:85 * 6}
+		PRINTFORML 屈服点数+{30 + FLAG:85 * 6}
+		PRINTFORML 耻情点数+{30 + FLAG:85 * 6}
+		PRINTFORML 乳房点数+{30 + FLAG:85 * 6}
+		PRINTFORML 阴核点数+{30 + FLAG:85 * 6}
+	ENDIF
+	JUEL:A:6 += 30 + FLAG:85 * 6
+	JUEL:A:8 += 30 + FLAG:85 * 6
+	JUEL:A:14 += 30 + FLAG:85 * 6
+	JUEL:A:0 += 30 + FLAG:85 * 6
+	BASE:A:1 -= 30 + FLAG:85 * 6
+	JUEL:A:5 += 30 + FLAG:85 * 6
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%被媚药所控制，在战斗中居然忘我地绝顶了。（攻击力和防御力下降一半！）
+		PRINTL 绝顶经验+1
+	ENDIF
+	EXP:A:2 += 1
+	CFLAG:A:11 /= 2
+	CFLAG:A:12 /= 2
+ENDIF
+
+
+RETURN 0
+
+;------------------------------
+@SUMMON_TRAP
+;------------------------------
+;召唤陷阱
+
+SIF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%踩到了召唤的魔法阵！！
+
+Z = RAND:2
+
+IF Z > 0
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%赶紧破坏掉魔法阵，离开了。
+	RETURN 1
+ELSE
+	SIF FLAG:5 & 32
+		PRINTFORML 地下城里的怪物被召唤来了！
+ENDIF
+
+CALL SUMMON_MONSTER, -1
+
+IF FLAG:85 > 0
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%受到魔法阵的魔力的冲击（体力-{FLAG:85 * 10}）
+	BASE:A:0 -= FLAG:85 * 10
+ENDIF
+
+RETURN 0
+
+;--------------------------------------------
+@SUCCUBUS_TRAP
+#DIM DICE
+;--------------------------------------------
+;梦魔陷阱
+
+IF FLAG:5 & 32
+	PRINTL 发现了一个少女，貌似是被凌辱之后的勇者…
+	PRINTL 救救她吗…
+ENDIF
+
+DICE = RAND:100
+
+;欲情フラグ
+SIF GETBIT(CFLAG:A:503, 9)
+	TIMES DICE, 0.80
+
+IF DICE > 60
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%觉得是陷阱，无视了她。
+	RETURN 1
+ELSEIF DICE < 10
+	IF FLAG:5 & 32
+		SIF GETBIT(CFLAG:A:503, 9)
+			PRINT 不由得冲动起来的
+		PRINTFORML %SAVESTR:A%伸出手来救助少女，突然被少女强吻了。
+		PRINTFORML 激烈地拥吻着，%SAVESTR:A%在不知不觉间理性飞散，欲望汹涌喷发……
+		PRINTFORML 没有任何疑问，毫无疑虑地把手伸向了股间…%SAVESTR:A%就这样被欲望支配了。
+		SIF TALENT:A:122 == 0
+			PRINTL 百合经验+6
+		PRINTFORML 欲情点数+{100 + FLAG:85 * 10}
+		PRINTFORML 屈服点数+{100 + FLAG:85 * 10}
+		PRINTFORML 耻情点数+{100 + FLAG:85 * 10}
+		PRINTFORML 乳房点数+{100 + FLAG:85 * 10}
+		PRINTFORML 阴核点数+{100 + FLAG:85 * 10}
+	ENDIF
+	SIF TALENT:A:122 == 0
+		EXP:A:40 += 6
+	JUEL:A:6 += 100 + FLAG:85 * 10
+	JUEL:A:8 += 100 + FLAG:85 * 10
+	JUEL:A:14 += 100 + FLAG:85 * 10
+	JUEL:A:0 += 100 + FLAG:85 * 10
+	BASE:A:1 -= 100 + FLAG:85 * 10
+	JUEL:A:5 += 100 + FLAG:85 * 10
+	IF FLAG:5 & 32
+		PRINTFORML 全裸的%SAVESTR:A%在之后的战斗中居然忘我地绝顶了。（攻击力和防御力降为0！）
+		PRINTL 绝顶经验+1
+	ENDIF
+	EXP:A:2 += 1
+	CFLAG:A:11 = 0
+	CFLAG:A:12 = 0
+ELSE
+	IF FLAG:5 & 32
+		SIF GETBIT(CFLAG:A:503, 9)
+			PRINT 不由得冲动起来的
+		PRINTFORML %SAVESTR:A%被高兴地跑过来的少女强吻了。
+		PRINTFORML 激烈地拥吻着，%SAVESTR:A%在不知不觉间理性飞散，欲望汹涌喷发……
+		PRINTFORML 把手伸向了股间…%SAVESTR:A%的一部分理性在警示着，但最终败给欲望了。
+		SIF TALENT:A:122 == 0
+			PRINTL 百合经验+4
+		PRINTFORML 欲情点数+{60 + FLAG:85 * 6}
+		PRINTFORML 屈服点数+{60 + FLAG:85 * 6}
+		PRINTFORML 耻情点数+{60 + FLAG:85 * 6}
+		PRINTFORML 乳房点数+{60 + FLAG:85 * 6}
+		PRINTFORML 阴核点数+{60 + FLAG:85 * 6}
+
+	ENDIF
+	SIF TALENT:A:122 == 0
+		EXP:A:40 += 4
+	JUEL:A:6 += 60 + FLAG:85 * 6
+	JUEL:A:8 += 60 + FLAG:85 * 6
+	JUEL:A:14 += 60 + FLAG:85 * 6
+	JUEL:A:0 += 60 + FLAG:85 * 6
+	BASE:A:1 -= 60 + FLAG:85 * 6
+	JUEL:A:5 += 60 + FLAG:85 * 6
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%在之后的战斗中居然忘我地绝顶了。（攻击力和防御力下降一半！）
+		PRINTL 绝顶经验+1
+	ENDIF
+	EXP:A:2 += 1
+	CFLAG:A:11 /= 2
+	CFLAG:A:12 /= 2
+ENDIF
+
+RETURN 0
+;--------------------------------------------
+@HUANJING_DOWN_TRAP
+#DIM DICE
+#DIM XZ
+;--------------------------------------------
+;幻境陷阱
+
+DICE = RAND:100
+XZ = RAND:5
+;欲情フラグ
+SIF GETBIT(CFLAG:A:503, 9)
+	TIMES DICE, 0.80
+
+IF TALENT:A:122
+SELECTCASE XZ
+	CASE 0
+	SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%察觉到了破绽，从幻境中逃脱了。
+	RETURN 1
+	CASE 1
+	PRINTFORML %SAVESTR:A%陷入幻境，冥冥中看到了自己向往的那个人
+	PRINTFORML 她笑颜如花，赤身裸体，抱着魔王，为魔王献上了香唇
+	PRINTFORML 二人的唾液互相交织着，直到她无法呼吸，魔王才放过她
+	PRINTFORML 她的眼神化为一汪春水，嘴中急促吞吐着热气，瘫软在魔王怀抱里
+	CASE 2
+	
+	CASEELSE 
+	PRINT 帅
+ENDSELECT
+ELSEIF TALENT:A:122 == 1
+ENDIF
+
+RETURN 0
+
+;----------------------------
+@SLIME_ROOM_TRAP
+#DIM DICE
+;----------------------------
+;史莱姆房间陷阱
+
+DICE = RAND:100
+TARGET = A
+
+
+;落下フラグ
+IF CFLAG:A:503 & 64
+	SIF FLAG:5 & 32
+
+		PRINTFORM 掉入了史莱姆的巢穴！！ 
+	DICE -= 20
+ELSE
+	SIF FLAG:5 & 32
+	PRINT 突然从四方的墙壁和天花板上渗出了史莱姆！ 
+ENDIF
+
+IF DICE > 80
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%死命地逃脱了…
+	RETURN 0
+ELSEIF DICE < 10
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%的全身都被史莱姆覆盖着，装备被融化，全裸了（攻击力和防御力减半！）
+	BASE:A:1 -= 25 + FLAG:85
+	CFLAG:A:11 /= 2
+	CFLAG:A:12 /= 2
+
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%的嘴里和肛门里，流入了大量的粘液…（气力-{10 + FLAG:85}）
+		PRINTL 肛门经验+1
+	ENDIF
+	EXP:A:1 += 1
+	BASE:A:1 -= 10 + FLAG:85
+ELSE
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%全身都被史莱姆戏弄着，装备都被融化了一半（攻击力和防御力下降三分之一！）
+	BASE:A:1 -= 25 + FLAG:85 * 5
+	CFLAG:A:11 -= CFLAG:A:11 / 3
+	CFLAG:A:12 -= CFLAG:A:12 / 3
+
+	IF RAND:3 == 0
+		IF FLAG:5 & 32
+			PRINTFORML %SAVESTR:A%气喘吁吁……（气力-{10 + FLAG:85}）
+			PRINTL 肛门经验+1
+		ENDIF
+		EXP:A:1 += 1
+		BASE:A:1 -= 10 + FLAG:85
+	ENDIF
+ENDIF
+
+;ローション自動調教
+CALL BEFORE_AUTOTRAIN
+CALL COM50_AUTO
+CALL SOURCE_CHECK_AUTO
+;ヌルヌル付与
+SETBIT CFLAG:A:503, 3
+
+RETURN 0
+
+;------------------------------
+@NET_TRAP
+;------------------------------
+;蜘蛛网
+
+LOCAL = 10 + FLAG:85 * 5
+
+;気力最大値によるキャップ
+SIF LOCAL > MAXBASE:A:1 / 20
+	LOCAL = MAXBASE:A:1 / 20
+
+SIF FLAG:5 & 32
+	PRINTFORM %SAVESTR:A%在蜘蛛的巢穴里消耗了相当的精力（气力-{LOCAL}） 
+BASE:A:1 -= LOCAL
+
+IF TALENT:0:328
+	;魔虫知识によって気力ダメージの1.5倍のHPダメージ
+	LOCAL += LOCAL / 2
+	;HP最大値によるキャップ
+	SIF LOCAL > MAXBASE:A:0 / 20
+		LOCAL = MAXBASE:A:0 / 20
+	SIF FLAG:5 & 32
+		PRINTFORM 毒蜘蛛不断地袭来！（HP-{LOCAL}）  
+	BASE:A:0 -= LOCAL
+ENDIF
+
+SIF FLAG:5 & 32
+	PRINTL  
+
+RETURN 0
+
+;--------------------------------
+@SHOP_TRAP
+#DIM COST
+;--------------------------------
+;行商人
+;COST = 代金
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%被奸商兜售了偏贵的商品。
+
+COST = RAND:(CFLAG:A:9 /10 + 5) * 50
+
+IF COST == 0
+	SIF FLAG:5 & 32
+		PRINTL 勇者什么都没买。
+	RETURN 1
+ENDIF
+
+COST += FLAG:85 * 10
+COST = COST * (99 + POWER(CFLAG:A:501, 3)) / 100
+
+IF CFLAG:A:580 < COST
+	IF FLAG:5 & 32
+		PRINTFORMW %SAVESTR:A%带的钱不够，企图杀价也失败了～
+	ENDIF
+	RETURN 1
+ENDIF
+
+SIF FLAG:5 & 32
+	PRINTFORML 全部销售额为{COST}点！
+
+MONEY += COST
+EX_FLAG:4444 += COST
+;CFLAG:A:580 -= COST
+CFLAG:A:582 -= COST
+
+
+BASE:A:0 += COST
+SIF BASE:A:0 > MAXBASE:A:0
+	BASE:A:0 = MAXBASE:A:0
+;気力の回復
+BASE:A:1 = MAXBASE:A:1
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%恢复了。
+
+RETURN 0
+
+
+;--------------------------------
+@BLACKOUT_TRAP
+#DIM DICE
+;--------------------------------
+;黑暗的陷阱
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%突然被夺走了视野。
+
+DICE = RAND:3
+
+IF DICE == 2
+	SIF FLAG:5 & 32
+		PRINTL 勇者赶紧从黑暗里逃掉了。
+	RETURN 0
+ELSEIF DICE == 1
+	SIF FLAG:5 & 32
+		PRINTFORML 黑暗之中什么都看不见！（攻击力减半！）
+	CFLAG:A:11 /= 2
+	SIF FLAG:5 & 32
+		PRINTFORML 黑暗里传来什么可怕的声音！（气力-100）
+	BASE:A:1 -= 100
+	IF FLAG:85 > 0
+		SIF FLAG:5 & 32
+			PRINTFORML %SAVESTR:A%在黑暗中被毒箭射中了！（体力-{FLAG:85 * 10}）
+		BASE:A:0 -= FLAG:85 * 10
+	ENDIF
+ELSE
+	SIF FLAG:5 & 32
+		PRINTFORML 黑暗之中什么都看不见！（攻击力减半！）
+	CFLAG:A:11 /= 2
+
+	IF FLAG:85 > 0
+		SIF FLAG:5 & 32
+			PRINTFORML %SAVESTR:A%在黑暗中被毒箭射中了！（体力-{FLAG:85 * 10}）
+		BASE:A:0 -= FLAG:85 * 10
+	ENDIF
+ENDIF
+
+RETURN 0
+
+
+;--------------------------------
+@SHOOT_TRAP
+;--------------------------------
+;弹射
+
+IF D:20 < 40
+	;個数増加による帳尻合わせではなくRETURNの戻り値を変えることで、そもそもの個数を減少させないように
+	;ITEM:75 += 1
+	RETURN 1
+ENDIF
+
+;落下フラグ
+IF CFLAG:A:503 & 64
+	SIF FLAG:5 & 32
+		PRINTFORML 掉入一个地方之后又掉入另一个地方，连锁地掉入未知的地方！！(气力-20)
+	BASE:A:1 -= 20
+ELSE
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%突然落下了！
+	;落下フラグON
+	CFLAG:A:503 += 64
+ENDIF
+
+
+Z = RAND:3
+
+IF Z > 0
+	SIF FLAG:5 & 32
+		PRINTL 勇者用手抓住边沿，爬上来了。
+	RETURN 1
+ENDIF
+
+SIF FLAG:5 & 32
+	PRINTFORML *嘿！！*
+IF CFLAG:A:501 == 9
+	Z = RAND:300
+	BASE:A:0 -= Z
+	IF FLAG:5 & 32
+		PRINTFORML 不停地往最底层掉落！带着奇妙的浮游感，%SAVESTR:A%从第9阶层天花板上的传送阵掉落，狠狠地摔在地上（体力-{Z}）
+		PRINTFORML %SAVESTR:A%迷路了…
+	ENDIF
+	CFLAG:A:509 = 1
+	D:1 = 1
+ELSEIF CFLAG:A:501 == 8
+	CFLAG:A:501 += 1
+	Z = RAND:300
+	BASE:A:0 -= Z
+	IF FLAG:5 & 32
+		PRINTFORML 这里看起来是最底层了。%SAVESTR:A%的屁股被狠狠地撞到了（体力-{Z}）
+		PRINTFORML %SAVESTR:A%迷路了…
+	ENDIF
+	CFLAG:A:509 = 1
+	;パーティが分断される
+	CALL PARTY_DEL, A
+	D:1 = 1
+ELSE
+	CFLAG:A:501 += 1
+	SIF FLAG:5 & 32
+		PRINTFORML 掉到了下一层，%SAVESTR:A%迷路了…
+	CFLAG:A:509 = 1
+	;パーティが分断される
+	CALL PARTY_DEL, A
+	D:1 = 1
+ENDIF
+
+IF FLAG:85 > 0
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%因为掉落的冲击而呻吟着…（体力-{FLAG:85}）
+	BASE:A:0 -= FLAG:85
+ENDIF
+
+RETURN 0
+
+
+;--------------------------------
+@DISPELL_TRAP
+;--------------------------------
+;魔力扩散陷阱
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%碰到了诅咒的魔法阵！
+
+Z = RAND:2
+
+IF Z > 0
+	SIF FLAG:5 & 32
+		PRINTL 勇者解除了诅咒。
+	RETURN 0
+ENDIF
+
+SIF FLAG:5 & 32
+	PRINTFORML 魔力的漩涡爆炸了！
+
+IF CFLAG:A:503 & 2
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%已经被诅咒了。
+ELSE
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%被诅咒了…
+	CFLAG:A:503 += 2
+ENDIF
+
+IF FLAG:85 > 0
+	SIF FLAG:5 & 32
+		PRINTFORML 魔力的漩涡侵蚀着%SAVESTR:A%的精神（气力-{FLAG:85 * 10}）
+	BASE:A:1 -= FLAG:85 * 10
+ENDIF
+
+RETURN 0
+
+;------------------------------
+@OIL_TRAP
+;------------------------------
+;油壶陷阱
+
+SIF FLAG:5 & 32
+	PRINTL 有油壶陷阱！
+
+Z = RAND:100
+
+IF Z < 30
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%轻巧地躲开了…
+	RETURN 1
+ELSE
+	Z += FLAG:85 * 2
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%被油泼满一身，气力减少{Z}点！
+	BASE:A:1 -= Z
+	IF CFLAG:A:503 & 8
+		SIF FLAG:5 & 32
+			PRINTFORML 黏黏糊糊的…
+	ELSE
+		CFLAG:A:503 += 8
+	ENDIF
+ENDIF
+
+RETURN 0
+
+;------------------------------
+@FIRE_TRAP
+#DIM DICE
+;------------------------------
+;火箭发射陷阱
+
+SIF FLAG:5 & 32
+	PRINTL 有火箭发射陷阱！
+
+DICE = RAND:200
+
+IF DICE < 100
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%轻巧地回避了火箭……
+	RETURN 0
+ELSE
+	DICE += FLAG:85 * 10
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%受到{DICE}点伤害！
+	BASE:A:0 -= DICE
+	IF CFLAG:A:503 & 8
+		SIF FLAG:5 & 32
+			PRINTFORML 火把身上的油点燃了，追加伤害！（{30 + FLAG:85 * 5}）
+		BASE:A:0 -= 30 + FLAG:85 * 5
+	ENDIF
+ENDIF
+
+
+
+RETURN 0
+
+;------------------------------
+@A_WORM_TRAP
+#DIM DICE
+;------------------------------
+;アナルワームの罠
+
+SIF FLAG:5 & 32
+	PRINTL 有肛门虫陷阱！
+
+DICE  = RAND:100
+
+;ヌルヌル状態で威力アップ
+SIF GETBIT(CFLAG:A:503, 3)
+	TIMES DICE, 1.30
+
+IF DICE < 35
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%发现了肛门虫，一下把它弄死了。
+	RETURN 1
+ENDIF
+
+SIF GETBIT(CFLAG:A:503, 3) && FLAG:5 & 32
+	PRINTFORM ぬるりと滑り込む！
+
+DICE += FLAG:85 * 7 + 30
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%被肛门虫消耗了{DICE}点气力！
+BASE:A:1 -= DICE
+
+;A経験が多いと、中に入られてしまう
+IF TALENT:A:肛门虫 == 0 && EXP:A:1 > 30
+	SETCOLORBYNAME LightSalmon
+	SIF FLAG:5 & 32
+		PRINTFORML 肛门虫在%SAVESTR:A%的肠内不停蠕动着……
+	RESETCOLOR
+	TALENT:A:193 = 1
+ELSEIF TALENT:A:肛门虫
+	PLAYER = 0
+	TARGET = A
+	;アナルワーム自動調教
+	CALL BEFORE_AUTOTRAIN
+	CALL COM13_AUTO
+	CALL SOURCE_CHECK_AUTO
+ENDIF
+
+EXP:A:1 += 1
+SIF FLAG:5 & 32
+	PRINTFORML 肛门经验+1
+
+RETURN 0
+
+;------------------------------
+@LOVE_BUG_TRAP
+#DIM DICE
+;------------------------------
+;淫虫の罠
+
+IF CFLAG:A:503 & 64
+	SIF FLAG:5 & 32
+		PRINTFORM 掉入了淫虫的巢穴！（气力-10） 
+	BASE:A:1 -= 10
+ELSE
+	SIF FLAG:5 & 32
+		PRINT 踩到了淫虫的巢穴上！ 
+ENDIF
+
+DICE = RAND:100
+
+IF TALENT:A:314 == 6
+	;天使
+	SIF FLAG:5 & 32
+		PRINTFORML 天使族的%SAVESTR:A%及时地飞起来，避开了巢穴… 
+	RETURN 1
+ELSEIF TALENT:A:314 == 8
+	;堕天使
+	SIF FLAG:5 & 32
+		PRINTFORML 堕天使族的%SAVESTR:A%及时地飞起来，避开了巢穴…
+	RETURN 01
+ENDIF
+
+IF DICE < 5
+	SIF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%敏捷地避开了巢穴… 
+	RETURN 1
+ELSEIF DICE >= 80
+	DICE = RAND:40 + FLAG:85 * 3 + 1
+	DICE *= 2
+	SIF FLAG:5 & 32
+		PRINTFORM %SAVESTR:A%落下的时候扭到脚了。受到{DICE}点伤害！ 
+ELSE
+	DICE = RAND:40 + FLAG:85 * 3 + 1
+	SIF FLAG:5 & 32
+		PRINTFORM %SAVESTR:A%受到{DICE}点伤害！
+ENDIF
+BASE:A:0 -= DICE
+
+SIF FLAG:5 & 32
+	PRINTL  
+
+PLAYER = 0
+TARGET = A
+;愛撫自動調教
+CALL BEFORE_AUTOTRAIN
+CALL COM0_AUTO
+CALL SOURCE_CHECK_AUTO
+
+IF TALENT:A:10 == 1
+	SIF FLAG:5 & 32
+		PRINTFORML 胆小的%SAVESTR:A%吓得要死…（气力-10）
+	BASE:A:1 -= 10
+ENDIF
+
+RETURN 0
+
+;------------------------------
+@DARK_JUEL_TRAP
+#DIM DICE
+;------------------------------
+;宝石の罠
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%将高价的宝石捡了起来……
+
+DICE = RAND:5 * 50
+
+;カルマが高いと誘惑に打ち勝つ判定
+SIF CFLAG:A:151 > 150 && RAND:4 == 0
+	DICE = 0
+
+IF DICE == 0
+	SIF FLAG:5 & 32
+		PRINTL 勇者克服了诱惑。
+	RETURN 1
+ENDIF
+
+DICE += FLAG:85 * 10
+DICE = DICE * (99 + POWER(CFLAG:A:501, 3)) / 100
+
+;好奇心ボーナス
+SIF TALENT:A:好奇心
+	DICE += 5
+;金のためボーナス
+SIF TALENT:A:成为勇者的契机 == 2
+	DICE += 10
+;ホビットボーナス
+SIF TALENT:A:种族 == 10
+	DICE += 15
+;ドワーフボーナス
+SIF TALENT:A:种族 == 11
+	DICE += 15
+;盗賊は収入が多い（1.2倍）
+SIF TALENT:A:盗贼
+	DICE += DICE / 5
+
+SIF FLAG:5 & 32
+	PRINTFORML 总计价值{DICE}的宝石被勇者装入怀中……
+
+CFLAG:A:581 += DICE
+
+JUEL:A:6 += 5
+SIF FLAG:5 & 32
+	PRINTFORML 屈服点数+5
+
+;そしてカルマが下がる
+CALL KARMA, A, -1
+
+RETURN 0
+
+;------------------------------
+@DEF_DOWN_TRAP
+#DIM DICE
+;------------------------------
+;攻撃陣地の罠
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%被附上攻击效果上升的图腾……
+
+DICE = RAND:(FLAG:85 + 1) + RAND:20 + 1
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%的防御值弱化了{DICE}％……
+
+CFLAG:A:680 += DICE
+
+RETURN 0
+
+;------------------------------
+@ATK_DOWN_TRAP
+#DIM DICE
+;------------------------------
+;防御陣地の罠
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%被附上了防御效果上升的图腾……
+
+DICE = RAND:(FLAG:85 + 1) + RAND:20 + 1
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%的伤害值被弱化了{DICE}％……
+
+CFLAG:A:681 += DICE
+
+RETURN 0
+
+;------------------------------
+@MAG_DOWN_TRAP
+#DIM DICE
+;------------------------------
+;魔法陣地の罠
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%被附上了魔法攻击效果上升的图腾……
+
+DICE = RAND:(FLAG:85 + 1) + RAND:20 + 1
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%受到的魔法伤害上升了{DICE}％……
+
+CFLAG:A:682 += DICE
+
+RETURN 0
+
+;------------------------------
+@ALL_DOWN_TRAP
+#DIM DICE
+;------------------------------
+;腕の罠
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%遭惨白的手所缠绕，被下了诅咒……
+
+DICE = (RAND:(FLAG:85 + 1) + RAND:20) / 2 + 1
+
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%被弱化了{DICE}％……
+
+CFLAG:A:680 += DICE
+CFLAG:A:681 += DICE
+CFLAG:A:682 += DICE
+
+RETURN 0
+
+;-------------------------------------------
+@SLAVE_TRAP_SET
+;-------------------------------------------
+;迎撃中に陷阱を補充する
+
+;補充行動か
+SIF CFLAG:A:500 != 2
+	RETURN 0
+
+LOCAL = CFLAG:A:501 + 299
+	
+$TRAP_LOOP_2
+	
+LOCAL:1 = FLAG:LOCAL
+
+IF LOCAL:1 > 0
+	
+	;補充
+	SIF ITEM:(LOCAL:1) > 0 && ITEM:(LOCAL:1) < 99
+		ITEM:(LOCAL:1) += 1
+	;余りを換金
+	IF ITEM:(LOCAL:1) >= 99
+		P = LOCAL:1
+		CALL TRAP_PRICE
+		MONEY += RESULT
+		EX_FLAG:4444 += RESULT
+		SIF FLAG:5 & 32
+			PRINTFORML 出售了多余的陷阱，获得了{RESULT}点收入。
+	ENDIF
+ENDIF
+
+LOCAL += 10
+
+SIF LOCAL < 330
+	GOTO TRAP_LOOP_2
+
+RETURN 0
+
+;---------------------------------------------
+@TRAP_PRICE
+;---------------------------------------------
+;陷阱の値段をRETURNで返す関数
+;引き値はP
+
+SIF P == 60
+	RETURN 10
+SIF P == 61
+	RETURN 50
+SIF P == 62
+	RETURN 80
+SIF P == 63
+	RETURN 100
+SIF P == 64
+	RETURN 120
+SIF P == 65
+	RETURN 150
+SIF P == 66
+	RETURN 170
+SIF P == 67
+	RETURN 180
+SIF P == 68
+	RETURN 190
+SIF P == 69
+	RETURN 1000
+SIF P == 70
+	RETURN 180
+SIF P == 71
+	RETURN 90
+SIF P == 72
+	RETURN 10
+SIF P == 73
+	RETURN 70
+SIF P == 74
+	RETURN 200
+SIF P == 75
+	RETURN 180
+SIF P == 76
+	RETURN 300
+SIF P == 77
+	RETURN 50
+SIF P == 78
+	RETURN 110
+SIF P == 79
+	RETURN 80
+SIF P == 80
+	RETURN 60
+SIF P == 81
+	RETURN 20
+SIF P == 82
+	RETURN 40
+SIF P == 83
+	RETURN 40
+SIF P == 84
+	RETURN 40
+SIF P == 85
+	RETURN 100
+
+RETURN 100

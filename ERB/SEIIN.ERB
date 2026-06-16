@@ -1,0 +1,166 @@
+﻿;eraIM@Sから流用
+
+;----------------------------------------------------------------
+;精飲絶頂関連の処理の始動
+;----------------------------------------------------------------
+@SEIIN_START
+;システムを適応していないと処理しない
+SIF FLAG:72 == 1
+RETURN 0
+
+;口で射精させていないor失神中だと処理しない
+IF TFLAG:0 == 0 || TFLAG:899 > 0
+	RETURN 0
+;喜欢精液を持っている場合は精飲絶頂処理へ直行
+ELSEIF TALENT:47 && TFLAG:0 > 0
+	CALL SEIIN_ORGASM
+;喜欢精液を持たず、絶頂を迎えている場合(箇所は問わない)、強制精飲絶頂の回数（通称：パブロフカウンター）をチェックする
+ELSEIF TFLAG:0 > 0 && TFLAG:29 > 0
+	CALL SEIIN_CHECK
+ENDIF
+
+;----------------------------------------------------------------
+;強制精飲絶頂の回数（パブロフカウンター）チェック
+;----------------------------------------------------------------
+@SEIIN_CHECK
+
+;規定の回数
+P = 50
+
+;奴隷の素質により規定回数を増減する
+;刚强
+SIF TALENT:13 == 1
+	P += 4
+;保守的
+SIF TALENT:24 == 1
+	P += 4
+;乐观的
+SIF TALENT:25 == 1
+	P -= 2
+;悲观的
+SIF TALENT:26 == 1
+	P += 2
+;戒备森严
+SIF TALENT:27 == 1
+	P += 5
+;压抑
+SIF TALENT:32 == 1
+	P += 4
+;开放
+SIF TALENT:33 == 1
+	P -= 2
+;不怕污臭
+SIF TALENT:61 == 1
+	P -= 2
+;反感污臭
+SIF TALENT:62 == 1
+	P += 2
+;接受快感
+SIF TALENT:70 == 1
+	P -= 2
+;否定快感
+SIF TALENT:71 == 1
+	P += 4
+;容易上瘾
+SIF TALENT:72 == 1
+	P -= 5
+;倒錯的
+SIF TALENT:80 == 1
+	P -= 2
+;淫乱
+SIF TALENT:76 == 1
+	P -= 20
+
+;強制精飲絶頂の処理へ
+CALL SEIIN_COMPULSION_ORGASM
+
+;----------------------------------------------------------------
+;精飲絶頂の処理
+;----------------------------------------------------------------
+@SEIIN_ORGASM
+
+;精饮绝顶经验の回数追加
+EX:13 += 1
+EXP:8 += 1
+
+;精饮绝顶经验の処理
+;経験の回数によって処理が変化
+IF TFLAG:0 == 2
+	PRINTFORML %SAVESTR:TARGET%精饮绝顶
+	PRINTFORML 精饮绝顶经验＋1
+	PRINTL 大量的精液把喉咙灌开了，
+	PRINTFORML %SAVESTR:TARGET%一边发出含糊不清的呻吟，一边颤抖着肩膀，达到绝顶高潮了……
+ELSE
+	PRINTFORML %SAVESTR:TARGET%精饮绝顶
+	PRINTFORML 精饮绝顶经验＋1
+	PRINTFORML 阴茎塞满了口腔，%SAVESTR:TARGET%只能发出含糊不清的声音，
+	PRINTL 随着肩膀轻微的颤动，达到高潮了…
+ENDIF
+
+;パラメーター増減
+;基本ソース
+SOURCE:10 = 2000
+SOURCE:11 = 5000
+SOURCE:13 = 10000
+
+IF EXP:8 == 1
+	TIMES SOURCE:13 , 3.00
+ELSEIF ABL:32 == 3
+	TIMES SOURCE:13 , 2.00
+ELSEIF ABL:32 == 4
+	TIMES SOURCE:10 , 1.50
+	TIMES SOURCE:11 , 1.50
+	TIMES SOURCE:13 , 1.50
+ELSEIF ABL:32 == 5
+	TIMES SOURCE:10 , 2.00
+	TIMES SOURCE:11 , 2.00
+ENDIF
+
+
+;----------------------------------------------------------------
+;強制精飲絶頂の処理
+;強制精飲絶頂の経験回数をCFLAG:600に格納
+;----------------------------------------------------------------
+@SEIIN_COMPULSION_ORGASM
+
+CFLAG:600 += 1
+
+;喜欢精液獲得フラグ成立メッセージ
+IF CFLAG:600 >= P
+	PRINTFORML 强制精饮绝顶
+	PRINTFORML %SAVESTR:TARGET%彻底地把精液的味道记住了…
+	TFLAG:110 = 1
+;強制精飲絶頂初回
+ELSEIF CFLAG:600 == 1
+	PRINTFORML 强制精饮绝顶
+	PRINTFORML %SAVESTR:TARGET%将%CALLNAME:MASTER%射出的精液尽力喝下去了，
+	PRINTFORML 通过持续不断的刺激，
+	PRINTFORMW 强制地让她去了……
+	PRINTFORML 异常经验＋１
+	EXP:50 += 1
+;以降メッセージは出るがウェイトはかからない
+ELSE
+	PRINTFORML 强制精饮绝顶
+	PRINTFORML %SAVESTR:TARGET%将%CALLNAME:MASTER%射出的精液尽力喝下去了，
+	PRINTFORML 通过持续不断的刺激，
+	PRINTFORML 强制地让她去了……
+ENDIF
+
+;喜欢精液獲得フラグ成立時
+IF CFLAG:600 >= P
+	;精液中毒がLV3に上がる
+	IF ABL:32 < 3
+		PRINTFORMW %SAVESTR:TARGET%的精液中毒达到LV3了
+		ABL:32 = 3
+	ENDIF
+ENDIF
+
+;パラメーター増減
+;基本ソース
+SOURCE:13 = 1000
+
+IF CFLAG:600 == 1
+	TIMES SOURCE:13 , 1.50
+ELSEIF CFLAG:600 == P
+	SOURCE:5 = 1000
+ENDIF

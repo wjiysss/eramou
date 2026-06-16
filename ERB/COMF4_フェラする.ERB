@@ -1,0 +1,121 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;口交
+;爱抚系コマンド：調教者が調教対象のペニスを口で刺激
+;-------------------------------------------------
+@COM4
+
+;-------------------------------------------------
+;跳转到进阶指令
+;-------------------------------------------------
+LOCAL = 4
+CALL GET_ADV_COM,LOCAL
+SIF RESULT != LOCAL
+	JUMPFORM COM{RESULT}
+
+
+PRINTL 口交(主)
+;SAVESTR:22 = 口交
+CALL TRAIN_MESSAGE_B
+
+;-------------------------------------------------
+;ソースの計算
+;-------------------------------------------------
+LOSEBASE:0 += 5
+LOSEBASE:1 += 50
+
+SOURCE:12 = 220
+SOURCE:14 = 50
+
+;ABL:阴蒂感觉をみる
+IF ABL:0 == 0
+	SOURCE:0 = 50
+ELSEIF ABL:0 == 1
+	SOURCE:0 = 200
+ELSEIF ABL:0 == 2
+	SOURCE:0 = 800
+ELSEIF ABL:0 == 3
+	SOURCE:0 = 1600
+ELSEIF ABL:0 == 4
+	SOURCE:0 = 2400
+ELSE
+	SOURCE:0 = 3200
+ENDIF
+
+;調教者のTALENT:擅用舌头をみる
+IF TALENT:PLAYER:52 || TEQUIP:89
+	TIMES SOURCE:0 , 2.00
+	SOURCE:16 += SOURCE:0/20
+ENDIF
+
+;兽奸の場合はここで終了
+SIF TEQUIP:89
+	RETURN 1
+
+;-------------------------------------------------
+;汚れの処理
+;-------------------------------------------------
+;奴隷のＰ⇔調教者の口の汚れが移動
+STAIN:2 |= STAIN:PLAYER:0
+STAIN:PLAYER:0 |= STAIN:2
+
+;-------------------------------------------------
+;経験上昇
+;-------------------------------------------------
+;レズ・ホモ経験
+IF TALENT:122 == 0 && TALENT:PLAYER:122 == 0
+	PRINTS EXPNAME:40
+	PRINTL +3
+	EXP:40 += 3
+ELSEIF TALENT:122 == 1 && TALENT:PLAYER:122 == 1
+	PRINTS EXPNAME:41
+	PRINTL +3
+	EXP:41 += 3
+ENDIF
+
+;調教者の初吻
+IF CFLAG:PLAYER:16 == -1
+	CFLAG:PLAYER:16 = 201
+	CSTR:PLAYER:4 = %SAVESTR:TARGET%
+ENDIF
+
+;調教者の経験
+CFLAG:PLAYER:22 += 1
+
+
+CALL EVENT_SEITSU
+
+;爱情经验
+IF TALENT:122
+	E = 2
+ELSE
+	E = 1
+ENDIF
+IF CFLAG:2 >= 1000 && ASSIPLAY == 0
+	PRINTFORML %EXPNAME:23%+{E}
+	EXP:23 += E
+ENDIF
+E = 0
+
+RETURN 1
+;
+;-------------------------------------------------
+;-------------------------------------------------
+;精通
+;-------------------------------------------------
+@EVENT_SEITSU
+A = NO:PLAYER
+;【男人】か【扶她】であり【未熟】
+SIF (TALENT:121 == 0 && TALENT:122 == 0) || TALENT:135 == 0
+	RETURN 0
+;更に［Ｃ感度］５以上で触手調教や兽奸でなく
+SIF ABL:0 <= 4 || TEQUIP:90 || TEQUIP:89
+	RETURN 0
+;「調教対象」から「調教者」への関係が150以上
+SIF RELATION:TARGET:A < 150
+	RETURN 0
+PRINTFORML %SAVESTR:PLAYER%的阴茎被吸啜着，%SAVESTR:TARGET%开始精通这个了…
+TALENT:135 = 0
+
+RETURN 1

@@ -1,0 +1,1287 @@
+﻿;--------------------------------------------------
+@DUNGEON_BATTLE2_PARTY, ARG:0
+#DIM ENEMY
+#DIM SIDEA
+#DIM SIDEB
+#DIM TURN
+#DIM MONID
+#DIM ATKER,2
+#DIM DEFER
+#DIM MAX_LEN = 10, 10, 10
+;--------------------------------------------------
+;勇者と元勇者の戦闘
+;A・ARG:0がキャラNo
+;B・ENEMYが対戦相手リーダー
+;SIDEA  = 仲間A
+;SIDEB  = 仲間B
+;ATKER  = 攻撃者（奴隷側）
+;DEFER  = 防衛者（勇者側）
+
+;対戦相手選択
+;リーダーのみを探す
+;ただし、潜入中は直接戦闘ではなく、PT内の工作活動を行う
+
+IF CFLAG:(ARG:0):500 == 4
+	CALL DUNGEON_SPY, ARG:0
+	RETURN 0
+ENDIF
+
+;---対象選択フェイズ---
+
+ENEMY = 0
+REPEAT CHARANUM
+	IF COUNT == 0 || CFLAG:COUNT:1 != 2
+		CONTINUE
+	ELSEIF CFLAG:(ARG:0):501 != CFLAG:COUNT:501
+		CONTINUE
+	ELSEIF CFLAG:COUNT:530 == 1
+		;仲間になっているフラグON
+		CONTINUE
+	ELSEIF RAND:5 != 0
+		CONTINUE
+	ENDIF
+	ENEMY = COUNT
+	BREAK
+REND
+
+;念のため代入しておく
+A = ARG:0
+B = ENEMY
+
+;---対象選択失敗時の処理---
+
+IF ENEMY == 0
+	IF FLAG:5 & 32
+		IF CFLAG:(ARG:0):507 == 1
+			PRINTFORMW %SAVESTR:(ARG:0)%专心恢复体力
+		ELSE
+			PRINTFORMW %SAVESTR:(ARG:0)%在寻找勇者，但没有找到
+		ENDIF
+	ENDIF
+	RETURN 0
+ENDIF
+
+;---戦闘開始前の準備---
+
+;仲間の代入
+SIDEA = CFLAG:ENEMY:531
+SIDEB = CFLAG:ENEMY:532
+
+;奴隷を援護する怪物
+FOR TURN, 0,  3
+	LOCAL = (CFLAG:(ARG:0):501 - 1) * 10 + 100 + RAND:5
+	;8階以上で強敵の抽選
+	IF CFLAG:(ARG:0):501 >= 8 && RAND:10 == 0
+		MONID = 191 + RAND:3
+		SIF ITEM:MONID > 0
+			LOCAL = MONID
+	ENDIF
+	CALL MONSTER_DATA, LOCAL, TURN, ARG:0, -1
+	;ボス化する
+	LOCAL:1 = (TURN * 100) + 8
+	E:(LOCAL:1) = 1
+	;1匹だけにする
+	LOCAL:1 = (TURN * 100) + 99
+	E:(LOCAL:1) = 1
+NEXT
+
+IF FLAG:5 & 32
+	PRINTW *发生了战斗！*
+	DRAWLINE
+ENDIF
+
+;弾の補充
+;パーティ戦を考慮し調整
+CFLAG:(ARG:0):571 = 7
+CFLAG:ENEMY:571 = 7
+SIF SIDEA > 0
+	CFLAG:SIDEA:571 = 7
+SIF SIDEB > 0
+	CFLAG:SIDEB:571 = 7
+
+;---先制攻撃フェイズ---
+
+;奴隷側の先制
+FOR TURN, 0, 3
+	IF TURN == 0
+		ATKER = ARG:0
+	ELSEIF TURN == 1
+		ATKER = CFLAG:(ARG:0):531
+	ELSEIF TURN == 2
+		ATKER = CFLAG:(ARG:0):532
+	ELSE
+		BREAK
+	ENDIF
+	
+	SIF ATKER <= 0
+		CONTINUE
+	
+	;対象決定
+	;现在の仕様ではリーダーのみを狙う
+	CALL SELECT_ATKER, ENEMY, TURN
+	
+	DEFER = RESULT
+	B = RESULT
+	
+	IF TALENT:ATKER:252 == 1 && CFLAG:ATKER:503 & 32
+		;先制不可
+		SIF FLAG:5 & 32
+			PRINTL 因为障碍物的阻挡未能先发制人……
+	ELSEIF  TALENT:ATKER:252 == 1
+		Z = 0
+		CALL DUEL_ATTACK, ATKER, 2, DEFER, 1
+	ENDIF
+	
+	;现在奴隷同士でパーティーを組まないためここで抜ける
+	BREAK
+	
+NEXT
+
+;勇者側側の先制
+FOR TURN, 0, 3
+	IF TURN == 0
+		DEFER = ENEMY
+	ELSEIF TURN == 1
+		DEFER = CFLAG:ENEMY:531
+	ELSEIF TURN == 2
+		DEFER = CFLAG:ENEMY:532
+	ELSE
+		BREAK
+	ENDIF
+	
+	SIF DEFER <= 0
+		CONTINUE
+	
+	;対象決定
+	;现在の仕様では奴隷配下が盾になるためコメントアウト
+	;CALL SELECT_SLAVE, ARG:0, TURN
+	
+	;ATKER = RESULT
+	;A = RESULT
+	
+	IF TALENT:DEFER:252 == 1 && CFLAG:DEFER:503 & 32
+		;先制不可
+		SIF FLAG:5 & 32
+			PRINTL 因为障碍物的阻挡未能先发制人……
+	ELSEIF  TALENT:DEFER:252 == 1
+		Z = 0
+		CALL ENEMY_ATTACK, DEFER, 2
+	ENDIF
+NEXT
+
+;---メインフェイズ---
+
+FOR TURN, 0, 20
+	;時間切れ
+	IF TURN > 15
+		SIF FLAG:5 & 32
+			PRINTFORML %SAVESTR:(ARG:0)%逃跑了………
+		BASE:(ARG:0):1 -= RAND:30
+		BREAK
+	ENDIF
+	
+	;パラメータ表示
+	
+	IF FLAG:5 & 32
+		
+		;名前の文字数、レベル、攻撃、防御の最大桁数を取得
+		MAX_LEN = MAX(STRLENS(SAVESTR:(ARG:0)), MAX_LEN);名前
+		MAX_LEN = MAX(STRLENS(TOSTR(CFLAG:(ARG:0):11))+3, MAX_LEN);攻撃に"攻 "の3文字
+		MAX_LEN = MAX(STRLENS(TOSTR(CFLAG:(ARG:0):12))+3, MAX_LEN);防御に"防 "の3文字
+		
+		SETFONT "ＭＳ ゴシック";等幅フォントに
+		DRAWLINE
+		
+		;名前表示
+		SETCOLORBYNAME DarkSeaGreen
+		PRINTFORM  %SAVESTR:(ARG:0),MAX_LEN,LEFT%
+		PRINTL  
+		
+		;HP表示
+		;"HP"の2文字分長さを引く
+		SETCOLORBYNAME DeepSkyBlue
+		PRINT  HP
+		BAR BASE:(ARG:0):0, MAXBASE:(ARG:0):0, (MAX_LEN - 4)
+		PRINTL  
+		
+		;気力表示
+		;"気"の2文字分長さを引く
+		;SETCOLORBYNAME DeepSkyBlue;色変えたい時はここ
+		PRINT  气
+		BAR BASE:(ARG:0):1, MAXBASE:(ARG:0):1, (MAX_LEN - 4)
+		PRINTL  
+		
+		;攻撃力表示
+		;"攻 "の3文字を引く
+		SETCOLORBYNAME LightGreen
+		PRINTFORM  攻 {CFLAG:(ARG:0):11,(MAX_LEN-3),LEFT}
+		PRINTL  
+		
+		;防御力表示
+		;"防 "の3文字を引く
+		;SETCOLORBYNAME LightGreen;色変えたい時はここ
+		PRINTFORM  防 {CFLAG:(ARG:0):12,(MAX_LEN-3),LEFT}
+		PRINTL  
+		
+		RESETCOLOR
+		SETFONT
+		
+		PRINTL  
+		WAIT
+		
+		CALL MONSTER_LIST
+		
+		WAIT
+		
+		PRINTW --- VS --- 
+		
+		DRAWLINE
+		ATKER = CFLAG:ENEMY:531
+		ATKER:1 = CFLAG:ENEMY:532
+		
+		;名前の文字数、レベル、攻撃、防御の最大桁数を取得
+		;3人のステータス表示の幅を決定する
+		MAX_LEN = MAX(STRLENS(SAVESTR:ENEMY), MAX_LEN);名前
+		MAX_LEN = MAX(STRLENS(TOSTR(CFLAG:ENEMY:11))+3, MAX_LEN);攻撃に"攻 "の3文字
+		MAX_LEN = MAX(STRLENS(TOSTR(CFLAG:ENEMY:12))+3, MAX_LEN);防御に"防 "の3文字
+		
+		MAX_LEN:1 = MAX(STRLENS(SAVESTR:ATKER), MAX_LEN);名前
+		MAX_LEN:1 = MAX(STRLENS(TOSTR(CFLAG:ATKER:11))+3, MAX_LEN);攻撃に"攻 "の3文字
+		MAX_LEN:1 = MAX(STRLENS(TOSTR(CFLAG:ATKER:12))+3, MAX_LEN);防御に"防 "の3文字
+		
+		MAX_LEN:2 = MAX(STRLENS(SAVESTR:(ATKER:1)), MAX_LEN);名前
+		MAX_LEN:2 = MAX(STRLENS(TOSTR(CFLAG:(ATKER:1):11))+3, MAX_LEN);攻撃に"攻 "の3文字
+		MAX_LEN:2 = MAX(STRLENS(TOSTR(CFLAG:(ATKER:1):12))+3, MAX_LEN);防御に"防 "の3文字
+		
+		SETFONT "ＭＳ ゴシック";等幅フォントに
+		
+		;名前表示
+		SETCOLORBYNAME DarkSeaGreen
+		PRINTFORM  %SAVESTR:ENEMY,MAX_LEN,LEFT%
+		SIF ATKER > 0
+			PRINTFORM  | %SAVESTR:ATKER,MAX_LEN:1,LEFT%
+		SIF ATKER:1 > 0
+			PRINTFORM  | %SAVESTR:(ATKER:1),MAX_LEN:2,LEFT%
+		PRINTL  
+		
+		;HP表示
+		;"HP"の2文字分長さを引く
+		SETCOLORBYNAME DeepSkyBlue
+		PRINT  HP
+		BAR BASE:ENEMY:0, MAXBASE:ENEMY:0, (MAX_LEN - 4)
+		IF ATKER > 0
+			PRINT  | HP
+			BAR BASE:ATKER:0, MAXBASE:ATKER:0, (MAX_LEN:1 - 4)
+		ENDIF
+		IF ATKER:1 > 0
+			PRINT  | HP
+			BAR BASE:(ATKER:1):0, MAXBASE:(ATKER:1):0, (MAX_LEN:2 - 4)
+		ENDIF
+		PRINTL 
+		
+		;気力表示
+		;"気"の2文字分長さを引く
+		;SETCOLORBYNAME DeepSkyBlue;色変えたい時はここ
+		PRINT  气
+		BAR BASE:ENEMY:1, MAXBASE:ENEMY:1, (MAX_LEN - 4)
+		IF ATKER > 0
+			PRINT  | 气
+			BAR BASE:ATKER:1, MAXBASE:ATKER:1, (MAX_LEN:1 - 4)
+		ENDIF
+		IF ATKER:1 > 0
+			PRINT  | 气
+			BAR BASE:(ATKER:1):1, MAXBASE:(ATKER:1):1, (MAX_LEN:2 - 4)
+		ENDIF
+		PRINTL 
+		
+		;攻撃力表示
+		;"攻 "の3文字を引く
+		SETCOLORBYNAME LightGreen
+		PRINTFORM  攻 {CFLAG:ENEMY:11,(MAX_LEN-3),LEFT}
+		SIF ATKER > 0
+			PRINTFORM  | 攻 {CFLAG:ATKER:11,((MAX_LEN:1)-3),LEFT}
+		SIF ATKER:1 > 0
+			PRINTFORM  | 攻 {CFLAG:(ATKER:1):11,((MAX_LEN:2)-3),LEFT}
+		PRINTL  
+		
+		;防御力表示
+		;"防 "の3文字を引く
+		;SETCOLORBYNAME LightGreen;色変えたい時はここ
+		PRINTFORM  防 {CFLAG:ENEMY:12,(MAX_LEN-3),LEFT}
+		SIF ATKER > 0
+			PRINTFORM  | 防 {CFLAG:ATKER:12,((MAX_LEN:1)-3),LEFT}
+		SIF ATKER:1 > 0
+			PRINTFORM  | 防 {CFLAG:(ATKER:1):12,((MAX_LEN:2)-3),LEFT}
+		PRINTL  
+		
+		RESETCOLOR
+		SETFONT
+		
+		DRAWLINE
+	ENDIF
+	
+	;戦闘を行うキャラの選択
+	
+	CALL SELECT_ATKER, ENEMY, TURN
+	
+	DEFER = RESULT
+	B = RESULT
+	
+	CALL SELECT_SLAVE, ARG:0, TURN
+	
+	ATKER = RESULT
+	A = RESULT
+	
+	IF ATKER >= 99
+		A = DEFER
+		ATKER = DEFER
+		;怪物が選択された場合、怪物戦闘と同じ処理になる
+		
+		
+		;先制(旧処理)
+		
+		;先攻後攻決定
+		CALL SPEED_PLUS
+		
+		IF RESULT > 0
+			CALL ENEMY_ATTACK, ATKER, 0
+			SIF RESULT == 0
+				CALL MONSTER_ATTACK, ATKER, TURN
+			IF RESULT == 999
+				IF FLAG:5 & 32
+					PRINTL 战斗中断
+				ENDIF
+				BREAK
+			ENDIF
+		ELSE
+			CALL MONSTER_ATTACK, ATKER, TURN
+			SIF RESULT == 0
+				CALL ENEMY_ATTACK, ATKER, 1
+			IF RESULT == 999
+				IF FLAG:5 & 32
+					PRINTL 战斗中断
+				ENDIF
+				BREAK
+			ENDIF
+		ENDIF
+		
+		;ATKER = DEFER = 勇者
+		;ARG:0 = 奴隶
+		CALL DEATH_CHECK2, ARG:0, ATKER
+		IF RESULT == 2
+			SIF FLAG:5 & 1
+				CALL PC_RYOU, ARG:0, ATKER
+			BREAK
+		ELSEIF RESULT == 1
+			BREAK
+		ENDIF
+		CONTINUE
+	ENDIF
+	
+	;配下怪物データの取得・怪物の攻撃
+	IF CFLAG:ATKER:570 >= 100
+		CALL MONSTER_DATA, CFLAG:ATKER:570, 3, ATKER, -1
+		CALL SLAVE_MONSTER_ATTACK_TO_ENEMY, ATKER, DEFER
+	ENDIF
+	IF CFLAG:DEFER:570 >= 100
+		CALL MONSTER_DATA, CFLAG:DEFER:570, 4, -1, DEFER
+		CALL SLAVE_MONSTER_ATTACK_TO_SLAVE, ATKER, DEFER
+	ENDIF
+	
+	;先制(旧処理)の場所メモ
+	;先制勇者(旧処理)
+	
+	SIF FLAG:5 & 32
+		DRAWLINE
+	
+	;ATKER = 奴隷
+	;DEFER = 勇者
+	
+	;先攻後攻決定
+	CALL SPEED_PLUS2
+	
+	IF RESULT > 0
+		;奴隷先攻
+		CALL DUEL_ATTACK, ATKER, 0, DEFER, 1
+
+		CALL DEATH_CHECK2, ATKER, DEFER
+		IF RESULT == 2
+			SIF FLAG:5 & 1
+				CALL PC_RYOU, ATKER, DEFER
+			BREAK
+		ELSEIF RESULT == 1
+			BREAK
+		ENDIF
+
+		;勇者後攻
+		SIF RESULT == 0
+			CALL DUEL_ATTACK, DEFER, 1, ATKER, 0
+		IF RESULT == 999
+			IF FLAG:5 & 32
+				PRINTL 战斗中断
+			ENDIF
+			BREAK
+		ENDIF
+	ELSE
+		;勇者先攻
+		CALL DUEL_ATTACK, DEFER, 0, ATKER, 0
+
+		CALL DEATH_CHECK2, ATKER, DEFER
+		IF RESULT == 2
+			SIF FLAG:5 & 1
+				CALL PC_RYOU, ATKER, DEFER
+			BREAK
+		ELSEIF RESULT == 1
+			BREAK
+		ENDIF
+
+		;奴隷後攻
+		SIF RESULT == 0
+			CALL DUEL_ATTACK, ATKER, 1, DEFER, 1
+		IF RESULT == 999
+			IF FLAG:5 & 32
+				PRINTL 战斗中断
+			ENDIF
+			BREAK
+		ENDIF
+	ENDIF
+	
+	CALL DEATH_CHECK2, ATKER, DEFER
+	IF RESULT == 2
+		SIF FLAG:5 & 1
+			CALL PC_RYOU, ATKER, DEFER
+		BREAK
+	ELSEIF RESULT == 1
+		BREAK
+	ENDIF
+	BASE:ATKER:1 -= RAND:20
+	BASE:DEFER:1 -= RAND:20
+NEXT
+
+;奴隷装備の回復
+CALL WEAPON_RESTORE,ARG:0
+;勇者装備の回復
+CALL WEAPON_RESTORE,ENEMY
+;仲間A装備回復
+ATKER = CFLAG:ENEMY:531
+SIF ATKER > 0
+	CALL WEAPON_RESTORE,ATKER
+;仲間B装備回復
+ATKER = CFLAG:ENEMY:532
+SIF ATKER > 0
+	CALL WEAPON_RESTORE,ATKER
+
+A = ARG:0
+
+IF CFLAG:(ARG:0):1 == 0
+	PRINTFORML %SAVESTR:(ARG:0)%败给了勇者，回到了魔王身边。
+	RETURN 1
+ELSEIF CFLAG:(ARG:0):1 == 9
+	PRINTFORML %SAVESTR:(ARG:0)%败给了勇者，成为了狂王的东西。
+	RETURN 1
+ENDIF
+;返り値にBを使用
+;Bが陥落する
+IF CFLAG:ENEMY:1 == 0
+	B = ENEMY
+	RETURN 2
+ENDIF
+IF SIDEA > 0 && CFLAG:SIDEA:1 == 0
+	B = SIDEA
+	RETURN 2
+ENDIF
+IF SIDEB > 0 && CFLAG:SIDEB:1 == 0
+	B = SIDEB
+	RETURN 2
+ENDIF
+
+RETURN 0
+
+;------------------------------
+@SELECT_SLAVE, ARG:0, ARG:1
+#DIM MEMBER
+#DIM MONID
+;------------------------------
+;攻撃する奴隷を選びます
+;ARG:0  = リーダー
+;ARG:1  = ターン
+;MEMBER = パーティー人数
+;E      = 怪物
+;MONID  = 怪物ID
+;怪物の攻撃の場合怪物数のID（99,199,299）が返る
+
+MEMBER = 1
+
+;仲間A,B確認
+;奴隷パーティー拡張があったら再利用
+;LOCAL = CFLAG:(ARG:0):531
+;SIF LOCAL > 0
+;	MEMBER += 1
+;LOCAL = CFLAG:(ARG:0):532
+;SIF LOCAL > 0
+;	MEMBER += 1
+
+FOR MONID, 0, 300
+	MONID += 99
+	SIF E:MONID > 0
+		MEMBER += 1
+NEXT
+
+;余りを求める
+LOCAL = ARG:1 % MEMBER
+
+;何番目か分かったので対応する勇者を返却
+IF LOCAL == 0
+	RETURN ARG:0
+ELSEIF LOCAL == 1
+	;仲間怪物
+	;全滅時も考える
+	FOR MONID, 0, 300
+		MONID += 99
+		SIF E:MONID > 0
+			RETURN MONID
+	NEXT
+	
+ELSEIF LOCAL == 2
+	FOR MONID, 100, 300
+		MONID += 99
+		SIF E:MONID > 0
+			RETURN MONID
+	NEXT
+ELSEIF LOCAL == 3
+	;299以外あり得ないが、一応
+	FOR MONID, 200, 300
+		MONID += 99
+		SIF E:MONID > 0
+			RETURN MONID
+	NEXT
+ENDIF
+
+;念のためいなかったらリーダーが返る
+RETURN ARG:0
+
+
+;------------------------------
+@SPEED_PLUS2
+;------------------------------
+;速度補正
+#DIM SPEED_X
+#DIM SPEED_Y
+SPEED_X = RAND:6
+SPEED_Y = RAND:6
+
+;奇袭
+SIF TALENT:A:243 == 1
+	SPEED_X += 1
+SIF TALENT:B:243 == 1
+	SPEED_Y += 1
+;恶魔翅膀
+SIF TALENT:A:245 == 1
+	SPEED_X += 1
+SIF TALENT:B:245 == 1
+	SPEED_Y += 1
+;俊足
+SIF TALENT:A:258 == 1
+	SPEED_X += 1
+SIF TALENT:B:258 == 1
+	SPEED_Y += 1
+;ホビットの加速ボーナス
+SIF TALENT:A:314 == 10
+	SPEED_X += 1
+SIF TALENT:B:314 == 10
+	SPEED_Y += 1
+;ドワーフの減速
+SIF TALENT:A:314 == 11
+	SPEED_X -= 1
+SIF TALENT:B:314 == 11
+	SPEED_Y -= 1
+;装備効果
+W:8 = 3
+CALL EQUIP_CHECK
+SPEED_X += RESULT
+
+;装備効果
+W:8 = 12
+CALL EQUIP_CHECK
+SPEED_X -= RESULT
+
+LOCAL = A
+A = B
+;装備効果
+W:8 = 3
+CALL EQUIP_CHECK
+SPEED_Y += RESULT
+W:8 = 12
+CALL EQUIP_CHECK
+SPEED_Y -= RESULT
+B = A
+A = LOCAL
+
+RETURN SPEED_X - SPEED_Y
+
+
+
+;--------------------------------
+@DUEL_ATTACK, ARG:0, ARG:1, ARG:2, ARG:3
+#DIM DMG
+#DIM MDMG
+#DIM DEF
+#DIM HIT
+#DIMS ATKTITLE
+#DIMS PUNCT
+;--------------------------------
+;キャラ同士の攻撃
+;ARG:0 = キャラNo
+;ARG:1 == 0 先手攻撃
+;ARG:1 == 1 後手攻撃
+;ARG:1 == 2 先制攻撃
+;ARG:2 = 対象キャラNo
+;ARG:3 = 戦闘種別
+;0 = 勇者→奴隷
+;1 = 奴隷→勇者
+;2 = 圣灵→奴隷
+;3 = 奴隷→圣灵
+;DMG = ダメージ
+;MDMG = 気力ダメージ
+;DEF = 対象の防御力
+;HIT = 命中減衰
+
+;一応代入
+A = ARG:0
+B = ARG:2
+TARGET = ARG:0
+
+PLAYER = 0
+;アナルワーム自動調教
+IF TALENT:肛门虫
+	CALL BEFORE_AUTOTRAIN
+	CALL COM13_AUTO
+	CALL SOURCE_CHECK_AUTO
+ENDIF
+
+IF ARG:3 == 0 || ARG:3 == 2
+	X:1 = 3
+	;この場合ABは逆転
+	B = ARG:0
+	A = ARG:2
+ELSEIF ARG:3 == 1 || ARG:3 == 3
+	X:1 = 4
+ENDIF
+
+;发动魔法
+CALL MAGIC
+SIF RESULT == 999
+	RETURN 999
+
+;精英部下的特技
+CALL SLAVE_MONSTER_SKILL, ARG:2, ARG:0
+SIF RESULT == 999
+	RETURN 999
+
+;予め変数に入れておく
+IF ARG:3 == 0
+	ATKTITLE = 勇者
+ELSEIF ARG:3 == 1 || ARG:3 == 3
+	ATKTITLE = 奴隶
+ELSEIF ARG:3 == 2
+	ATKTITLE = 圣灵骑士
+	PUNCT = ・
+ENDIF
+
+;戦闘前発動スキル
+CALL SKILL_EXTRA_BONUS,ARG:0
+
+
+;攻撃による被害
+
+;セリフ
+SIF FLAG:5 & 32
+	CALL ATTACK_KOUJO, ARG:0
+
+;先手かつ奇袭の場合、相手の防御値を減少させる
+IF ARG:1 == 0 && TALENT:(ARG:0):243 == 1
+	SIF FLAG:5 & 32
+		PRINT 偷袭成功！！
+	CFLAG:(ARG:2):12 /= 2
+ENDIF
+
+;武器効果
+W:0 = CFLAG:(ARG:0):550
+;素手の場合剑を装備
+IF W:0 <= 0
+	W:0 = 40
+	CFLAG:(ARG:0):550 = W:0
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORM %ATKTITLE%%PUNCT%%SAVESTR:(ARG:0)%使用
+	CALL PRINT_EQUIPTYPE_WEAPON
+	PRINTFORML 攻击！！
+ENDIF
+
+CALL EQUIP_DATABASE
+CALL EQUIP_POWERUP, ARG:2
+
+;奴隷vs潜入中奴隷なら攻撃をサボる
+IF CFLAG:(ARG:0):1 == 3 && CFLAG:(ARG:2):1 == 3
+;#;PRINTFORML <奴隷%SAVESTR:(ARG:0)% vs 奴隷%SAVESTR:(ARG:2)%>
+	;1/3で攻撃失敗、1/3でダメージ補正三分の一に
+	SELECTCASE RAND:3
+	CASE 0
+		IF FLAG:5 & 32
+			LOCALS:0 = 的攻击落空了…………
+			LOCALS:1 = 不知何故停下了攻击的手！
+			LOCALS:2 = 采取防御姿态……
+			LOCALS:3 = 一副观察着的样子……
+			LOCALS:4 = 跌倒了！
+			PRINTFORML %ATKTITLE%%LOCALS:(RAND:5)%
+		ENDIF
+		RETURN 0
+	CASE 1
+		W:9 = W:9 / 3
+		PRINTFORML %ATKTITLE%%PUNCT%%SAVESTR:(ARG:0)%假装攻击……其实在放水……
+	ENDSELECT
+ENDIF
+
+;DMG=ダメージ
+;MDMG=気力ダメージ
+
+DMG = (CFLAG:(ARG:0):11 - CFLAG:(ARG:2):12)*2
+
+CALL ATTACK_CHARA_EXTRA_DMG_BATTLE2, (ARG:0), DMG, (ARG:1), (ARG:2), ATKTITLE
+DMG = RESULT
+
+CALL ATTACK_CHARA_EXTRA_DMG, (ARG:0), DMG, (ARG:1)
+DMG = RESULT
+
+;ダメージ補正
+CALL DEFENCE_CHARA_EXTRA_DMG,(ARG:2), DMG
+DMG = RESULT
+
+IF DMG > 0
+	
+	IF FLAG:5 & 32
+		PRINTFORML %ATKTITLE%%PUNCT%%SAVESTR:(ARG:0)%的攻击令%SAVESTR:(ARG:2)%受到{DMG}点伤害！
+	ENDIF
+	EXP:(ARG:0):80 += CFLAG:(ARG:2):9
+	SIF FLAG:5 & 32
+		WAIT
+	RETURN 0
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTFORML %SAVESTR:(ARG:2)%拼命忍受着%ATKTITLE%%PUNCT%%SAVESTR:(ARG:0)%的攻击………
+ENDIF
+
+SIF FLAG:5 & 32
+	WAIT
+
+RETURN 0
+
+;--------------------------------
+@SLAVE_MONSTER_ATTACK_TO_ENEMY, ARG:0, ARG:1
+;--------------------------------
+;ARG:0 = 勇者No
+;ARG:1 = 対戦相手No
+#DIM DAMAGE
+#DIM TOP
+;奴隷配下怪物側の攻撃
+
+;配下がいるかどうか
+IF CFLAG:(ARG:0):570 < 100
+	RETURN 0
+ELSEIF E:300 < 100
+	RETURN 0
+ENDIF
+
+;怪物側の攻撃力を算出
+DAMAGE = CFLAG:(ARG:0):9 * (E:302 + 1)
+
+;魔法補正
+SIF E:306 != 0
+	DAMAGE *= 2
+
+TOP = E:300
+;攻撃による被害
+SIF FLAG:5 & 32
+	PRINTFORML 服从于奴隶的%ITEMNAME:TOP%发动了攻击！！
+
+IF CFLAG:(ARG:1):12 < DAMAGE
+	DAMAGE -= CFLAG:(ARG:1):12
+	CFLAG:(ARG:1):12 /= 3
+	CFLAG:(ARG:1):12 *= 2
+	SIF FLAG:5 & 32
+		PRINTFORML 怪物的攻击使勇者%SAVESTR:(ARG:1)%受到{DAMAGE}伤害！
+	BASE:(ARG:1):0 -= DAMAGE
+	BASE:(ARG:1):1 -= DAMAGE
+	EXP:(ARG:0):80 += CFLAG:(ARG:1):9
+	SIF FLAG:5 & 32
+		WAIT
+	RETURN 0
+ENDIF
+SIF FLAG:5 & 32
+	PRINTFORML 勇者%SAVESTR:(ARG:1)%拼命忍受着怪物的攻击………
+
+CFLAG:(ARG:1):12 /= 3
+CFLAG:(ARG:1):12 *= 2
+
+SIF FLAG:5 & 32
+	WAIT
+RETURN 0
+
+
+;--------------------------------
+@SLAVE_MONSTER_ATTACK_TO_SLAVE, ARG:0, ARG:1
+;--------------------------------
+;ARG:0 = 勇者No
+;ARG:1 = 対戦相手No
+#DIM DAMAGE
+#DIM TOP
+;勇者配下怪物側の攻撃
+
+;配下がいるかどうか
+IF CFLAG:(ARG:1):570 < 100
+	RETURN 0
+ELSEIF E:400 < 100
+	RETURN 0
+ENDIF
+
+;怪物側の攻撃力を算出
+DAMAGE = CFLAG:(ARG:1):9 * (E:402 + 1)
+
+;魔法補正
+SIF E:406 != 0
+	DAMAGE *= 2
+
+TOP = E:400
+;攻撃による被害
+SIF FLAG:5 & 32
+	PRINTFORML 服从于勇者的%ITEMNAME:TOP%发动了攻击！！
+
+IF CFLAG:(ARG:0):12 < DAMAGE
+	DAMAGE -= CFLAG:(ARG:0):12
+	CFLAG:(ARG:0):12 /= 3
+	CFLAG:(ARG:0):12 *= 2
+	SIF FLAG:5 & 32
+		PRINTFORML 怪物的攻击使%SAVESTR:(ARG:0)%受到{DAMAGE}点伤害！
+	BASE:(ARG:0):0 -= DAMAGE
+	BASE:(ARG:0):1 -= DAMAGE
+	EXP:(ARG:1):80 += CFLAG:(ARG:0):9
+	SIF FLAG:5 & 32
+		WAIT
+	RETURN 0
+ENDIF
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:(ARG:0)%拼命忍受着怪物的攻击………
+
+CFLAG:(ARG:0):12 /= 3
+CFLAG:(ARG:0):12 *= 2
+
+SIF FLAG:5 & 32
+	WAIT
+RETURN 0
+
+;--------------------------------------
+@ATTACK_CHARA_EXTRA_DMG_BATTLE2,ARG:0,DMG, ARG:1, ARG:2, ATKTITLE
+#DIM DMG
+#DIM MDMG
+#DIM DEF
+#DIM HIT
+#DIMS ATKTITLE
+;--------------------------------------
+;ARG:0 = 攻撃キャラ
+;DMG   = ダメージ
+;MDMG  = 気力
+;ARG:1 = 先攻後攻
+;ARG:2 = 被攻撃キャラ
+;対人戦ダメージ補正
+
+;ミス処理
+HIT = W:11
+SIF TALENT:(ARG:2):251 == 1
+	HIT += 15
+IF (RAND:100 - HIT) < 0
+	IF FLAG:5 & 32
+		PRINTFORML %ATKTITLE%的攻击落空了……
+	ENDIF
+	RETURN 0
+ENDIF
+
+;気力回復
+BASE:(ARG:0):1 += W:12
+SIF BASE:(ARG:0):1 > MAXBASE:(ARG:0):1
+	BASE:(ARG:0):1 = MAXBASE:(ARG:0):1
+
+IF CFLAG:(ARG:2):12 < CFLAG:(ARG:0):11
+	;DEF=相手の防御力
+	DEF = CFLAG:(ARG:2):12
+ENDIF 
+
+	;防御値の減少
+	LOCAL = CFLAG:(ARG:2):12 / 3
+	LOCAL = LOCAL * W:14 / 100
+	CFLAG:(ARG:2):12 -= LOCAL
+	
+	;DMG=ダメージ
+	;MDMG=気力ダメージ
+	DMG = (CFLAG:(ARG:0):11 - DEF)*2
+	MDMG = DMG
+	
+	;ダメージ変動
+	IF CFLAG:(ARG:0):571 > 0
+		DMG = DMG * W:9 / 100
+	ELSEIF W:15 == 1
+		DMG /= 2
+	ELSEIF W:15 == 2
+		SIF FLAG:5 & 32
+			PRINTFORML 弹药用尽，只能干瞪眼！
+	RETURN 0
+ENDIF
+MDMG = MDMG * W:16 / 100
+
+CFLAG:(ARG:0):571 -= W:10
+
+;連続攻撃処理
+IF (RAND:100 - W:13) < 0
+	SIF FLAG:5 & 32
+		PRINTFORML %ATKTITLE%发出了迅捷的2连击！！
+	DMG *= 2
+	CFLAG:(ARG:0):571 -= W:10
+ENDIF
+
+;先手かつ奇襲なら防御値減少
+IF ARG:1 == 0 && TALENT:(ARG:0):243 == 1
+	SIF FLAG:5 & 32
+		PRINT 奇襲成功！！
+	CFLAG:(ARG:2):12 /= 2
+ENDIF
+
+;追加効果
+IF (W:6 & 1) && RAND:2
+	;毒
+	IF CFLAG:(ARG:2):503 & 16
+		SIF FLAG:5 & 32
+			PRINT 毒素不断侵蚀！！
+		DMG *= 2
+	ELSE
+		SIF FLAG:5 & 32
+			PRINT 毒素增加了！！
+		CFLAG:(ARG:2):503 += 16
+	ENDIF
+ENDIF
+
+;耐性処理
+;対人では一律1.2倍
+;火炎・電撃・冷気
+SIF (W:6 & 2) || (W:6 & 4) || (W:6 & 8)
+	DMG += DMG / 5
+
+BASE:(ARG:2):1 -= MDMG
+
+RETURN DMG
+
+;--------------------------------------
+@DEATH_CHECK2, ARG:0, ARG:1
+;--------------------------------------
+;ARG:0 = 魔王側
+;ARG:1 = 勇者側
+
+;勇者死亡判定
+IF BASE:(ARG:1):0 <= 0
+	PRINTFORML %SAVESTR:(ARG:1)%最终在潮湿的地下城中用尽了最后的气力。
+	CFLAG:(ARG:1):1 = 0
+	RETURN 2
+ELSEIF BASE:(ARG:1):0 <= 300
+	PRINTFORML %SAVESTR:(ARG:1)%感觉到生命垂危，投降求饶了。 
+	CFLAG:(ARG:1):1 = 0
+	RETURN 2
+ELSEIF BASE:(ARG:1):1 <= 0
+	PRINTFORML %SAVESTR:(ARG:1)%失去了战斗的意志，丢掉武器投降了。
+	CFLAG:(ARG:1):1 = 0
+	RETURN 2
+ENDIF
+
+;魔王側の生き残りを判定
+
+IF BASE:(ARG:0):0 <= 0 && (FLAG:5 & 128)
+	PRINTFORML %SAVESTR:(ARG:0)%最终在潮湿的地下城中用尽了最后的气力。
+	CFLAG:(ARG:0):1 = 9
+	RETURN 1
+ELSEIF BASE:(ARG:0):0 <= 300 && (FLAG:5 & 128)
+	PRINTFORML %SAVESTR:(ARG:0)%感觉到生命垂危，投降求饶了。 
+	PRINTFORMW %SAVESTR:(ARG:1)%将堕落的同伴遣送回国了。
+	CFLAG:(ARG:0):1 = 9
+	RETURN 1
+ELSEIF BASE:(ARG:0):1 <= 1000 && TALENT:(ARG:0):280 && (FLAG:5 & 128)
+	PRINTFORML 被狂王俘虏过的%SAVESTR:(ARG:0)%丧失了战意，丢下武器投降了。
+	PRINTFORMW 看着%SAVESTR:(ARG:0)%的求饶，%SAVESTR:(ARG:1)%把这个堕落的同伴送回本国了。
+	CFLAG:(ARG:0):1 = 9
+	RETURN 1
+ELSEIF BASE:(ARG:0):1 <= 0 && (FLAG:5 & 128)
+	PRINTFORML %SAVESTR:(ARG:0)%失去了战斗的意志，丢掉武器投降了。
+	PRINTFORMW %SAVESTR:(ARG:1)%将堕落的同伴遣送回国了。
+	CFLAG:(ARG:0):1 = 9
+	RETURN 1
+ENDIF
+
+IF BASE:(ARG:0):0 <= 0
+	PRINTFORML %SAVESTR:(ARG:0)%最终在潮湿的地下城中用尽了最后的气力。
+	CFLAG:(ARG:0):1 = 0
+	RETURN 1
+ELSEIF BASE:(ARG:0):0 <= 300
+	PRINTFORML %SAVESTR:(ARG:0)%感觉到生命垂危，投降求饶了。
+	PRINTFORMW %SAVESTR:(ARG:1)%怜悯着堕落了的同伴，静静地走开了。
+	CFLAG:(ARG:0):1 = 0
+	RETURN 1
+ELSEIF BASE:(ARG:0):1 <= 0
+	PRINTFORML %SAVESTR:(ARG:0)%失去了战斗的意志，丢掉武器投降了。
+	PRINTFORMW %SAVESTR:(ARG:1)%怜悯着堕落了的同伴，静静地走开了。
+	CFLAG:(ARG:0):1 = 0
+	RETURN 1
+ENDIF
+
+RETURN 0
+
+;--------------------------------------
+@DUNGEON_SPY, ARG:0
+#DIM LEADER
+#DIM ENEMY
+#DIM BETRAY
+;--------------------------------------
+;潜入中奴隷の特別行動
+;直接攻撃はせず、工作活動に専念する
+
+
+
+LEADER = CFLAG:(ARG:0):533
+
+SIF LEADER <= 0
+	RETURN 0
+
+IF FLAG:5 & 32
+	DRAWLINE
+	PRINTW *魔爪悄悄地伸向了勇者的队伍……*
+	DRAWLINE
+	;コンフィグ「戦闘ログでのSKIP中断」がONなら強制停止
+	IF GETBIT(FLAG:5,9)
+		FORCEWAIT
+	ELSE
+		WAIT
+	ENDIF
+ENDIF
+
+;パーティを裏切って陥落させる処理
+;
+;もう一人の仲間
+ENEMY = (ARG:0 == CFLAG:LEADER:531) ? CFLAG:LEADER:532 # CFLAG:LEADER:531
+;裏切る確率は体力が半分以下～100、気力が1/3以下で加算される
+;体力100以下かつ気力0の時確率は100%になる
+BETRAY = LIMIT(100 - (BASE:LEADER:0 * 100 - 10000) / (MAXBASE:LEADER:0 / 2 - 300), 0, 100)
+;#;PRINTFORM 背叛几率：(体力加算({BETRAY}) + 
+LOCAL = LIMIT(100 - BASE:LEADER:1 * 100 / (MAXBASE:LEADER:1 / 3), 0, 100)
+;#;PRINTFORM 气力加算({LOCAL})) * 
+BETRAY += LOCAL
+;互いのレベル差1ごとに確率を1/10増加または減少する、つまりレベル差が3なら1.3倍　最大5レベル分まで
+LOCAL = 10 + LIMIT(CFLAG:(ARG:0):9 - CFLAG:LEADER:9, -5, 5)
+;#;PRINTFORM 等级差补正({LOCAL / 10}.{LOCAL - LOCAL / 10 * 10}倍)
+BETRAY = BETRAY * LOCAL * 100 / 1000
+;もう一人の仲間も潜入奴隷なら確率は通常の2倍
+IF ENEMY != 0 && CFLAG:ENEMY:500 == 4
+	BETRAY *= 2
+	;#;PRINTFORM  * 复数潜入补正(200％)
+ENDIF
+BETRAY /= 2
+LOCAL = RAND:100
+;#;PRINTFORML  / 2 = {BETRAY}％ %BETRAY > LOCAL ? ">" # "<="% {LOCAL}
+IF LOCAL < BETRAY
+	;性格が慈爱か懦弱で抖S气质Lv3未満かつ善恶值が秩序(100以上)なら2/3で躊躇う
+	IF CFLAG:(ARG:0):151 >= 100 && (TALENT:(ARG:0):160 || TALENT:(ARG:0):162) && ABL:(ARG:0):20 < 3 && RAND:3 != 0
+		PRINTFORML 勇者%SAVESTR:LEADER%已经没有多少抵抗的余力了，现在正是陷落她的好时机！
+		PRINTFORML 虽然时间不长，但起码是同伴一场，%SAVESTR:(ARG:0)%为背叛朋友的事踌躇着。
+	;[施虐狂]の場合2/3で潜入続行
+	ELSEIF TALENT:(ARG:0):83 && RAND:3 != 0
+		PRINTFORML %SAVESTR:(ARG:0)%饶有兴致地欣赏着勇者%SAVESTR:LEADER%凄惨痛苦的样子。
+	;もう一人の仲間がいて潜入奴隷ではないなら2/3で失敗
+	ELSEIF ENEMY && CFLAG:ENEMY:500 != 4 && RAND:3 != 0
+		PRINTFORML %SAVESTR:(ARG:0)%窥探着勇者%SAVESTR:LEADER%的样子，寻找着背叛的机会。
+		PRINTFORML 但是由于附近%SAVESTR:ENEMY%的行动而一直没有机会行动……
+	ELSE
+		PRINTFORM %SAVESTR:(ARG:0)%看着勇者%SAVESTR:LEADER%
+		IF (BASE:LEADER:0 * 100 / MAXBASE:LEADER:0) < (BASE:LEADER:1 * 100 / MAXBASE:LEADER:1)
+			PRINT 奄奄一息
+		ELSE
+			PRINT 累得脸色发青
+		ENDIF
+		PRINTL 的样子，觉得正是时机，拔出了武器！
+		PRINTFORML 面对一脸茫然的勇者，
+		PRINTFORM %SAVESTR:(ARG:0)%
+		;刺青がある場合は見せびらかす　ただし頬の刺青は除く　まあ普段から丸見えだし…
+		CALL GET_TATOO(ARG:0)
+		IF RESULT && (RESULT:1 != 10 || 2 <= RESULT)
+			LOCAL = ((RESULT:1 == 10) ? RAND:(RESULT - 1) + 1 # RAND:RESULT) + 1
+			PRINTFORML 敞开衣服，炫耀般地露出魔王亲自刻上『%CSTR:(ARG:0):(RESULT:LOCAL)%』的%TATOO_LOCATE_NAME(RESULT:1)%的刺青。
+		ENDIF
+		PRINTFORML 告诉了她自己本来的目的，让她选择投降还是死亡。
+		PRINT 勇者对同伴的背叛感到难以置信与
+		IF TALENT:(ARG:0):163 || TALENT:(ARG:0):164
+			PRINT 无比愤怒，就这样在悲愤中被
+		ELSE
+			PRINT 无比绝望，就这样在沉默中被
+		ENDIF
+		PRINTL 拘束起来了……
+		PRINTL
+		;note:ここで口上などお出しするということも？
+;		CALL 裏切り口上, ARG:0
+		PRINTFORML %SAVESTR:LEADER%被抓住了……
+		MONEY += 100 * CFLAG:LEADER:9
+		EX_FLAG:4444 += 100 * CFLAG:LEADER:9
+		PRINTFORMW 获得了{100 * CFLAG:LEADER:9}G！
+		CFLAG:(ARG:0):505 += 1
+		SIF ENEMY && CFLAG:ENEMY:500 == 4
+			CFLAG:ENEMY:505 += 1
+		CFLAG:LEADER:506 = 1
+		CFLAG:LEADER:507 = 0
+		CFLAG:LEADER:1 = 0
+		CALL PARTY_DEL, LEADER
+		PRINTL
+		PRINTFORM 要让%SAVESTR:(ARG:0)%
+		SIF ENEMY && CFLAG:ENEMY:500 == 4
+			PRINTFORM 和%SAVESTR:ENEMY%
+		PRINTL 回来吗？
+		$INPUT_LOOP_01
+		PRINTL  [0] - 好的
+		PRINTL  [1] - 不要
+		INPUT
+		IF RESULT == 0
+			CFLAG:(ARG:0):1 = 5
+			IF ENEMY && CFLAG:ENEMY:500 == 4
+				CFLAG:ENEMY:1 = 5
+				PRINTFORML %SAVESTR:(ARG:0)%和%SAVESTR:ENEMY%各自使用了回城魔法。
+			ELSE
+				PRINTFORML %SAVESTR:(ARG:0)%使用了回城魔法。
+			ENDIF
+		ELSEIF RESULT != 1
+			GOTO INPUT_LOOP_01
+		ENDIF
+		RETURN 0
+	ENDIF
+	PRINTL
+ENDIF
+
+
+CALL SPY_BATTLE, ARG:0, LEADER
+
+ENEMY = CFLAG:LEADER:531
+
+;仲間Aを見る
+;魔王でない、かつ潜入奴隷でもない場合工作活動へ
+SIF ENEMY > 0 && ENEMY != ARG:0 && CFLAG:ENEMY:500 != 4
+	CALL SPY_BATTLE, ARG:0, ENEMY
+
+ENEMY = CFLAG:LEADER:532
+
+;仲間Bも見る
+SIF ENEMY > 0 && ENEMY != ARG:0 && CFLAG:ENEMY:500 != 4
+	CALL SPY_BATTLE, ARG:0, ENEMY
+
+
+RETURN 0
+
+
+;--------------------------------------
+@SPY_BATTLE, ARG:0, ARG:1
+#DIM HDMG
+#DIM MDMG
+#DIM KDMG
+;--------------------------------------
+;ARG:0 = 潜入奴隷
+;ARG:1 = 対象勇者
+;HDMG  = HPダメージ
+;MDMG  = 気力ダメージ
+;KDMG  = 減少する善恶值
+
+HDMG = 10
+MDMG = 10
+KDMG = 1
+
+IF RAND:3 == 0
+	;謎の薬投与
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:(ARG:0)%对%SAVESTR:(ARG:1)%谎称说有去除疲劳的药，
+		PRINTFORMW 给她煎服了桃色的草……
+		PRINTFORMW %SAVESTR:(ARG:1)%并不知这其实是一种媚药……
+		PRINTFORML 欲情点数+{10 + ABL:(ARG:0):12 * 8}
+	ENDIF
+	
+	;技巧によって気力ダメージは増える
+	MDMG += ABL:(ARG:0):12 * 10
+	;珠増加
+	JUEL:(ARG:1):5 += 10 + ABL:(ARG:0):12 * 8
+	
+ELSEIF RAND:2 == 0
+	;マッサージ
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:(ARG:0)%帮%SAVESTR:(ARG:1)%做了按摩，
+		PRINTFORMW 妖艳的手爱抚着胸部和下腹……
+		IF TALENT:(ARG:1):81 || ABL:(ARG:1):22 > 0
+			;双性恋・百合气质
+			PRINTFORMW %SAVESTR:(ARG:1)%感觉也不错……
+			PRINTFORML 欲情点数+{8 + ABL:(ARG:0):12 * 3}
+			PRINTFORML 阴核点数+{1 + ABL:(ARG:0):12 * 2}
+			PRINTFORML 乳房点数+{1 + ABL:(ARG:0):12 * 2}
+		ELSE
+			PRINTFORML 欲情点数+{5 + ABL:(ARG:0):12 * 2}
+			PRINTFORML 阴核点数+{1 + ABL:(ARG:0):12}
+			PRINTFORML 乳房点数+{1 + ABL:(ARG:0):12}
+		ENDIF
+	ENDIF
+	
+	;珠増加
+	IF TALENT:(ARG:1):81 || ABL:(ARG:1):22 > 0
+		JUEL:(ARG:1):5 += 8 + ABL:(ARG:0):12 * 3
+		JUEL:(ARG:1):0 += 1 + ABL:(ARG:0):12 * 2
+		JUEL:(ARG:1):14 += 1 + ABL:(ARG:0):12 * 2
+	ELSE
+		JUEL:(ARG:1):5 += 5 + ABL:(ARG:0):12 * 2
+		JUEL:(ARG:1):0 += 1 + ABL:(ARG:0):12
+		JUEL:(ARG:1):14 += 1 + ABL:(ARG:0):12
+	ENDIF
+	
+	
+ELSE
+	;下剤投与
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:(ARG:0)%在%SAVESTR:(ARG:1)%的饭菜里下了泻药，
+		PRINTFORMW %SAVESTR:(ARG:1)%吃坏了肚子，蹲在地下城的角落里额头冒汗……
+	ENDIF
+	
+	;技巧によって気力ダメージは増える
+	HDMG += ABL:(ARG:0):12 * 20
+	MDMG += ABL:(ARG:0):12 * 15
+	KDMG += 1
+ENDIF
+
+;[施虐狂]持ちならダメージが1.2倍
+IF TALENT:(ARG:0):83
+	HDMG = HDMG * 120 / 100
+	MDMG = MDMG * 120 / 100
+ENDIF
+
+;善恶值を負の値にする
+KDMG *= -1
+
+IF FLAG:5 & 32
+	PRINTFORML %SAVESTR:(ARG:1)%因为疲劳，HP{HDMG}、气力{MDMG}下降了。
+	PRINTFORMW (善良值减少了:{KDMG})
+ENDIF
+
+BASE:(ARG:1):0 -= HDMG
+BASE:(ARG:1):1 -= MDMG
+
+CALL KARMA, ARG:1, KDMG
+
+SIF FLAG:5 & 32
+	PRINTL  
+
+RETURN 0
+

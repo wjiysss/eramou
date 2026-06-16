@@ -1,0 +1,162 @@
+﻿;---------------------------------------------------------
+@CHAR_MAKE, ARG:0 = 0, ARG:1 = 0
+;---------------------------------------------------------
+JUMP CHARA_MAKE(A, ARG:0, ARG:1)
+
+;--------------------------------------
+@NAMING
+;--------------------------------------
+JUMP CHARA_NAME_DEFINE(A)
+
+;--------------------------------------------------
+@NAME_RESET
+;--------------------------------------------------
+JUMP CN_REBUILD
+
+;--------------------------------------------------
+@SET_CHAR_CLOTH
+;--------------------------------------------------
+JUMP CM_CLOTH
+
+;--------------------------------------------------
+@CHAR_INIT
+;--------------------------------------------------
+JUMP CHARA_INIT(A)
+
+;--------------------------------------------------
+@CHAR_MAKE_INPORT, ARG:0 = 1
+;--------------------------------------------------
+;引数ARG:0に応じて生成に成功するか判定
+;引数を指定しない場合はRAND(1)=0で必ず成功
+SIF RAND(ARG:0) != 0
+	RETURN 0
+	
+JUMP CHARA_MAKE_INPORT
+
+;--------------------------------------------------
+@CHAR_INHERIT
+;--------------------------------------------------
+JUMP CHARA_MAKE_INHERIT(A,B)
+
+;--------------------------------------------------
+@RAND_CHARA_MAKE
+;--------------------------------------------------
+#DIM CHARA, 1
+#DIM ID_OF_NEWCHARA
+#DIM TEMP
+#DIM HAIRCOLOR
+#DIM CHARACTER
+#DIM XINGGE
+$INPUT_LOOP_11
+;キャラのNOを選定
+CHARA = RAND(1, 17)
+;GETCHARA(キャラ番号, SPフラグ)でキャラが存在しない場合は-1
+;存在する場合はキャラ登録番号が帰る
+IF GETCHARA(CHARA, 0) == -1
+	;異国の勇者の判定をする
+	CALL CHAR_MAKE_INPORT
+	IF RESULT == 0
+		;異国の勇者ではない
+		LOCAL:0 = 0
+		ADDCHARA CHARA
+		CALL ADDCHARA_EX, CHARANUM - 1
+		A = CHARANUM - 1
+		ID_OF_NEWCHARA = CHARANUM - 1
+		;性格
+		IF CHARACTER != -1
+			CALL SET_CHARASTERISTIC(ID_OF_NEWCHARA, CHARACTER)
+		ENDIF
+		;髪色
+		IF HAIRCOLOR > 0
+			CALL SET_HAIRCOLOR(ID_OF_NEWCHARA, HAIRCOLOR)
+		ENDIF
+		
+		
+		$INPUT_LOOP_12
+		PRINTL 呃……面前的勇者，是这个形象的……
+		PRINT [0] 印象 ： 
+		;性格表示、未定義ならランダムに設定
+		CALL SHOW_CHARASTERISTIC(ID_OF_NEWCHARA)
+		IF RESULT == -1
+			CALL SET_RANDOM_CHARASTERISTIC(ID_OF_NEWCHARA)
+			CALL SHOW_CHARASTERISTIC(ID_OF_NEWCHARA)
+		ENDIF
+		CHARACTER = RESULT
+		;记录性格设定
+		XINGGE = ID_OF_GENERAL_CHARASTERISTICS:CHARACTER
+		PRINTL
+		
+		PRINT [1] 发色 ： 
+		;髪色表示、未定義ならランダムに設定
+		CALL SHOW_HAIRCOLOR(ID_OF_NEWCHARA)
+		IF RESULT == 0
+			CALL SET_RANDOM_HAIRCOLOR(ID_OF_NEWCHARA)
+			CALL SHOW_HAIRCOLOR(ID_OF_NEWCHARA)
+		ENDIF
+		HAIRCOLOR = RESULT
+		PRINTL
+		
+		DRAWLINE
+		PRINTL [100] 你发动了魔王真眼，深入探究她的一切……
+		
+		INPUT
+		
+		IF RESULT == 0
+			;性格変更
+			PRINTL 什么样的态度呢……
+			CALL CHOOSE_CHARASTERISTIC(ID_OF_NEWCHARA)
+			GOTO INPUT_LOOP_12
+			
+		ELSEIF RESULT == 1
+			;髪色変更
+			PRINTL 什么样的发色呢…
+			CALL CHOOSE_HAIRCOLOR(ID_OF_NEWCHARA)
+			GOTO INPUT_LOOP_12
+			
+		ELSEIF RESULT == 100
+			;進む
+		ELSE
+			GOTO INPUT_LOOP_12
+		ENDIF
+		
+		;派遣奴隷フラグ（レベル1生成）
+		FLAG:402 = 1
+		;使用记录的性格设定建立角色
+		CALL CHAR_MAKE(XINGGE,)
+		
+	ELSE
+		;異国の勇者である
+		LOCAL:0 = 1
+	ENDIF
+	
+	;キャラのステータス表示
+	CALL SHOW_CHARA_INFO, ID_OF_NEWCHARA, -2
+	
+	PRINTL 解开你封印的，真的是这样的女人吗…？
+	PRINTL [1] 不不不不…我看错了！  [2] 是她！是她！就是她！抓起来！…
+	INPUT
+	IF RESULT == 1
+		CALL PARTY_CHAR_DEL, (CHARANUM - 1)
+		DELCHARA (CHARANUM - 1)
+		CALL NAME_RESET
+		GOTO INPUT_LOOP_11
+	ELSE
+	PRINTL *****************************************
+	SIF LOCAL:0
+		PRINT 异国的
+	PRINT 冒险者
+	PRINTS SAVESTR:(CHARANUM - 1)
+	PRINTL 被囚禁在了地牢里！
+	PRINTL *****************************************
+	CFLAG:(CHARANUM - 1):1 = 0
+	;使ったフラグを戻しておく
+	FLAG:402 = 0
+	WAIT
+	ENDIF
+ELSE
+	PRINTL 由于对魔王的恐惧，勇者没有出现。（奴隶数已达上限，请处决几个）
+	WAIT
+	RETURN 0
+ENDIF
+
+RETURN (CHARANUM - 1)

@@ -1,0 +1,1172 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;处女を奪うかどうかの確認
+;-------------------------------------------------
+@CONFIRM_LOST_VIRGIN
+$INPUT_LOOP_01
+IF TALENT:0
+	PRINTFORML 夺取%SAVESTR:TARGET%的处女吗？
+	PRINTL  [0] - 来吧女人
+	PRINTL  [1] - 让她继续做女孩
+	INPUT
+	IF RESULT == 1
+		RETURN 0
+	ELSEIF RESULT != 0
+		GOTO INPUT_LOOP_01
+	ENDIF
+ENDIF
+RETURN 1
+
+@CONFIRM_LOST_VIRGIN_YOU
+$INPUT_LOOP_01
+IF TALENT:0
+	PRINTFORML 舍弃%SAVESTR:PLAYER%的处女吗？
+	PRINTL  [0] - 好的
+	PRINTL  [1] - 不要
+	INPUT
+	IF RESULT == 1
+		RETURN 0
+	ELSEIF RESULT != 0
+		GOTO INPUT_LOOP_01
+	ENDIF
+ENDIF
+RETURN 1
+
+
+;-------------------------------------------------
+;調教者の射精チェック
+;-------------------------------------------------
+@COM_EJAC_PLAYER_SEX
+#DIM EXP_ID
+;兽奸の場合はそのまま終了
+SIF TEQUIP:89
+	RETURN 0
+
+;死斗场の場合は助手以外はここで終了
+SIF TEQUIP:55 && (ASSI != PLAYER)
+	RETURN 0
+
+;調教者の射精ゲージ増加量
+B = 0
+
+;正常位、背后位
+IF SELECTCOM == 20 || SELECTCOM == 21 || SELECTCOM == 90
+	;調教対象のABL:技巧をみる
+	IF ABL:12 == 0
+		B = 1500
+	ELSEIF ABL:12 == 1
+		B = 1600
+	ELSEIF ABL:12 == 2
+		B = 1800
+	ELSEIF ABL:12 == 3
+		B = 2000
+	ELSEIF ABL:12 == 4
+		B = 2400
+	ELSE
+		B = 3000
+	ENDIF
+
+	;調教対象のABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 0.80
+	ELSEIF ABL:10 == 1
+		TIMES B , 0.90
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.10
+	ELSEIF ABL:10 == 4
+		TIMES B , 1.20
+	ELSE
+		TIMES B , 1.30
+	ENDIF
+;对面座位
+ELSEIF SELECTCOM == 22
+	;ABL:技巧をみる
+	IF ABL:12 == 0
+		B = 800
+	ELSEIF ABL:12 == 1
+		B = 1000
+	ELSEIF ABL:12 == 2
+		B = 1200
+	ELSEIF ABL:12 == 3
+		B = 1400
+	ELSEIF ABL:12 == 4
+		B = 1600
+	ELSE
+		B = 1800
+	ENDIF
+
+	;ABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 1
+		TIMES B , 1.30
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.60
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.90
+	ELSEIF ABL:10 == 4
+		TIMES B , 2.10
+	ELSE
+		TIMES B , 2.40
+	ENDIF
+;背面座位
+ELSEIF SELECTCOM == 23
+	;ABL:技巧をみる
+	IF ABL:12 == 0
+		B = 500
+	ELSEIF ABL:12 == 1
+		B = 700
+	ELSEIF ABL:12 == 2
+		B = 900
+	ELSEIF ABL:12 == 3
+		B = 1100
+	ELSEIF ABL:12 == 4
+		B = 1300
+	ELSE
+		B = 1500
+	ENDIF
+
+	;ABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 1
+		TIMES B , 1.10
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.20
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.30
+	ELSEIF ABL:10 == 4
+		TIMES B , 1.40
+	ELSE
+		TIMES B , 1.50
+	ENDIF
+;骑乘位
+ELSEIF SELECTCOM == 34
+	;ABL:技巧をみる
+	IF ABL:12 == 0
+		B = 1000
+	ELSEIF ABL:12 == 1
+		B = 1300
+	ELSEIF ABL:12 == 2
+		B = 1700
+	ELSEIF ABL:12 == 3
+		B = 2200
+	ELSEIF ABL:12 == 4
+		B = 3000
+	ELSE
+		B = 4500
+	ENDIF
+
+	;ABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 0.80
+	ELSEIF ABL:10 == 1
+		TIMES B , 0.90
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.10
+	ELSEIF ABL:10 == 4
+		TIMES B , 1.20
+	ELSE
+		TIMES B , 1.30
+	ENDIF
+
+	;ABL:侍奉技术をみる
+	IF ABL:13 == 0
+		TIMES B , 0.30
+	ELSEIF ABL:13 == 1
+		TIMES B , 0.70
+	ELSEIF ABL:13 == 2
+		TIMES B , 1.00
+	ELSEIF ABL:13 == 3
+		TIMES B , 1.20
+	ELSEIF ABL:13 == 4
+		TIMES B , 1.50
+	ELSE
+		TIMES B , 1.80
+	ENDIF
+;插入子宫口蹂躏
+ELSEIF SELECTCOM == 121
+	;ABL:技巧をみる
+	IF ABL:12 == 0
+		B = 1500
+	ELSEIF ABL:12 == 1
+		B = 1600
+	ELSEIF ABL:12 == 2
+		B = 1800
+	ELSEIF ABL:12 == 3
+		B = 2000
+	ELSEIF ABL:12 == 4
+		B = 2400
+	ELSE
+		B = 3000
+	ENDIF
+
+	;ABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 0.80
+	ELSEIF ABL:10 == 1
+		TIMES B , 0.90
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.10
+	ELSEIF ABL:10 == 4
+		TIMES B , 1.20
+	ELSE
+		TIMES B , 1.30
+	ENDIF
+;插入Ｇ点蹂躏
+ELSEIF SELECTCOM == 120
+	;ABL:技巧をみる
+	IF ABL:12 == 0
+		B = 500
+	ELSEIF ABL:12 == 1
+		B = 700
+	ELSEIF ABL:12 == 2
+		B = 900
+	ELSEIF ABL:12 == 3
+		B = 1100
+	ELSEIF ABL:12 == 4
+		B = 1300
+	ELSE
+		B = 1500
+	ENDIF
+
+	;ABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 1
+		TIMES B , 1.10
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.20
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.30
+	ELSEIF ABL:10 == 4
+		TIMES B , 1.40
+	ELSE
+		TIMES B , 1.50
+	ENDIF
+;正常位・接吻
+ELSEIF SELECTCOM == 128
+	;調教対象のABL:技巧をみる
+	IF ABL:12 == 0
+		B = 1500
+	ELSEIF ABL:12 == 1
+		B = 1600
+	ELSEIF ABL:12 == 2
+		B = 1800
+	ELSEIF ABL:12 == 3
+		B = 2000
+	ELSEIF ABL:12 == 4
+		B = 2400
+	ELSE
+		B = 3000
+	ENDIF
+
+	;調教対象のABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 0.80
+	ELSEIF ABL:10 == 1
+		TIMES B , 0.90
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.10
+	ELSEIF ABL:10 == 4
+		TIMES B , 1.20
+	ELSE
+		TIMES B , 1.30
+	ENDIF
+
+	;ABL:侍奉精神をみる
+	IF ABL:16 == 0
+		TIMES B , 0.50
+	ELSEIF ABL:16 == 1
+		TIMES B , 0.80
+	ELSEIF ABL:16 == 2
+		TIMES B , 1.20
+	ELSEIF ABL:16 == 3
+		TIMES B , 1.50
+	ELSEIF ABL:16 == 4
+		TIMES B , 1.80
+	ELSE
+		TIMES B , 2.40
+	ENDIF
+;正常位・胸爱抚
+ELSEIF SELECTCOM == 129
+	;調教対象のABL:技巧をみる
+	IF ABL:12 == 0
+		B = 1500
+	ELSEIF ABL:12 == 1
+		B = 1600
+	ELSEIF ABL:12 == 2
+		B = 1800
+	ELSEIF ABL:12 == 3
+		B = 2000
+	ELSEIF ABL:12 == 4
+		B = 2400
+	ELSE
+		B = 3000
+	ENDIF
+
+	;調教対象のABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 0.80
+	ELSEIF ABL:10 == 1
+		TIMES B , 0.90
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.10
+	ELSEIF ABL:10 == 4
+		TIMES B , 1.20
+	ELSE
+		TIMES B , 1.30
+	ENDIF
+;正常位SP
+ELSEIF SELECTCOM == 130
+	;調教対象のABL:技巧をみる
+	IF ABL:12 == 0
+		B = 1500
+	ELSEIF ABL:12 == 1
+		B = 1600
+	ELSEIF ABL:12 == 2
+		B = 1800
+	ELSEIF ABL:12 == 3
+		B = 2500
+	ELSEIF ABL:12 == 4
+		B = 3200
+	ELSE
+		B = 4000
+	ENDIF
+
+	;調教対象のABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 0.80
+	ELSEIF ABL:10 == 1
+		TIMES B , 0.90
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.10
+	ELSEIF ABL:10 == 4
+		TIMES B , 1.20
+	ELSE
+		TIMES B , 1.30
+	ENDIF
+
+	;ABL:侍奉精神をみる
+	IF ABL:16 == 0
+		TIMES B , 0.50
+	ELSEIF ABL:16 == 1
+		TIMES B , 0.80
+	ELSEIF ABL:16 == 2
+		TIMES B , 1.20
+	ELSEIF ABL:16 == 3
+		TIMES B , 1.50
+	ELSEIF ABL:16 == 4
+		TIMES B , 1.80
+	ELSE
+		TIMES B , 2.40
+	ENDIF
+;背后位・胸爱抚・打屁股
+ELSEIF SELECTCOM == 131 || SELECTCOM == 132
+	;調教対象のABL:技巧をみる
+	IF ABL:12 == 0
+		B = 1500
+	ELSEIF ABL:12 == 1
+		B = 1600
+	ELSEIF ABL:12 == 2
+		B = 1800
+	ELSEIF ABL:12 == 3
+		B = 2000
+	ELSEIF ABL:12 == 4
+		B = 2400
+	ELSE
+		B = 3000
+	ENDIF
+
+	;調教対象のABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 0.80
+	ELSEIF ABL:10 == 1
+		TIMES B , 0.90
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.10
+	ELSEIF ABL:10 == 4
+		TIMES B , 1.20
+	ELSE
+		TIMES B , 1.30
+	ENDIF
+;站立背后位
+ELSEIF SELECTCOM == 133
+	;調教対象のABL:技巧をみる
+	IF ABL:12 == 0
+		B = 1500
+	ELSEIF ABL:12 == 1
+		B = 1600
+	ELSEIF ABL:12 == 2
+		B = 1800
+	ELSEIF ABL:12 == 3
+		B = 2000
+	ELSEIF ABL:12 == 4
+		B = 2400
+	ELSE
+		B = 3000
+	ENDIF
+
+	;調教対象のABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 0.80
+	ELSEIF ABL:10 == 1
+		TIMES B , 0.90
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.10
+	ELSEIF ABL:10 == 4
+		TIMES B , 1.20
+	ELSE
+		TIMES B , 1.30
+	ENDIF
+
+	;ABL:侍奉精神をみる
+	IF ABL:16 == 0
+		TIMES B , 0.50
+	ELSEIF ABL:16 == 1
+		TIMES B , 0.80
+	ELSEIF ABL:16 == 2
+		TIMES B , 1.20
+	ELSEIF ABL:16 == 3
+		TIMES B , 1.50
+	ELSEIF ABL:16 == 4
+		TIMES B , 1.80
+	ELSE
+		TIMES B , 2.40
+	ENDIF
+;背后位ＳＰ
+ELSEIF SELECTCOM == 134
+	;調教対象のABL:技巧をみる
+	IF ABL:12 == 0
+		B = 1500
+	ELSEIF ABL:12 == 1
+		B = 1600
+	ELSEIF ABL:12 == 2
+		B = 1800
+	ELSEIF ABL:12 == 3
+		B = 2500
+	ELSEIF ABL:12 == 4
+		B = 3200
+	ELSE
+		B = 4000
+	ENDIF
+
+	;調教対象のABL:顺从をみる
+	IF ABL:10 == 0
+		TIMES B , 0.80
+	ELSEIF ABL:10 == 1
+		TIMES B , 0.90
+	ELSEIF ABL:10 == 2
+		TIMES B , 1.00
+	ELSEIF ABL:10 == 3
+		TIMES B , 1.10
+	ELSEIF ABL:10 == 4
+		TIMES B , 1.20
+	ELSE
+		TIMES B , 1.30
+	ENDIF
+
+	;ABL:侍奉精神をみる
+	IF ABL:16 == 0
+		TIMES B , 0.50
+	ELSEIF ABL:16 == 1
+		TIMES B , 0.80
+	ELSEIF ABL:16 == 2
+		TIMES B , 1.20
+	ELSEIF ABL:16 == 3
+		TIMES B , 1.50
+	ELSEIF ABL:16 == 4
+		TIMES B , 1.80
+	ELSE
+		TIMES B , 2.40
+	ENDIF
+;逆レイプ
+ELSEIF SELECTCOM == 24
+	;調教対象のABL:技巧をみる
+	IF ABL:12 == 0
+		B = 1500
+	ELSEIF ABL:12 == 1
+		B = 1600
+	ELSEIF ABL:12 == 2
+		B = 1800
+	ELSEIF ABL:12 == 3
+		B = 2000
+	ELSEIF ABL:12 == 4
+		B = 2400
+	ELSE
+		B = 3000
+	ENDIF
+;逆肛門レイプ
+ELSEIF SELECTCOM == 25
+	;調教対象のABL:技巧をみる
+	IF ABL:12 == 0
+		B = 1500
+	ELSEIF ABL:12 == 1
+		B = 1600
+	ELSEIF ABL:12 == 2
+		B = 1800
+	ELSEIF ABL:12 == 3
+		B = 2000
+	ELSEIF ABL:12 == 4
+		B = 2400
+	ELSE
+		B = 3000
+	ENDIF
+ENDIF
+
+;調教対象のABL:欲望をみる
+IF ABL:11 == 0
+	TIMES B , 1.00
+ELSEIF ABL:11 == 1
+	TIMES B , 1.10
+ELSEIF ABL:11 == 2
+	TIMES B , 1.20
+ELSEIF ABL:11 == 3
+	TIMES B , 1.30
+ELSEIF ABL:11 == 4
+	TIMES B , 1.40
+ELSE
+	TIMES B , 1.50
+ENDIF
+
+;ABL:性交技术をみる
+IF ABL:14 == 0
+	TIMES B , 1.00
+ELSEIF ABL:14 == 1
+	TIMES B , 1.10
+ELSEIF ABL:14 == 2
+	TIMES B , 1.20
+ELSEIF ABL:14 == 3
+	TIMES B , 1.30
+ELSEIF ABL:14 == 4
+	TIMES B , 1.40
+ELSE
+	TIMES B , 1.50
+ENDIF
+
+;PALAM:润滑をみる
+IF PALAM:3 < PALAMLV:1
+	TIMES B , 0.60
+ELSEIF PALAM:3 < PALAMLV:2
+	TIMES B , 0.80
+ELSEIF PALAM:3 < PALAMLV:3
+	TIMES B , 1.00
+ELSEIF PALAM:3 < PALAMLV:4
+	TIMES B , 1.20
+ELSEIF PALAM:3 >= PALAMLV:4
+	TIMES B , 1.40
+ENDIF
+
+;プレイヤーのABL:阴蒂感觉をみる
+IF ABL:PLAYER:0 == 0
+	TIMES B , 1.00
+ELSEIF ABL:PLAYER:0 == 1
+	TIMES B , 1.50
+ELSEIF ABL:PLAYER:0 == 2
+	TIMES B , 2.00
+ELSEIF ABL:PLAYER:0 == 3
+	TIMES B , 2.50
+ELSEIF ABL:PLAYER:0 == 4
+	TIMES B , 3.50
+ELSE
+	TIMES B , 5.00
+ENDIF
+
+;EXP:私处经验をみる
+EXP_ID = 0
+;乳内の場合Ｂ経験
+SIF CFLAG:113 == 1
+	EXP_ID = 35
+;私处经验が多くなると少し下がる
+IF EXP:0 < EXPLV:1
+	TIMES B , 1.50
+ELSEIF EXP:0 < EXPLV:2
+	TIMES B , 1.00
+ELSEIF EXP:0 < EXPLV:3
+	TIMES B , 0.90
+ELSEIF EXP:0 < EXPLV:4
+	TIMES B , 0.80
+ELSEIF EXP:0 < EXPLV:5
+	TIMES B , 0.70
+ELSE
+	TIMES B , 0.60
+ENDIF
+
+;EXP:私处扩张经验をみる
+;私处扩张经验が多くなるとかなり下がる
+EXP_ID = 52
+;乳内の場合噴乳経験
+SIF CFLAG:113 == 1
+	EXP_ID = 54
+IF EXP:52 < EXPLV:1
+	TIMES B , 1.00
+ELSEIF EXP:52 < EXPLV:2
+	TIMES B , 0.80
+ELSEIF EXP:52 < EXPLV:3
+	TIMES B , 0.50
+ELSEIF EXP:52 < EXPLV:4
+	TIMES B , 0.30
+ELSEIF EXP:52 < EXPLV:5
+	TIMES B , 0.10
+ELSE
+	TIMES B , 0.05
+ENDIF
+
+;安全套装着中だと下がる
+IF TEQUIP:35 || (ASSIPLAY && TEQUIP:36 )
+	TIMES B , 0.60
+ENDIF
+
+;射精ゲージ増加処理
+SIF TALENT:PLAYER:121 || TALENT:PLAYER:122
+	BASE:PLAYER:2 += B
+
+;射精処理
+S = BASE:PLAYER:2
+EJAC = MAXBASE:PLAYER:2
+
+IF  S > EJAC * 2
+	E = 2
+ELSEIF S > EJAC
+	E = 1
+ELSE
+	E = 0
+ENDIF
+
+;大量射精
+IF E == 2
+	EXP:PLAYER:3 += 2
+	EXP:20 += 2
+	IF TEQUIP:35 == 1
+		PRINTL 大量射精
+	ELSEIF CFLAG:113 == 1
+		PRINTL 乳内大量射精
+	ELSEIF CFLAG:113 == 2
+		PRINTL 大量射精
+		PRINTFORML %SAVESTR:TARGET%的精巢似乎感受到了强烈的冲击
+	ELSE
+		PRINTL 膣内大量射精
+	ENDIF
+	PRINTL 精液经验＋２
+	;Ｐに精液汚れ
+	STAIN:PLAYER:2 |= 4
+
+	BASE:PLAYER:2 -= EJAC*2
+	SIF BASE:PLAYER:2 >= EJAC
+		BASE:PLAYER:2 = EJAC-1
+
+	;セックスで射精フラグ
+	TFLAG:2 = 2
+	;膣内射精フラグ（主人）
+	SIF ASSIPLAY == 0 && TEQUIP:35 == 0
+		TFLAG:38 = 2
+	;膣内射精フラグ（助手）
+	SIF ASSIPLAY && TEQUIP:36 == 0
+		TFLAG:38 = 2
+;通常の射精
+ELSEIF E == 1
+	EXP:PLAYER:3 += 1
+	EXP:20 += 1
+	;Ｐに精液汚れ
+	IF TEQUIP:35 == 1
+		PRINTL 射精
+	ELSEIF CFLAG:113 == 1
+		PRINTL 乳内射精
+	ELSEIF CFLAG:113 == 2
+		PRINTL 射精
+		PRINTFORML %SAVESTR:TARGET%的精巢似乎感受到了的冲击
+	ELSE
+		PRINTL 膣内射精
+	ENDIF
+	PRINTL 精液经验＋１
+	STAIN:PLAYER:2 |= 4
+
+	BASE:PLAYER:2 -= EJAC
+	SIF BASE:PLAYER:2 >= EJAC
+		BASE:PLAYER:2 = EJAC-1
+
+	;セックスで射精フラグ
+	TFLAG:2 = 1
+	;膣内射精フラグ（主人）
+	SIF ASSIPLAY == 0 && TEQUIP:35 == 0
+		TFLAG:38 = 1
+	;膣内射精フラグ（助手）
+	SIF ASSIPLAY && TEQUIP:36 == 0
+		TFLAG:38 = 1
+ENDIF
+CALL COM_EJAC_PLAYER_MILK
+
+;-------------------------------------------------
+;調教者の噴乳チェック
+;-------------------------------------------------
+;2016/11/04 追加、基本にはCOM_EJAC_PLAYER_SEXとTARGET_MILK_CHECKの変形
+;-------------------------------------------------
+@COM_EJAC_PLAYER_MILK
+;-------------------------------------------------
+;母乳素質でいないと、噴乳できない
+SIF TALENT:PLAYER:130 == 0
+	RETURN 0
+;兽奸の場合はそのまま終了
+SIF TEQUIP:89
+	RETURN 0
+;死斗场の場合は助手以外はここで終了
+SIF TEQUIP:55 && (ASSI != PLAYER)
+	RETURN 0
+	
+;調教者の噴乳ゲージ増加量
+;そのまま射精ゲージ流用し、Ｂ感覚のレッベルによて、変化する
+IF ABL:PLAYER:1 == 0
+	TIMES B , 0.60
+ELSEIF ABL:PLAYER:1 == 1
+	TIMES B , 0.80
+ELSEIF ABL:PLAYER:1 == 2
+	TIMES B , 1.00
+ELSEIF ABL:PLAYER:1 == 3
+	TIMES B , 1.20
+ELSEIF ABL:PLAYER:1 >= 4
+	TIMES B , 1.40
+ELSE 
+	TIMES B , 1.60
+ENDIF
+
+;克制
+SIF TALENT:PLAYER:20
+	B /= 2
+
+;接受快感
+SIF TALENT:PLAYER:70
+	TIMES B , 1.20
+
+;淫乱化
+SIF TALENT:PLAYER:76
+	TIMES B , 1.10
+
+;否定快感
+SIF TALENT:PLAYER:71
+	TIMES B , 0.80
+
+;B敏感
+SIF TALENT:PLAYER:108
+	TIMES B , 1.50
+
+;贫乳
+SIF TALENT:PLAYER:109
+	TIMES B , 0.50
+
+;绝壁
+SIF TALENT:PLAYER:116
+	TIMES B , 0.20
+
+;調教対象が幼儿退行
+SIF TALENT:TARGET:131
+	B *= 2
+
+;調教対象が幼稚
+SIF TALENT:TARGET:132
+	B *= 2
+	
+;調教者が淫乳
+SIF TALENT:PLAYER:231
+	B *= 2
+
+;調教者が弄乳狂
+SIF TALENT:PLAYER:78
+	B *= 2
+
+B = 1000+(B-1000)/2
+BASE:PLAYER:3 += B
+
+S = BASE:PLAYER:3
+EJAC = MAXBASE:PLAYER:3
+
+IF  S > EJAC * 2
+	E = 2
+ELSEIF B > EJAC
+	E = 1
+ELSE
+	E = 0
+ENDIF
+
+IF E == 2
+	PRINTFORML %SAVESTR:PLAYER%的乳头喷出了大量的母乳。
+	PRINTL 喷奶经验＋２
+	IF EXP:PLAYER:54 == 0
+		EXP:PLAYER:50 += 1
+		PRINTL 异常经验＋1
+	ENDIF
+	EXP:PLAYER:54 += 2
+	;Ｂに母乳汚れ
+	STAIN:PLAYER:5 |= 16
+
+	BASE:PLAYER:3 -= EJAC*2
+	SIF BASE:PLAYER:3 >= EJAC
+		BASE:PLAYER:3 = EJAC-1
+
+	NOWEX:PLAYER:5 += 1
+	EX:PLAYER:5 += 1
+ELSEIF E == 1
+	PRINTFORML %SAVESTR:PLAYER%的乳头流出了母乳。
+	PRINTL 喷奶经验＋1
+	IF EXP:PLAYER:54 == 0
+		EXP:PLAYER:50 += 1
+		PRINTL 异常经验＋1
+	ENDIF
+	EXP:PLAYER:54 += 1
+	;Ｂに母乳汚れ
+	STAIN:PLAYER:5 |= 16
+
+	BASE:PLAYER:3 -= EJAC*2
+	SIF BASE:PLAYER:3 >= EJAC
+		BASE:PLAYER:3 = EJAC-1
+
+	NOWEX:PLAYER:5 += 1
+	EX:PLAYER:5 += 1
+ENDIF
+;-------------------------------------------------
+;セックス後の処理
+;-------------------------------------------------
+@COM_AFTER_VAGINA_SEX
+;-------------------------------------------------
+;経験上昇
+;-------------------------------------------------
+S = 0
+;私处感觉が高いほど私处经验が入る
+IF ABL:2 <= 1
+	S += 2
+ELSEIF ABL:2 <= 4
+	S += 3
+ELSEIF ABL:2 <= 7
+	S += 4
+ELSE
+	S += 5
+ENDIF
+EXP:0 += S
+PRINTFORML 私处经验+{S}
+S = 0
+
+EXP:5 += 1
+PRINTL 性交经验＋１
+
+;异常经验
+Z = 0
+TFLAG:14 = 0
+CALL INCEST
+
+;处女丧失の相手が女性なら异常经验に＋1
+SIF TALENT:0 && TALENT:PLAYER:122 == 0 && TALENT:PLAYER:121 != 1
+	Z += 1
+;处女丧失の相手が父親か母親なら异常经验に＋２
+IF TALENT:0 && TFLAG:14 == 1
+	Z += 2
+;处女丧失の相手が兄弟姉妹なら异常经验に＋１
+ELSEIF TALENT:0 && (TFLAG:14 == 3 || TFLAG:14 == 4)
+	Z += 1
+ENDIF
+;处女丧失が兽奸なら异常经验は基本値２
+SIF TALENT:0 && TEQUIP:89
+	Z = 2
+
+;处女丧失が骑乘位なら异常经验に＋1
+SIF TALENT:0 && SELECTCOM == 34
+	Z += 1
+
+IF Z
+	EXP:50 += Z
+	PRINTFORML %EXPNAME:50%＋{Z}
+ENDIF
+
+;膣内フラグに上書きされることもある
+SIF RAND:2 == 0
+	CFLAG:113 = 0
+	
+;兽奸の場合はここで終了
+SIF TEQUIP:89
+	RETURN 0
+
+;百合经验上昇
+IF TALENT:122 == 0 && TALENT:PLAYER:122 == 0
+	PRINTS EXPNAME:40
+	PRINTL +4
+	EXP:40 += 4
+ENDIF
+
+;死斗场の場合はここで終了
+SIF TEQUIP:55 && (ASSI != PLAYER)
+	RETURN 0
+
+;爱情经验
+;調教者が童贞で調教対象が处女
+IF TALENT:PLAYER:1 && TALENT:0
+	E = 100
+;調教対象が处女
+ELSEIF  TALENT:0
+	E = 50
+;正常位、正常位・胸爱抚
+ELSEIF SELECTCOM == 20 || SELECTCOM == 129
+	E = 4
+;正常位・接吻
+ELSEIF SELECTCOM == 128
+	E = 5
+;正常位・極
+ELSEIF SELECTCOM == 130
+	E = 8
+;对面座位
+ELSEIF SELECTCOM == 22
+	E = 5
+;その他
+ELSE
+	E = 3
+ENDIF
+
+;爱情经验
+IF CFLAG:2 >= 1000 && ASSIPLAY == 0
+	PRINTFORML %EXPNAME:23%+{E}
+	EXP:23 += E
+ENDIF
+E = 0
+
+;初体験の相手が助手
+IF ASSI > 0 && ASSIPLAY
+	R = NO:ASSI
+	;助手が童贞で調教対象が处女
+	IF TALENT:ASSI:1 && TALENT:0
+		RELATION:R += 30
+		SIF RELATION:R == 30
+			RELATION:R = 130
+	;調教対象が处女
+	ELSEIF TALENT:0
+		RELATION:R += 20
+		SIF RELATION:R == 20
+			RELATION:R = 120
+	;助手が童贞
+	ELSEIF TALENT:ASSI:1
+		RELATION:R += 10
+		SIF RELATION:R == 10
+			RELATION:R = 110
+	ENDIF
+	SIF RELATION:R > 200
+		RELATION:R = 200
+ENDIF
+
+;主人によるセックスなら好感度上升
+IF ASSIPLAY == 0
+	IF ABL:2 >= 3
+		TFLAG:30 += 2
+	ELSE
+		TFLAG:30 += 1
+	ENDIF
+ENDIF
+
+;親族関係の判定
+TFLAG:14 = 0
+CALL INCEST
+;調教者が童贞なら童贞喪失
+IF TALENT:PLAYER:1
+	TALENT:PLAYER:1 = 0
+	PRINTW 【童贞丧失】
+	IF CFLAG:PLAYER:15 == 0
+		CFLAG:PLAYER:15 = NO:TARGET + 1
+		CSTR:PLAYER:3 = %SAVESTR:TARGET%
+		;初体験が近親相姦
+		;初体験の相手が自分の息子・娘という状況は生物学的にありえないので省く
+		IF TFLAG:14 == 2 && TALENT:122
+			CFLAG:PLAYER:15 = 300
+		ELSEIF TFLAG:14 == 2 && TALENT:122 == 0
+			CFLAG:PLAYER:15 = 301
+		ELSEIF TFLAG:14 == 3 && TALENT:122
+			CFLAG:PLAYER:15 = 306
+		ELSEIF TFLAG:14 == 3 && TALENT:122 == 0
+			CFLAG:PLAYER:15 = 307
+		ELSEIF TFLAG:14 == 4 && TALENT:122
+			CFLAG:PLAYER:15 = 304
+		ELSEIF TFLAG:14 == 4 && TALENT:122 == 0
+			CFLAG:PLAYER:15 = 305
+		ELSEIF TFLAG:14 == 5 && TALENT:122
+			CFLAG:PLAYER:15 = 309
+		ELSEIF TFLAG:14 == 6 && TALENT:122 == 0
+			CFLAG:PLAYER:15 = 308
+		ENDIF
+	ENDIF
+ENDIF
+
+TFLAG:14 = 0
+
+;-------------------------------------------------
+;汚れの処理
+;-------------------------------------------------
+;奴隷のＶ⇔調教者のＰの汚れが移動
+STAIN:3 |= STAIN:PLAYER:2
+STAIN:PLAYER:2 |= STAIN:3
+;
+;
+;-------------------------------------------------
+@COM_AFTER_EXTRA_SEX
+#DIM ABNOMAL_EXP
+;-------------------------------------------------
+;経験上昇
+;-------------------------------------------------
+B = 0
+ABNOMAL_EXP = 0
+
+IF CFLAG:113 == 1
+	;Ｂ感覚が高いほどＢ経験が入る
+	IF ABL:1 <= 1
+		B += 2
+	ELSEIF ABL:1 <= 4
+		B += 3
+	ELSEIF ABL:1 <= 7
+		B += 4
+	ELSE
+		B += 5
+	ENDIF
+	;初のB経験の場合異常経験2
+	SIF EXP:35 < 1
+		ABNOMAL_EXP += 2
+	EXP:35 += B
+	PRINTFORML 乳房经验+{B}
+ENDIF
+B = 0
+
+EXP:5 += 1
+PRINTL 性交経験＋１
+
+;異常経験
+Z = 0
+TFLAG:14 = 0
+CALL INCEST
+ABNOMAL_EXP += Z
+
+IF ABNOMAL_EXP
+	EXP:50 += ABNOMAL_EXP
+	PRINTFORML %EXPNAME:50%＋{ABNOMAL_EXP}
+ENDIF
+
+;獣姦の場合はここで終了
+SIF TEQUIP:89
+	RETURN 0
+
+;レズ経験上昇
+IF TALENT:122 == 0 && TALENT:PLAYER:122 == 0
+	PRINTS EXPNAME:40
+	PRINTL +4
+	EXP:40 += 4
+ENDIF
+
+;コロシアムの場合はここで終了
+SIF TEQUIP:55 && (ASSI != PLAYER)
+	RETURN 0
+
+;愛情経験
+;調教者が童貞で調教対象が処女
+IF TALENT:PLAYER:1 && TALENT:0
+	E = 100
+;調教対象が処女
+ELSEIF  TALENT:0
+	E = 50
+;正常位、正常位・胸愛撫
+ELSEIF SELECTCOM == 20 || SELECTCOM == 129
+	E = 4
+;正常位・キス
+ELSEIF SELECTCOM == 128
+	E = 5
+;正常位・極
+ELSEIF SELECTCOM == 130
+	E = 8
+;対面座位
+ELSEIF SELECTCOM == 22
+	E = 5
+;その他
+ELSE
+	E = 3
+ENDIF
+
+;愛情経験
+IF CFLAG:2 >= 1000 && ASSIPLAY == 0
+	PRINTFORML %EXPNAME:23%+{E}
+	EXP:23 += E
+ENDIF
+E = 0
+
+;初体験の相手が助手
+IF ASSI > 0 && ASSIPLAY
+	R = NO:ASSI
+	;助手が童貞で調教対象が処女
+	IF TALENT:ASSI:1 && TALENT:0
+		RELATION:R += 30
+		SIF RELATION:R == 30
+			RELATION:R = 130
+	;調教対象が処女
+	ELSEIF TALENT:0
+		RELATION:R += 20
+		SIF RELATION:R == 20
+			RELATION:R = 120
+	;助手が童貞
+	ELSEIF TALENT:ASSI:1
+		RELATION:R += 10
+		SIF RELATION:R == 10
+			RELATION:R = 110
+	ENDIF
+	SIF RELATION:R > 200
+		RELATION:R = 200
+ENDIF
+
+;主人によるセックスなら好感度上昇
+IF ASSIPLAY == 0
+	IF ABL:2 >= 3
+		TFLAG:30 += 2
+	ELSE
+		TFLAG:30 += 1
+	ENDIF
+ENDIF
+
+;親族関係の判定
+TFLAG:14 = 0
+CALL INCEST
+;調教者が童貞なら童貞喪失
+IF TALENT:PLAYER:1
+	TALENT:PLAYER:1 = 0
+	PRINTW 【童貞喪失】
+	IF CFLAG:PLAYER:15 == 0
+		CFLAG:PLAYER:15 = NO:TARGET + 1
+		CSTR:PLAYER:3 = %SAVESTR:TARGET%
+		;初体験が近親相姦
+		;初体験の相手が自分の息子・娘という状況は生物学的にありえないので省く
+		IF TFLAG:14 == 2 && TALENT:122
+			CFLAG:PLAYER:15 = 300
+		ELSEIF TFLAG:14 == 2 && TALENT:122 == 0
+			CFLAG:PLAYER:15 = 301
+		ELSEIF TFLAG:14 == 3 && TALENT:122
+			CFLAG:PLAYER:15 = 306
+		ELSEIF TFLAG:14 == 3 && TALENT:122 == 0
+			CFLAG:PLAYER:15 = 307
+		ELSEIF TFLAG:14 == 4 && TALENT:122
+			CFLAG:PLAYER:15 = 304
+		ELSEIF TFLAG:14 == 4 && TALENT:122 == 0
+			CFLAG:PLAYER:15 = 305
+		ELSEIF TFLAG:14 == 5 && TALENT:122
+			CFLAG:PLAYER:15 = 309
+		ELSEIF TFLAG:14 == 6 && TALENT:122 == 0
+			CFLAG:PLAYER:15 = 308
+		ENDIF
+	ENDIF
+ENDIF
+
+TFLAG:14 = 0
+;

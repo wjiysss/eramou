@@ -1,0 +1,204 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+@COM53
+;ビデオカメラ
+
+;SAVESTR:22 = 水晶球
+CALL TRAIN_MESSAGE_B
+
+;カウントは10回とします
+LOCAL = 10
+
+IF TEQUIP:53
+;ビデオ撮影がされていれば終了させる
+;テープは終了時に数を減らす
+	TEQUIP:53 = 0
+	ITEM:28 -= 1
+ELSE
+;ビデオ撮影してなければ初期化して開始
+	TEQUIP:53 = 1
+	CFLAG:491 = 0
+	FOR LOCAL:1,0,LOCAL
+		LOCAL:2 = LOCAL:1 + 480
+		CFLAG:(LOCAL:2) = 0
+	NEXT
+	;撮影開始時の状態を記録
+	FLAG:22 = 0
+	SIF TEQUIP:54
+		FLAG:22 |= 1
+	SIF TEQUIP:58
+		FLAG:22 |= 2
+	SIF TEQUIP:59
+		FLAG:22 |= 4
+	SIF TEQUIP:44
+		FLAG:22 |= 8
+	SIF TEQUIP:11
+		FLAG:22 |= 16
+	SIF TEQUIP:13
+		FLAG:22 |= 32
+	SIF TEQUIP:46
+		FLAG:22 |= 64
+	SIF TEQUIP:89
+		FLAG:22 |= 128
+	SIF TEQUIP:90
+		FLAG:22 |= 256
+	SIF TEQUIP:18
+		FLAG:22 |= 512
+ENDIF
+
+RETURN 1
+
+;-------------------------------------------------
+;ビデオ撮影中･･･
+;-------------------------------------------------
+@EQUIP_COM53
+
+#DIM VIDEO_MAX
+#DIM SAVE_ID
+
+;カウントは10回とします
+VIDEO_MAX = 10 + 4 * CFLAG:499
+	
+IF CFLAG:491 == 0
+;初回はカウントに入れない
+	CFLAG:491 += 1
+ELSEIF CFLAG:491 > 0 && CFLAG:491 <= VIDEO_MAX
+	SAVE_ID = CFLAG:491 + 459
+	CFLAG:SAVE_ID = SELECTCOM
+	SIF ASSIPLAY && TALENT:ASSI:122 == 0
+		CFLAG:SAVE_ID += 1000
+	SIF ASSIPLAY && TALENT:ASSI:122
+		CFLAG:SAVE_ID += 2000
+
+	PRINTFORML ＜视频拍摄中{CFLAG:491}/{VIDEO_MAX}＞
+
+	CFLAG:491 += 1
+
+	;パラメータ変化
+	;TODO バランス調整(ビデオによるパラメータ変化は考慮しないか？)
+	LOSEBASE:0 += 0
+	LOSEBASE:1 += 50
+
+	LOCAL:0 = 370
+	LOCAL:1 = 1750
+	LOCAL:2 = 700
+
+	;PALAM:欲情をみる
+	IF PALAM:5 < PALAMLV:1
+		TIMES LOCAL:0 , 0.80
+	ELSEIF PALAM:5 < PALAMLV:2
+		TIMES LOCAL:0 , 0.90
+	ELSEIF PALAM:5 < PALAMLV:3
+		TIMES LOCAL:0 , 1.00
+	ELSEIF PALAM:5 < PALAMLV:4
+		TIMES LOCAL:0 , 1.10
+	ELSEIF PALAM:5 >= PALAMLV:4
+		TIMES LOCAL:0 , 1.20
+	ENDIF
+
+	;ABL:従順をみる
+	IF ABL:10 == 0
+		TIMES LOCAL:0 , 0.40
+	ELSEIF ABL:10 == 1
+		TIMES LOCAL:0 , 0.60
+	ELSEIF ABL:10 == 2
+		TIMES LOCAL:0 , 0.80
+	ELSEIF ABL:10 == 3
+		TIMES LOCAL:0 , 1.00
+	ELSEIF ABL:10 == 4
+		TIMES LOCAL:0 , 1.10
+	ELSE
+		TIMES LOCAL:0 , 1.20
+	ENDIF
+
+	;ABL:露出癖をみる
+	IF ABL:17 == 0
+		TIMES LOCAL:0 , 0.80
+		TIMES LOCAL:2 , 2.00
+	ELSEIF ABL:17 == 1
+		TIMES LOCAL:0 , 1.00
+		TIMES LOCAL:2 , 1.70
+	ELSEIF ABL:17 == 2
+		TIMES LOCAL:0 , 1.30
+		TIMES LOCAL:2 , 1.40
+	ELSEIF ABL:17 == 3
+		TIMES LOCAL:0 , 1.60
+		TIMES LOCAL:2 , 1.00
+	ELSEIF ABL:17 == 4
+		TIMES LOCAL:0 , 2.00
+		TIMES LOCAL:2 , 0.80
+	ELSE
+		TIMES LOCAL:0 , 3.00
+		TIMES LOCAL:2 , 0.60
+	ENDIF
+
+	;倒錯的
+	SIF TALENT:80
+		TIMES LOCAL:0 , 2.00
+	;目立ちたがり
+	SIF TALENT:28
+		TIMES LOCAL:0 , 1.50
+	;臆病
+	SIF TALENT:10
+		TIMES LOCAL:2 , 1.70
+	;露出狂
+	IF TALENT:89
+		TIMES LOCAL:0 , 2.00
+		TIMES LOCAL:1 , 1.20
+		TIMES LOCAL:2 , 0.50
+	ENDIF
+
+	SOURCE:10 += LOCAL:0
+	SOURCE:12 += LOCAL:1
+	SOURCE:14 += LOCAL:2
+
+ENDIF
+
+;-------------------------------------------------
+;経験上昇
+;-------------------------------------------------
+IF ABL:17 >= 2 && CFLAG:491 > 1
+	EXP:70 += 1
+	PRINTL 拍摄经验＋１
+ENDIF
+
+;-------------------------------------------------
+;その他の処理
+;-------------------------------------------------
+;テープ残量がなくなると強制的にEQUIPフラグを外す
+IF CFLAG:491 > VIDEO_MAX
+	PRINTL ＜魔力耗尽了，录像拍摄将要结束＞
+	PRINTL 要给水晶球充能吗？
+	PRINTFORM 已充能{CFLAG:499}次。
+	PRINTL 充能費用为500G。
+	PRINTL [1]	充能
+	PRINTL
+	PRINTL [2]	不了
+	INPUT
+	IF RESULT == 2
+		TEQUIP:53 = 0
+		ITEM:28 -= 1
+		CFLAG:499 = 0
+		PRINTL ＜魔力耗尽了，录像拍摄结束＞
+	ELSEIF RESULT== 1
+		CFLAG:499 += 1
+		IF CFLAG:499 <= 5
+			MONEY -= 500
+			EX_FLAG:4444 -= 500
+			VIDEO_MAX = 10 + 4 * CFLAG:499
+			PRINTFORM 水晶球容量扩充为{VIDEO_MAX}次。
+			PRINTL
+		ELSE
+			TEQUIP:53 = 0
+			ITEM:28 -= 1
+			CFLAG:499 = 0
+			PRINTL ＜已经无法再充能了＞
+			PRINTL ＜魔力耗尽了，录像拍摄结束＞
+		ENDIF
+	ENDIF	
+ENDIF
+
+SIF ASSIPLAY == 0 && ABL:7 >= 3
+	TFLAG:30 += 1
+
+RETURN 1

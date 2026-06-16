@@ -1,0 +1,1017 @@
+﻿;----------------------------------------
+@DUNGEON_ROOM,ARG:0
+#DIM ROOMID
+#DIM ROOM
+#DIM EXTRA
+;----------------------------------------
+;ダンジョンの施設
+
+IF CFLAG:(ARG:0):1 == 3
+	;迎撃の場合、建設
+	A = ARG:0
+	CALL DUNGEON_ROOM_BUILD
+	RETURN 0
+ENDIF
+
+;侵攻中の勇者？
+SIF CFLAG:(ARG:0):1 != 2 && CFLAG:(ARG:0):1 != 12
+	RETURN 0
+
+;店遭遇の可能性
+IF RAND:12 == 0
+	A = ARG:0
+	CALL DUNGEON_SHOP_ITEMSELL
+	;戦闘が発生しないフラグを返す
+	RETURN 1
+ENDIF
+
+
+
+
+
+;施設番号
+IF CFLAG:(ARG:0):1 == 12
+	CALL CAMPAIGN_ROOM,CFLAG:(ARG:0):501
+	ROOM = RESULT
+	;拡張
+	CALL CAMPAIGN_ROOM_EXTRA,CFLAG:(ARG:0):501
+	EXTRA = RESULT
+ELSE
+	ROOMID = CFLAG:(ARG:0):501 + 349
+	
+	;施設なし
+	SIF FLAG:ROOMID <= 0
+		RETURN 0
+	ROOM = FLAG:ROOMID
+	;拡張
+	ROOMID += 10
+	EXTRA = FLAG:ROOMID
+	;ITEM:ROOM -= 1
+ENDIF
+
+
+
+
+IF ROOM == 500
+	CALL DUNGEON_SHOP, EXTRA
+ELSEIF ROOM == 501
+	CALL DUNGEON_SWAMP, EXTRA
+ELSEIF ROOM == 502
+	CALL DUNGEON_FARM_RESCUE, EXTRA
+ELSEIF ROOM == 503
+	CALL DUNGEON_ICE, EXTRA
+ELSEIF ROOM == 504
+	CALL DUNGEON_HEAT, EXTRA
+ELSEIF ROOM == 505
+	CALL DUNGEON_MASE, EXTRA
+ELSEIF ROOM == 506
+	CALL DUNGEON_MUSEUM, EXTRA
+ELSEIF ROOM == 507
+	CALL DUNGEON_HOTEL, EXTRA
+ENDIF
+
+RETURN 0
+
+;----------------------------------------
+@DUNGEON_ROOM_BUILD
+#DIM ROOMID
+#DIM ROOM
+#DIM EXTRA
+;----------------------------------------
+;ダンジョンの建設
+;全ての拡張を同一に行うので
+;拡張を追加する際は全部の数を増やすこと
+;SHOP_2.ERB@INTERCEPTにも必要な設定があります
+;いまは2個だけ
+
+;命令チェック
+SIF CFLAG:A:500 != 3
+	RETURN 0
+
+ROOMID = CFLAG:A:501 + 349
+
+;设施无
+SIF FLAG:ROOMID <= 0
+	RETURN 0
+
+;设施番号
+ROOM = FLAG:ROOMID
+
+ROOMID += 10
+
+;拡張
+EXTRA = FLAG:ROOMID
+
+;確率を弄る場合ここのランダムを弄る
+
+IF RAND:4 == 0
+	;拡張1
+	SIF EXTRA & 1
+		RETURN 0
+	FLAG:ROOMID += 1
+ELSEIF RAND:3 == 0
+	;拡張2
+	SIF EXTRA & 2
+		RETURN 0
+	FLAG:ROOMID += 2
+ELSE
+	RETURN 0
+ENDIF
+
+IF FLAG:5 & 32
+	PRINTL
+	PRINTFORML %ITEMNAME:ROOM%进行了扩张！
+	printform 扩张
+	IF FLAG:ROOMID & 1
+		print ：○
+	ELSE
+		print ：×
+	ENDIF
+	IF FLAG:ROOMID & 2
+		print ：○
+	ELSE
+		print ：×
+	ENDIF
+	PRINTL  
+	printformw %SAVESTR:A%的工作变为内职了。
+ENDIF
+
+CFLAG:A:500 = 0
+
+RETURN 0
+
+
+;------------------------------------
+@DUNGEON_ROOM_DAY
+#DIM ROOMID
+#DIM ROOM
+#DIM EXTRA
+;------------------------------------
+
+FOR ROOMID, 350, 359
+	
+	ROOM = FLAG:ROOMID
+	
+	ROOMID += 10
+	EXTRA = FLAG:ROOMID
+	ROOMID -= 10
+	
+	IF ROOM == 500
+		CALL DUNGEON_SHOP_DAY, EXTRA
+	ELSEIF ROOM == 502
+		CALL DUNGEON_FARM, EXTRA
+	ENDIF
+
+NEXT
+
+RETURN 0
+
+;------------------------------------
+@DUNGEON_SHOP, ARG:0
+#DIM COST
+;------------------------------------
+;商店街。僅かながら現金収入
+;拡張& 1=武具屋
+;拡張& 2=道具屋
+;COST = 代金
+
+IF FLAG:5 & 32
+	PRINTL
+	PRINTFORML 是商店街型地下城
+	printform 扩张
+	SIF ARG:0 == 0
+		print ：无
+	SIF ARG:0 & 1
+		print ：武器店
+	SIF ARG:0 & 2
+		print ：道具店
+	PRINTL  
+ENDIF
+
+COST = (CFLAG:A:9 * 5)+10
+
+IF ARG:0 & 1 && RAND:3 == 0
+	;武器屋分岐
+	IF FLAG:5 & 32
+		printformw %SAVESTR:A%找到了武器店…
+	ENDIF
+	
+	COST = (CFLAG:A:9 * 8)+20
+	
+	IF CFLAG:A:580 < COST
+		IF FLAG:5 & 32
+			printformw %SAVESTR:A%带的钱不够，眼巴巴地看着橱窗发愁……
+		ENDIF
+		RETURN 0
+	ENDIF
+	
+	CALL ADD_EX_ITEM, -2, A, 1
+	SIF FLAG:5 & 32 && RESULT > 0
+		PRINTFORMW 现金收入+{COST}
+	
+	IF RESULT > 0
+		MONEY += COST
+		EX_FLAG:4444 += COST
+		CFLAG:A:580 -= COST
+	ENDIF
+	
+	RETURN 0
+ELSEIF ARG:0 & 2 && RAND:2 == 0
+	;道具屋分岐
+	IF FLAG:5 & 32
+		printformw %SAVESTR:A%找到了道具店…
+	ENDIF
+	
+	COST = (CFLAG:A:9 * 6)+20
+	
+	IF CFLAG:A:580 < COST
+		IF FLAG:5 & 32
+			printformw %SAVESTR:A%带的钱不够，眼巴巴地看着橱窗发愁……
+		ENDIF
+		RETURN 0
+	ENDIF
+	
+	CALL ADD_EX_ITEM, -3, A, 1
+	SIF FLAG:5 & 32 && RESULT > 0
+		printformw 现金收入+{COST}
+	
+	IF RESULT > 0
+		MONEY += COST
+		EX_FLAG:4444 += COST
+		CFLAG:A:580 -= COST
+	ENDIF
+	
+	RETURN 0
+ENDIF
+
+IF CFLAG:A:580 < COST
+	IF FLAG:5 & 32
+		printformw %SAVESTR:A%带的钱不够，在商店街边走边叹气……
+	ENDIF
+	RETURN 0
+ENDIF
+
+MONEY += COST
+EX_FLAG:4444 += COST
+CFLAG:A:580 -= COST
+BASE:A:0 += 20
+BASE:A:1 += 50
+
+IF FLAG:5 & 32
+	printformw %SAVESTR:A%在商店街尽情地大吃大喝…（体力+20、气力+50）
+	printformw 现金收入+{COST}
+ENDIF
+
+RETURN 0
+
+;------------------------------------
+@DUNGEON_SHOP_ITEMSELL
+#DIM COST
+;------------------------------------
+;ダンジョン内にあるアイテムを売る店
+;不思議のダンジョン系で床にアイテム置いて売ってるやつのイメージ
+;COST = 値段
+
+COST = (CFLAG:A:9 * 6)+50
+
+;最大値
+SIF COST > 1000
+	COST = 1000
+
+IF FLAG:5 & 32
+	PRINTL
+	PRINTFORML %SAVESTR:A%发现了一间不可思议的房间，里面有着陈列架和柜台，正在卖着东西……
+ENDIF
+
+;否定の珠売却
+IF JUEL:A:100 > 2000
+	IF FLAG:5 & 32
+		PRINTFORMW 很反感魔王的%SAVESTR:A%从店主处拿到了赞助……（资金+500）
+	ENDIF
+	JUEL:A:100 -= 500
+	CFLAG:A:580 += 500
+ENDIF
+
+;反発刻印売却
+IF MARK:A:3 > 0
+	IF FLAG:5 & 32
+		PRINTFORMW 很讨厌魔王的%SAVESTR:A%从店主处获得了力量……（经验值+{MARK:A:3 * 1000}）
+	ENDIF
+	EXP:A:80 += MARK:A:3 * 1000
+	MARK:A:3 -= 1
+ENDIF
+
+;アイテム売却
+CALL SELL_EX_ITEM,A
+
+IF CFLAG:A:580 < COST
+	IF FLAG:5 & 32
+		PRINTFORML %SAVESTR:A%带的钱不够，眼巴巴地在店里转了一圈……
+	ENDIF
+	RETURN 0
+ENDIF
+
+CALL ADD_EX_ITEM, -3, A, 1
+SIF FLAG:5 & 32 && RESULT > 0
+	PRINTFORML 现金收入+{COST}
+
+IF RESULT > 0
+	MONEY += COST
+	EX_FLAG:4444 += COST
+	CFLAG:A:580 -= COST
+ENDIF
+
+
+RETURN 0
+
+;------------------------------------
+@DUNGEON_SHOP_DAY, ARG:0
+#DIM INCOME
+;------------------------------------
+;商店街。僅かながら現金収入
+;拡張& 1=武具屋
+;拡張& 2=道具屋
+
+INCOME = CFLAG:0:9 * (RAND:10 + 5)
+
+;拡張によって僅かに増える
+SIF ARG:0 & 1
+	INCOME += CFLAG:0:9 + 20
+SIF ARG:0 & 2
+	INCOME += CFLAG:0:9 + 20
+IF EX_FLAG:99 <= 20 && EX_FLAG:99 >= 0
+PRINTL 威望值是【岌岌可危】
+INCOME = 0
+ELSEIF EX_FLAG:99 <= 40 && EX_FLAG:99 > 20
+PRINTL 威望值是【动荡不安】
+PRINTW 収入减少
+INCOME *= 3
+INCOME /= 10
+ELSEIF EX_FLAG:99 <= 60 && EX_FLAG:99 > 40
+PRINTl 威望值是【略受质疑】
+INCOME *= 3
+INCOME /= 4
+ELSEIF EX_FLAG:99 <= 80 && EX_FLAG:99 > 60
+PRINTl 威望值是【相安无事】
+INCOME *= 6
+INCOME /= 5
+ELSEIF EX_FLAG:99 <= 100 && EX_FLAG:99 > 80
+PRINTl 威望值是【广受爱戴】
+INCOME *= 2
+ENDIF
+	PRINTL
+	printformw 从商店街征收了今天的税金。（现金收入+{INCOME}）
+
+MONEY += INCOME
+EX_FLAG:4444 += INCOME
+
+RETURN 0
+
+;------------------------------------
+@DUNGEON_SWAMP, ARG:0
+#DIM DMG
+;------------------------------------
+;沼地。機能していないようなので毒沼に変更
+;DMG = ダメージ量
+;拡張& 1=毒草
+;拡張& 2=毒蟲
+
+IF FLAG:5 & 32
+	PRINTL
+	PRINTFORML 是毒沼型地下城
+	printform 扩张
+	SIF ARG:0 == 0
+		print ：无
+	SIF ARG:0 & 1
+		print ：毒草
+	SIF ARG:0 & 2
+		print ：毒虫
+	PRINTL  
+ENDIF
+
+DMG = CFLAG:0:9 + 10
+
+;毒草
+;相手が強いほど強化
+SIF ARG:0 & 1
+	DMG += CFLAG:A:9
+
+;毒蟲
+;陷阱レベルで強化
+SIF ARG:0 & 2
+	DMG += FLAG:85 * 2
+
+BASE:A:0 -= DMG
+
+;最低1は残るタイプ
+SIF BASE:A:0 < 1
+	BASE:A:0 = 1
+
+IF FLAG:5 & 32
+	printformw %SAVESTR:A%走在毒沼中………（{DMG}点伤害！）
+ENDIF
+
+RETURN 0
+
+;-------------------------------------
+@DUNGEON_FARM, ARG:0
+#DIM MON_ID
+#DIM MON_NUM
+#DIM TALK
+#DIM LOG_OFF
+#DIM SELL_BABY
+;-------------------------------------
+;怪物が増える。ターン終了時効果
+;拡張& 1=搾乳設備
+;拡張& 2=扶她種付け奴隷
+
+;肉便器ないとダメ
+SIF FLAG:83 <= 0
+	RETURN 0
+
+;20160524改変
+
+GETBIT FLAG:614,0
+LOG_OFF = RESULT
+GETBIT FLAG:614,1
+SELL_BABY = RESULT
+
+CALL RAND_MONSTER_NUMBER
+MON_ID = RESULT
+MON_NUM = ITEM:MON_ID
+IF SELL_BABY
+	MONEY += FLAG:83 * 10
+	EX_FLAG:4444 += FLAG:83 * 10
+ELSEIF MON_NUM + FLAG:83 > 999
+	MON_NUM = 999
+ELSE
+	MON_NUM += FLAG:83
+ENDIF
+
+;竿役分岐
+IF FLAG:613 == 1 && LOG_OFF == 0
+	PRINTL 「播种的大叔们好好努力让便器们怀孕啊~」
+	PRINTW 监督的淫魔踹着俘虏中年的腰，中年将腥臭的精液大量注入了肉便器……
+ELSEIF FLAG:613 == 2 && LOG_OFF == 0
+	PRINTL 「小鸡鸡奴隶少年们，加把劲啊。把分配的播种任务完成就行了。」
+	PRINTW 监督的淫魔温柔地催促着，俘虏少年将充满年轻气息的浓厚精液注入了肉便器……
+ELSEIF FLAG:613 == 3 && LOG_OFF == 0
+	PRINTL 「怀孕吧！　怀上吧！　啊哈哈哈，怀孕吧！」
+	PRINTW 扶她淫魔的媚药精液不断地注入肉便器中……
+ENDIF
+
+FOR LOCAL:0, 0, FLAG:83
+	SIF LOCAL:0 >= 10
+		BREAK
+	
+	SIF LOG_OFF
+		BREAK
+	
+	;1の位はランダムパターン
+	TALK = RAND:6
+	
+	;10の位は施設拡張フラグ
+	IF ARG:0 & 1 && RAND:6 == 0
+		;搾乳フラグON
+		TALK += 10
+	ELSEIF ARG:0 & 2 && RAND:5 == 0
+		;ふたなりフラグON
+		TALK += 20
+	ENDIF
+	
+	;100の位は肉便器の数
+	IF FLAG:83 > 100  && RAND:6 == 0
+		TALK += 500
+	ELSEIF FLAG:83 > 80  && RAND:5 == 0
+		TALK += 400
+	ELSEIF FLAG:83 > 60  && RAND:4 == 0
+		TALK += 300
+	ELSEIF FLAG:83 > 40  && RAND:3 == 0
+		TALK += 200
+	ELSEIF FLAG:83 > 20  && RAND:2 == 0
+		TALK += 100
+	ENDIF
+	
+	SELECTCASE TALK
+	;フラグ無し
+		CASE 0
+			PRINT 「嗯…嗯…」
+		CASE 1
+			PRINT 「已经…不想…再生…啦…………」
+		CASE 2
+			PRINT 「呜呜…啊！～！…泄了！！」
+		CASE 3
+			PRINT 「唔哦！！…噢噢～！哦哦哦！…」
+		CASE 4
+			PRINT 「唔…啊啊………」
+		CASE 5
+			PRINT 「已经怀孕了………请……饶了我吧……………」
+	;搾乳フラグあり
+		CASE 10 TO 15
+			PRINT 「奶水…要出来了………」
+	;ふたなりフラグあり
+		CASE 20 TO 25
+			PRINT 「扶她的鸡鸡………」
+	
+	;20人超フラグあり
+		CASE 100
+			PRINT 「不要…不要啊…」
+		CASE 101
+			PRINT 「啊啊………」
+		CASE 102
+			PRINT 「肚子…在动……」
+		CASE 103
+			PRINT 「全是精液……好讨厌………」
+		CASE 104
+			PRINT 「已经不行了………」
+		CASE 105
+			PRINT 「这里是………哪里？」
+	;20人超・搾乳フラグあり
+		CASE 110 TO 115
+			PRINT 「放……放过胸部吧…………」
+	;20人超・ふたなりフラグあり
+		CASE 120 TO 125
+			PRINT 「啊～鸡鸡…好舒服～！」
+	
+	;40人超フラグあり
+		CASE 200
+			PRINT 「呜呜……明明…不会再反抗了……」
+		CASE 201
+			PRINT 「不要再插进去啦！！…」
+		CASE 202
+			PRINT 「我……生了多少个了啊………」
+		CASE 203
+			PRINT 「啊～精液…好美味～…」
+		CASE 204
+			PRINT 「好想回家………」
+		CASE 205
+			PRINT 「现在…是何年何月啦………」
+	;40人超・搾乳フラグあり
+		CASE 210 TO 215
+			PRINT 「胸部……胸部……嘻嘻嘻嘻……哈哈哈哈哈…………」
+	;40人超・ふたなりフラグあり
+		CASE 220 TO 225
+			PRINT 「啊，一直勃起着…………」
+	
+	;60人超フラグあり
+		CASE 300
+			PRINT 「求求你们放过我吧……已经…不想再生…不想再生啦！……」
+		CASE 301
+			PRINT 「里面…再狠狠地插进来………」
+		CASE 302
+			PRINT 「啊～鸡鸡～…好美味啊～」
+		CASE 303
+			PRINT 「后面……也……来………」
+		CASE 304
+			PRINT 「哈……哈………」
+		CASE 305
+			PRINT 「你………新被抓来的？」
+	;60人超・搾乳フラグあり
+		CASE 310 TO 315
+			PRINT 「不行…乳头勃起来了………」
+	;60人超・ふたなりフラグあり
+		CASE 320 TO 325
+			PRINT 「精液……满满的………」
+	
+	;80人超フラグあり
+		CASE 400
+			PRINT 「又……又生了…………」
+		CASE 401
+			PRINT 「豆豆勃起着……下不去了…………」
+		CASE 402
+			PRINT 「再来………」
+		CASE 403
+			PRINT （跪趴在地舔舐着零落的精液）
+		CASE 404
+			PRINT 「好大…………」
+		CASE 405
+			PRINT 「泄了！！～又要泄了！！！！！…」
+	;80人超・搾乳フラグあり
+		CASE 410 TO 415
+			PRINT 「好舒服……再狠狠地榨我的乳啊！………」
+	;80人超・ふたなりフラグあり
+		CASE 420 TO 425
+			PRINT 「我是便器……我是便器…………」
+	
+	;100人超フラグあり
+		CASE 500
+			PRINT 「啊哈哈……我的……孩子………」
+		CASE 501
+			PRINT 「阴蒂…又肿…又痛…啊…………」
+		CASE 502
+			PRINT 「唔哦～！！………」
+		CASE 503
+			PRINT （央求着阴茎）
+		CASE 504
+			PRINT （发疯似得扭动着腰）
+		CASE 505
+			PRINT 「……」
+	;80人超・搾乳フラグあり
+		CASE 510 TO 515
+			PRINT 「奶水好香……玩烂我的胸！玩坏它！哈哈哈…哈哈……」
+	;80人超・ふたなりフラグあり
+		CASE 520 TO 525
+			PRINT 「哈哈…鸡鸡…鸡鸡……好棒好棒………」
+	
+	ENDSELECT
+	
+	PRINT  
+	
+NEXT
+
+PRINTL  
+
+;SIF LOG_OFF == 0 && SELL_BABY == 0
+PRINTFORML 人类牧场的肉便器生了{FLAG:83}只%ITEMNAME:MON_ID%。
+
+SIF LOG_OFF == 0 && SELL_BABY == 1
+	PRINTFORML 将人类牧场的肉便器生下的孩子卖了{FLAG:83 * 10}G。
+		MONEY += FLAG:83 * 10
+		EX_FLAG:4444 += FLAG:83 * 10
+IF ARG:0 & 1
+	;搾乳
+	PRINTFORML 出售从肉便器挤出的乳汁得到了{FLAG:83}G。
+	MONEY += FLAG:83
+	EX_FLAG:4444 += FLAG:83
+ENDIF
+
+IF ARG:0 & 2
+	;扶她奴隷
+	PRINTFORML 原本是勇者的扶她奴隶侵犯着肉便器，淫欲转化成了{FLAG:83}经验值。
+	EXP:0:80 += FLAG:83
+ENDIF
+
+SIF LOG_OFF == 0
+	WAIT
+
+ITEM:MON_ID = MON_NUM
+
+;-------------------------------------
+@DUNGEON_FARM_RESCUE, ARG:0
+;-------------------------------------
+;牧場に勇者が到達すると肉便器を救出されてしまう
+;拡張& 1=搾乳設備
+;拡張& 2=扶她種付け奴隷
+
+IF FLAG:5 & 32
+	PRINTL
+	PRINTFORML 是人类牧场型地下城
+	printform 扩张
+	SIF ARG:0 == 0
+		print ：无
+	SIF ARG:0 & 1
+		print ：榨乳设备
+	SIF ARG:0 & 2
+		print ：扶她配种奴隶
+	PRINTL  
+ENDIF
+
+;肉便器ないとダメ
+SIF FLAG:83 <= 0
+	RETURN 0
+
+IF FLAG:5 & 32
+	PRINTFORMW 勇者发现了一个可悲的肉便器，并且将其解放。
+ENDIF
+
+SIF CFLAG:(ARG:0):1 != 12
+	FLAG:83 -= 1
+
+RETURN 0
+
+;-------------------------------------
+@DUNGEON_ICE, ARG:0
+#DIM MDMG
+;-------------------------------------
+;勇者の攻撃力が1割下がる
+;MDMG=気力ダメージ
+;拡張& 1=吹雪（アイテム破壊）
+;拡張& 2=積雪（体力消耗）
+
+IF FLAG:5 & 32
+	PRINTL
+	PRINTFORML 是冰封型地下城
+	printform 扩张
+	SIF ARG:0 == 0
+		print ：无
+	SIF ARG:0 & 1
+		print ：吹雪
+	SIF ARG:0 & 2
+		print ：积雪
+	PRINTL  
+ENDIF
+
+MDMG = 0
+
+IF ARG:0 & 1 && RAND:6 == 0
+	LOCAL = RAND:5 + 560
+	IF CFLAG:A:LOCAL > 0 && FLAG:5 & 32
+		PRINTFORM 激烈的飞雪把
+		CALL EX_ITEM_NAME,CFLAG:A:LOCAL
+		PRINTFORMW 破坏了……
+	ENDIF
+	CFLAG:A:LOCAL = 0
+ENDIF
+
+;デフォの攻撃値減少
+CFLAG:A:11 *= 9
+CFLAG:A:11 /= 10
+
+;積雪による精神ダメージ
+SIF ARG:0 & 2
+	MDMG += CFLAG:0:9 + 2
+
+BASE:A:1 -= MDMG
+
+IF FLAG:5 & 32
+	printform %SAVESTR:A%在冰室的严寒中哆嗦着身体………（攻击力下降一成！）
+	SIF MDMG > 0
+		printform （{MDMG}点气力下降！）
+	PRINTW 
+ENDIF
+
+
+
+RETURN 0
+
+;-------------------------------------
+@DUNGEON_HEAT, ARG:0
+#DIM DMG
+;-------------------------------------
+;勇者の防御力が1割下がる
+;DMG = ダメージ量
+;拡張& 1=オアシス（回復点）
+;拡張& 2=火柱（ダメージ）
+
+IF FLAG:5 & 32
+	PRINTL
+	PRINTFORML 是灼热型的地下城
+	printform 扩张
+	SIF ARG:0 == 0
+		print ：无
+	SIF ARG:0 & 1
+		print ：绿洲
+	SIF ARG:0 & 2
+		print ：火柱
+	PRINTL  
+ENDIF
+
+IF ARG:0 & 1 && RAND:6 == 0
+	;回復点
+	;诱惑的な効果
+	
+	BASE:A:1 += 50
+	SIF BASE:A:1 > MAXBASE:A:1
+		BASE:A:1 = MAXBASE:A:1
+	
+	IF  FLAG:5 & 32
+		PRINTFORML 发现了绿洲………（气力50回复！亲密度上升！）
+		PRINTFORMW 屈服点数+{CFLAG:0:9 * 4}
+	ENDIF
+	
+	JUEL:TARGET:6 += CFLAG:0:9 * 4
+	CFLAG:TARGET:2 += 20
+	
+	RETURN 0
+ENDIF
+
+DMG = 0
+
+CFLAG:A:12 *= 9
+CFLAG:A:12 /= 10
+
+;火柱によるダメージ
+SIF ARG:0 & 2
+	DMG += CFLAG:0:9 + 10
+
+BASE:A:0 -= DMG
+
+;最低1は残るタイプ
+SIF BASE:A:0 < 1
+	BASE:A:0 = 1
+
+IF FLAG:5 & 32
+	PRINTL
+	PRINTFORML %SAVESTR:A%由于热砂的暑气，集中力下降了……（防御力下降一成！）
+	SIF DMG > 0
+		printform （火柱造成了{DMG}点伤害！）
+	PRINTW 
+ENDIF
+
+RETURN 0
+
+;-------------------------------------
+@DUNGEON_MASE, ARG:0
+#DIM BACK
+;-------------------------------------
+;たまに迷う
+;BACK = 侵攻減少度
+;拡張& 1=回転床（侵攻度減少）
+;拡張& 2=ダークゾーン（侵攻度減少）
+
+IF FLAG:5 & 32
+	PRINTL
+	PRINTFORML 是迷宫型地下城
+	printform 扩张
+	SIF ARG:0 == 0
+		print ：无
+	SIF ARG:0 & 1
+		print ：回转地板
+	SIF ARG:0 & 2
+		print ：黑暗地带
+	PRINTL  
+ENDIF
+
+BACK = 0
+
+SIF ARG:0 & 1
+	BACK += 5
+SIF ARG:0 & 2
+	BACK += 5
+
+SIF RAND:3 < 1
+	RETURN 0
+
+D:20 -= BACK
+
+IF FLAG:5 & 32
+	printformw %SAVESTR:A%在迷宫里迷路了………
+	SIF BACK > 0
+		printform 突然发现走了回头路！
+	PRINTW 
+ENDIF
+
+CFLAG:A:509 = 1
+
+RETURN 0
+
+;-------------------------------------
+@DUNGEON_MUSEUM, ARG:0
+#DIM DMG
+#DIM MDMG
+;-------------------------------------
+;石像と剥製の数に応じて最大1/4気力が減る
+;DMG  = ダメージ
+;MDMG = 気力ダメージ
+;拡張& 1=巡回ゴーレム（ダメージ）
+;拡張& 2=陳列棚（先制封印）
+
+IF FLAG:5 & 32
+	PRINTL
+	PRINTFORML 是博物馆型地下城
+	printform 扩张
+	SIF ARG:0 == 0
+		print ：无
+	SIF ARG:0 & 1
+		print ：巡逻魔像
+	SIF ARG:0 & 2
+		print ：陈列架
+	PRINTL  
+ENDIF
+
+;石像と剥製ないとダメ
+SIF FLAG:84 <= 0
+	RETURN 0
+
+MDMG = FLAG:84 * 5
+DMG = 0
+
+SIF ARG:0 & 1
+	DMG += FLAG:84 * 2
+
+SIF MDMG > (MAXBASE:A:1 / 4)
+	MDMG = MAXBASE:A:1 / 4
+
+IF FLAG:5 & 32
+	PRINTFORML %SAVESTR:A%看到了勇者们変成的装饰品，发自内心地颤抖着………（气力-{MDMG}）
+	SIF DMG > 0
+		PRINTFORML 用牺牲者制作成的魔像发起了攻击！（{DMG}伤害！）
+	PRINTW 
+ENDIF
+
+IF RAND:4 == 0 && ARG:0 & 2
+	;陳列棚
+	SIF FLAG:5 & 32
+		PRINTFORMW 远程攻击被柜子妨碍……（无法先发制人）
+	IF CFLAG:A:503 & 32
+		SIF FLAG:5 & 32
+			PRINTL 已经无法先发制人了。
+	ELSE
+		CFLAG:A:503 += 32
+	ENDIF
+ENDIF
+
+BASE:A:1 -= MDMG
+SIF DMG > 0
+	BASE:A:0 -= DMG
+
+;最低1は残るタイプ
+SIF BASE:A:0 < 1
+	BASE:A:0 = 1
+
+RETURN 0
+
+;------------------------------------
+@DUNGEON_HOTEL, ARG:0
+#DIM COST
+#DIM MENU
+;------------------------------------
+;娼館街。性癖に合致すれば高額収入
+;拡張& 1=アナルOK
+;拡張& 2=本番OK
+;COST = 代金
+;MENU = お店のメニュー
+
+IF FLAG:5 & 32
+	PRINTL
+	PRINTFORML 来到了娼馆街的迷宫
+	PRINTFORM 扩张
+	SIF ARG:0 == 0
+		PRINT ：无
+	SIF ARG:0 & 1
+		PRINT ：菊花OK
+	SIF ARG:0 & 2
+		PRINT ：本垒OK
+	PRINTL  
+ENDIF
+
+;判定
+MENU = 0
+
+;MENU = 1 正太控
+;MENU = 2 萝莉控
+;MENU = 3 男淫魔
+;MENU = 4 女淫魔
+
+;カルマが低い非処女の場合
+SIF CFLAG:A:151 < -20 && TALENT:A:0 == 0
+	MENU = 3
+;カルマが低いレズっ気の場合
+SIF CFLAG:A:151 < 0 && ABL:A:22 > 0
+	MENU = 4
+;カルマが低いふたなりの場合
+SIF CFLAG:A:151 < 30 && TALENT:A:121
+	MENU = 4
+;カルマが低いオトコの場合
+SIF CFLAG:A:151 < 10 && TALENT:A:122
+	MENU = 4
+;ショタコン
+SIF TALENT:A:143
+	MENU = 1
+;ロリコン
+SIF TALENT:A:142
+	MENU = 2
+
+IF MENU == 0
+	IF FLAG:5 & 32
+		printformw %SAVESTR:A%面露厌恶的穿过了街道…
+	ENDIF
+	RETURN 0
+ENDIF
+
+COST = (CFLAG:A:9 * 8)+150
+
+;オプション
+SIF ARG:0 & 1
+	TIMES COST, 1.1
+SIF ARG:0 & 2
+	TIMES COST, 1.1
+
+IF CFLAG:A:580 < COST
+	IF FLAG:5 & 32
+		PRINTFORMW %SAVESTR:A%带的钱好像不够了…
+	ENDIF
+	RETURN 0
+ENDIF
+
+MONEY += COST
+EX_FLAG:4444 += COST
+CFLAG:A:580 -= COST
+CALL KARMA, A, -1
+
+IF FLAG:5 & 32
+	printform %SAVESTR:A%在娼馆街和
+	IF MENU == 1
+		PRINT 少年奴隶
+	ELSEIF MENU == 2
+		PRINT 少女奴隶
+	ELSEIF MENU == 3
+		PRINT 男淫魔
+	ELSEIF MENU == 4
+		PRINT 女淫魔
+	ENDIF
+	PRINTFORM 一起
+	IF MENU == 1 || MENU == 2
+		PRINT 享受着地上无法体会到的背德的快感……
+	ELSE
+		PRINT 愉快地享乐着…
+	ENDIF
+	PRINTL （善恶值下降了1）
+	PRINTFORMW 现金收入+{COST}
+ENDIF
+
+RETURN 0
+
+
+
+

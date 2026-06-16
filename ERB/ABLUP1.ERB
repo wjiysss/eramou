@@ -1,0 +1,214 @@
+﻿;乳房感觉のLvUP処理とその可否判定
+;eratohoA ver1,204のスクリプトをベースに処理を簡略化
+;eraIM@Sから導入しました(eramaou)
+;-------------------------------------------------
+;乳房感觉のLvUP
+;-------------------------------------------------
+@ABLUP1
+#DIM CALC
+;各部位感覚封鎖
+CALC = 0
+SIF TALENT:101 & 2
+	CALC ++
+SIF TALENT:103 & 2
+	CALC ++
+SIF TALENT:105 & 2
+	CALC ++
+
+DRAWLINE
+;SIF TALENT:122 == 0 && TALENT:116 == 0
+;	PRINT 乳房和
+;PRINTL 乳头的感度提升了。
+;PRINTL 乳房感觉越高，越容易在胸爱抚、榨乳等行为得到更大的快感。
+;CUSTOMDRAWLINE ‥
+;最大Lvは5、[淫乳]が付いている場合はLv10まで开放
+IF ABL:1 >= 5 && TALENT:78 == 0
+	PRINTW 需要特殊素质才能继续提升
+	RETURN 0
+ELSEIF TALENT:107 & 2
+	PRINTW 乳房感觉已经被封锁了
+	RETURN 0
+ELSEIF ABL:1 >= CALC * 5 + 10
+	PRINTW 已达最高级
+	RETURN 0
+ENDIF
+
+;必要な乳房感觉点数
+A = 0
+
+;条件別にＯＫかダメかを記録する
+;乳房感觉点数による可否（I=0:可、I&1:点数不足）
+I = 0
+
+CALL DECIDE_ABLUP1
+
+PRINTFORM [0] - %PALAMNAME:14%点数×{JUEL:14}/{A} ……
+PRINTV GET_ABLUP_STATE(I)
+PRINTL 
+
+PRINTL [100] - 停止
+
+
+INPUT
+IF (RESULT < 0 || RESULT > 0) && RESULT != 100
+	RESTART
+ELSEIF I != 0 && RESULT == 0
+	PRINTL 未满足条件
+	RESTART
+ELSEIF RESULT == 100
+	RETURN 0
+ENDIF
+
+ABL:1 += 1
+
+IF RESULT == 0
+	JUEL:14 -= A
+ENDIF
+
+PRINTFORML %ABLNAME:1%变为LV{ABL:1}。
+
+RETURN 0
+
+
+;-------------------------------------------------
+@CORE_ABLUP1
+;-------------------------------------------------
+ABL:1 ++
+
+IF I == 0
+	JUEL:14 -= A
+ENDIF
+
+
+;-------------------------------------------------
+;乳房感觉のLvUP可否判定
+;-------------------------------------------------
+@DECIDE_ABLUP1
+#DIM CALC
+#DIM LCOUNT
+;各部位感覚封鎖
+CALC = 0
+SIF TALENT:101 & 2
+	CALC ++
+SIF TALENT:103 & 2
+	CALC ++
+SIF TALENT:105 & 2
+	CALC ++
+
+;Ｂ感覚はLv5が上限、[淫乳]が付いている場合はLv10まで解放
+SIF ABL:1 >= 5 && TALENT:78 == 0
+	RETURN 0
+SIF ABL:1 >= CALC * 5 + 10
+	RETURN 0
+;感覚封鎖されている場合は不可
+SIF TALENT:107 & 2
+	RETURN 0
+
+;判定変数を空に
+A = 0
+I = 0
+
+IF ABL:1 == 0
+	A = 1
+ELSEIF ABL:1 == 1
+	A = 20
+ELSEIF ABL:1 == 2
+	A = 400
+ELSEIF ABL:1 == 3
+	A = 8000
+ELSEIF ABL:1 == 4
+	A = 20000
+ELSEIF ABL:1 == 5
+	A = 40000
+ELSEIF ABL:1 == 6
+	A = 60000
+ELSEIF ABL:1 == 7
+	A = 90000
+ELSEIF ABL:1 == 8
+	A = 120000
+ELSEIF ABL:1 == 9
+	A = 180000
+ELSEIF ABL:1 < 15
+	A = 180000
+	FOR LCOUNT, 0, (ABL:1 - 9)
+		A = A * 125 / 100
+	NEXT
+ELSEIF ABL:1 < 20
+	A = 362000
+	FOR LCOUNT, 0, (ABL:1 - 14)
+		A = A * 120 / 100
+	NEXT
+ELSEIF ABL:1 < 25
+	A = 583000
+	FOR LCOUNT, 0, (ABL:1 - 19)
+		A = A * 115 / 100
+	NEXT
+ENDIF
+
+;戒备森严
+IF TALENT:27
+	SIF ABL:1 == 4
+		TIMES A , 2.00
+	SIF ABL:1 == 5
+		TIMES A , 2.50
+	SIF ABL:1 >= 6
+		TIMES A , 3.00
+ENDIF
+
+;B鈍感
+SIF TALENT:107
+	TIMES A , 1.20
+;巨乳
+SIF TALENT:110
+	TIMES A , 1.10
+;爆乳
+SIF TALENT:114
+	TIMES A , 1.20
+	
+;超乳
+SIF TALENT:119
+	TIMES A , 1.30
+
+;B敏感
+SIF TALENT:108
+	TIMES A , 0.80
+
+;他部位の封鎖数
+IF ABL:1 > 5 && ABL:1 <= 10 && CALC > 0
+	A = A * (15 - CALC) / 15
+ELSEIF ABL:1 <= 15 && CALC > 1
+	A = A * (16 - CALC) / 15
+ELSEIF ABL:1 <= 20 && CALC > 2
+	A = A * (17 - CALC) / 15
+ENDIF
+
+;淫乱
+SIF TALENT:76
+	TIMES A , 0.80
+;淫乳
+SIF TALENT:78
+	TIMES A , 0.80
+;贫乳
+SIF TALENT:109
+	TIMES A , 0.80
+;绝壁
+SIF TALENT:116
+	TIMES A , 0.65
+
+;最低でも１個は必要
+SIF A < 1
+	A = 1
+
+;乳房点数で上げられるか？
+SIF JUEL:14 < A
+	I |= 1
+
+IF I == 0
+	RETURN 1
+ELSE
+	RETURN 0
+ENDIF
+
+;
+;
+;

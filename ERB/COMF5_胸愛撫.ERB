@@ -1,0 +1,143 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;胸爱抚
+;爱抚系コマンド：調教者が調教対象の乳房を手と口で刺激
+;-------------------------------------------------
+@COM5
+
+;-------------------------------------------------
+;跳转到进阶指令
+;-------------------------------------------------
+LOCAL = 5
+CALL GET_ADV_COM,LOCAL
+SIF RESULT != LOCAL
+	JUMPFORM COM{RESULT}
+
+
+
+PRINTL 胸爱抚
+;SAVESTR:22 = 胸爱抚
+CALL TRAIN_MESSAGE_B
+
+;-------------------------------------------------
+;ソースの計算
+;-------------------------------------------------
+LOSEBASE:0 += 5
+LOSEBASE:1 += 50
+
+SOURCE:4 = 60
+SOURCE:8 = 20
+SOURCE:12 = 100
+
+;ABL:乳房感觉をみる
+IF ABL:1 == 0
+	SOURCE:17 = 20
+	SOURCE:3 = 50
+ELSEIF ABL:1 == 1
+	SOURCE:17 = 100
+	SOURCE:3 = 100
+ELSEIF ABL:1 == 2
+	SOURCE:17 = 500
+	SOURCE:3 = 160
+ELSEIF ABL:1 == 3
+	SOURCE:17 = 1200
+	SOURCE:3 = 200
+ELSEIF ABL:1 == 4
+	SOURCE:17 = 2000
+	SOURCE:3 = 230
+ELSE
+	SOURCE:17 = 2800
+	SOURCE:3 = 250
+ENDIF
+
+;死斗场・兽奸の場合はここで終了
+SIF TEQUIP:89 || TEQUIP:55
+	RETURN 1
+
+;調教者が［幼儿退行］
+IF TALENT:PLAYER:131 && TEQUIP:89 == 0
+	TIMES SOURCE:17 , 1.20
+	TIMES SOURCE:3 , 1.20
+ENDIF
+
+;調教者が［幼稚］
+IF TALENT:PLAYER:132 && TEQUIP:89 == 0
+	TIMES SOURCE:17 , 1.20
+	TIMES SOURCE:3 , 1.20
+ENDIF
+
+;-------------------------------------------------
+;汚れの処理
+;-------------------------------------------------
+IF TEQUIP:90
+	;奴隷のＢに触手の汚れがつく
+	STAIN:5 |= 2
+	STAIN:5 |= 4
+ELSE
+	;奴隷の胸の汚れがなければ口をつかう（爱液と母乳よごれはＯＫ、不怕脏か助手調教時は問題无）
+	IF STAIN:5 < 2 || STAIN:5 == 16 || STAIN:5 == 17 || ASSIPLAY == 1 || TALENT:MASTER:64 == 1
+		;調教者のTALENT:擅用舌头をみる
+		IF TALENT:PLAYER:52
+			TIMES SOURCE:17 , 1.40
+			SOURCE:16 += SOURCE:17/20
+		ENDIF
+
+		;奴隷のＢ⇔調教者の口の汚れが移動
+		STAIN:5 |= STAIN:PLAYER:0
+		STAIN:PLAYER:0 |= STAIN:5
+	ENDIF
+
+	;奴隷のＢ⇔調教者の指の汚れが移動
+	STAIN:5 |= STAIN:PLAYER:1
+	STAIN:PLAYER:1 |= STAIN:5
+ENDIF
+
+;-------------------------------------------------
+;経験上昇
+;-------------------------------------------------
+;レズ・ホモ経験
+IF TALENT:122 == 0 && TALENT:PLAYER:122 == 0
+	PRINTS EXPNAME:40
+	PRINTL +5
+	EXP:40 += 5
+ELSEIF TALENT:122 == 1 && TALENT:PLAYER:122 == 1
+	PRINTS EXPNAME:41
+	PRINTL +5
+	EXP:41 += 5
+ENDIF
+
+;爱情经验
+E = 1
+IF CFLAG:2 >= 1000 && ASSIPLAY == 0
+	PRINTFORML %EXPNAME:23%+{E}
+	EXP:23 += E
+ENDIF
+E = 0
+
+CALL EVENT_JUNYU
+
+RETURN 1
+
+;-------------------------------------------------
+;-------------------------------------------------
+;母乳体质への変化
+;-------------------------------------------------
+@EVENT_JUNYU
+A = NO:PLAYER
+;【母乳体质】無しかつ【娇小】で無し【贫乳】無しかつ【男人】でない
+SIF TALENT:130  || TALENT:100 || TALENT:109 || TALENT:122
+	RETURN 0
+;更に［Ｂ感度］５以上かつ【巨乳】か【爆乳】か【超乳】で触手調教や兽奸でなく
+SIF ABL:1 <= 4 || (TALENT:110 == 0 && TALENT:114 == 0 && TALENT:119 == 0) || TEQUIP:90 || TEQUIP:89
+	RETURN 0
+;調教者が【幼稚】か【幼儿退行】か【未熟】
+SIF TALENT:PLAYER:132 == 0 && TALENT:PLAYER:131 == 0 && TALENT:PLAYER:135 == 0
+	RETURN 0
+;「調教対象」から「調教者」への関係が150以上か主人プレイで爱
+SIF RELATION:TARGET:A < 150 && (ASSIPLAY || TALENT:85 == 0)
+	RETURN 0
+PRINTFORML %SAVESTR:TARGET%的乳房被玩弄着，里面的母乳漏出来了…
+TALENT:130 = 1
+
+RETURN 1

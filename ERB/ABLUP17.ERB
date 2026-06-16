@@ -1,0 +1,286 @@
+﻿;露出癖のLvUP処理とその可否判定
+;eratohoA ver1,204のスクリプトをベースに処理を簡略化
+
+;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;露出癖のLvUP
+;-------------------------------------------------
+@ABLUP17
+DRAWLINE
+;PRINTL 奴隶的露出癖提升了。
+;PRINTL 露出癖越高，越容易在耻辱及屈辱的行为中获得快感。
+;CUSTOMDRAWLINE ‥
+;露出癖はLv5が上限
+;[坦率][开放][爱表现][露出狂]が付いている場合はLv10まで开放
+IF ABL:17 >= 5 && (TALENT:13 == 0 && TALENT:33 == 0 && TALENT:28 == 0 && TALENT:89 == 0)
+	PRINTW 需要特殊素质才能继续提升
+	RETURN 0
+ELSEIF ABL:17 >= 10
+	PRINTW 已达最高级
+	RETURN 0
+ENDIF
+
+;必要な耻情点数
+A = 0
+;必要な异常经验回数
+B = 0
+;必要な绝顶经验回数
+C = 0
+;必要な调教自慰经验回数
+D = 0
+
+;条件別にＯＫかダメかを記録する
+;耻情点数による可否（I=0:可、I&1:点数不足、I&2:経験不足）
+I = 0
+
+CALL DECIDE_ABLUP17
+
+;欲望が露出癖＋１レベルでないといけない（[爱慕]がない場合）
+IF TALENT:85 == 0
+	PRINTFORM %ABLNAME:11%LV{ABL:17+1}以上(现在LV{ABL:11})且
+	PRINTL 
+ELSEIF TALENT:85 == 1
+;顺从が露出癖＋１レベルでないといけない（[爱慕]がある場合）
+	PRINTFORM %ABLNAME:10%LV{ABL:17+1}以上(现在LV{ABL:10})且
+	PRINTL
+ENDIF
+
+;异常经验が必要か
+SIF B > 0
+	PRINTFORML %EXPNAME:50%{B}以上(现在{EXP:50})且
+
+PRINTFORM [0] - %PALAMNAME:8%点数×{JUEL:8}/{A} ……
+PRINTV GET_ABLUP_STATE(I)
+PRINTL 
+;绝顶经验
+SIF C > 0
+	PRINTFORML 　　　%EXPNAME:2%　{EXP:2}/{C}
+;调教自慰经验
+SIF D > 0
+	PRINTFORML 　　　%EXPNAME:11%　{EXP:11}/{D}
+
+PRINTL [100] - 停止
+
+INPUT
+IF (RESULT < 0 || RESULT > 0) && RESULT != 100
+	RESTART
+ELSEIF I != 0 && RESULT == 0
+	PRINTL 未满足条件。
+	RESTART
+ELSEIF RESULT == 100
+	RETURN 0
+ENDIF
+
+ABL:17 += 1
+
+IF RESULT == 0
+	JUEL:8 -= A
+ENDIF
+
+PRINTFORML %ABLNAME:17%变为LV{ABL:17}。
+
+RETURN 0
+
+
+;-------------------------------------------------
+@CORE_ABLUP17
+;-------------------------------------------------
+ABL:17 ++
+
+IF I == 0
+	JUEL:8 -= A
+ENDIF
+
+
+;-------------------------------------------------
+;露出癖のLvUP可否判定
+;-------------------------------------------------
+@DECIDE_ABLUP17
+SIF ABL:17 >= 10
+	RETURN 0
+SIF ABL:17 >= 5 && (TALENT:13 == 0 && TALENT:33 == 0 && TALENT:28 == 0 && TALENT:89 == 0)
+	RETURN 0
+
+;判定変数を空に
+A = 0
+B = 0
+C = 0
+D = 0
+I = 0
+J = 0
+
+IF ABL:17 == 0
+	A = 100
+	C = 1
+ELSEIF ABL:17 == 1
+	A = 1000
+	D = 1
+ELSEIF ABL:17 == 2
+	A = 3000
+ELSEIF ABL:17 == 3
+	A = 6000
+ELSEIF ABL:17 == 4
+	A = 12000
+ELSEIF ABL:17 == 5
+	A = 25000
+ELSEIF ABL:17 == 6
+	A = 50000
+ELSEIF ABL:17 == 7
+	A = 80000
+ELSEIF ABL:17 == 8
+	A = 120000
+ELSEIF ABL:17 == 9
+	A = 150000
+ENDIF
+
+;戒备森严
+IF TALENT:27
+	SIF ABL:17 == 3
+		TIMES A , 1.50
+	SIF ABL:17 == 4
+		TIMES A , 2.00
+	SIF ABL:17 == 5
+		TIMES A , 2.50
+	SIF ABL:17 >= 6
+		TIMES A , 3.00
+ENDIF
+
+;ＬＶ３以上に上げるときは异常经验必要（素質：[爱表现][开放][淫乱][倒錯的][受虐狂][疯狂]なら無視できる）
+IF ABL:17 >= 3 && (TALENT:28 == 0 && TALENT:33 == 0 && TALENT:76 == 0 && TALENT:80 == 0 && TALENT:88 == 0 && TALENT:123 == 0)
+	B = ABL:17 - 2
+ENDIF
+
+;崩坏
+SIF TALENT:9
+	TIMES A , 0.80
+;胆怯
+SIF TALENT:10
+	TIMES A , 1.20
+;反抗心
+SIF TALENT:11
+	TIMES A , 1.50
+;刚强
+SIF TALENT:12
+	TIMES A , 1.10
+;嚣张
+SIF TALENT:16
+	TIMES A , 1.10
+;克制
+SIF TALENT:20
+	TIMES A , 1.10
+;冷漠
+SIF TALENT:21
+	TIMES A , 1.10
+;感情淡薄
+SIF TALENT:22
+	TIMES A , 1.50
+;爱表现
+SIF TALENT:28
+	TIMES A , 0.50
+;看重贞操
+SIF TALENT:30
+	TIMES A , 1.20
+;看轻贞操
+SIF TALENT:31
+	TIMES A , 0.90
+
+;压抑
+IF TALENT:32
+	TIMES A , 1.20
+;开放
+ELSEIF TALENT:33
+	TIMES A , 0.80
+ENDIF
+
+;抵抗
+SIF TALENT:34
+	TIMES A , 1.50
+
+;害羞
+IF TALENT:35
+	TIMES A , 1.10
+;不知羞耻
+ELSEIF TALENT:36
+	TIMES A , 0.90
+ENDIF
+
+;把柄
+SIF TALENT:37
+	TIMES A , 0.80
+
+;容易自慰
+SIF TALENT:60
+	TIMES A , 0.90
+
+;接受快感
+IF TALENT:70
+	TIMES A , 0.90
+;否定快感
+ELSEIF TALENT:71
+	TIMES A , 1.20
+ENDIF
+
+;容易上瘾
+SIF TALENT:72
+	TIMES A , 0.90
+;容易陷落
+SIF TALENT:73
+	TIMES A , 0.50
+;淫乱
+SIF TALENT:76
+	TIMES A , 0.80
+;倒錯的
+SIF TALENT:80
+	TIMES A , 0.75
+;施虐狂
+SIF TALENT:83
+	TIMES A , 1.20
+;受虐狂
+SIF TALENT:88
+	TIMES A , 0.75
+;疯狂
+SIF TALENT:123
+	TIMES A , 0.50
+
+;欲望が露出癖＋１レベルでないといけない（[爱慕]がない場合）
+IF TALENT:85 == 0
+	IF ABL:11 < ABL:17+1
+		;欲望が不足
+		I |= 4
+	ENDIF
+ELSEIF TALENT:85 == 1
+;顺从が露出癖＋１レベルでないといけない（[爱慕]がある場合）
+	IF ABL:10 < ABL:17+1
+		;顺从が不足
+		I |= 4
+	ENDIF
+ENDIF
+
+;最低でも1個は必要
+SIF A < 1
+	A = 1
+
+;异常经验が不足
+SIF EXP:50 < B
+	I |= 2
+;绝顶经验が不足
+SIF EXP:2 < C
+	I |= 2
+;调教自慰经验が不足
+SIF EXP:11 < D
+	I |= 2
+
+;耻情点数は足りている？
+SIF JUEL:8 < A
+	I |= 1
+
+IF I == 0
+	RETURN 1
+ELSE
+	RETURN 0
+ENDIF
+
+;
+;
+;

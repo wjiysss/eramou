@@ -1,0 +1,1381 @@
+﻿;-------------------------------------------------
+;売却末路口上
+;Sは売却値
+;最初に反抗刻印３、淫乱、愛、その他で分岐、次に値段（100万以上、50万以上、10万以上、10万未満）によって分岐
+;そして売られる先は職業によって４分岐
+;売られた先によって要求TALENT、PALAMが違って最終的な末路が表示される。
+;基本パターンは売却値段*4、売却先*4、正否判定で*2の32パターン
+;反抗3は売却値段と売却先を２つにまで減らして8パターン
+;通常売却は売却値段を３つにまで減らして12パターン
+;最後に魔族とその他の*2で…64（愛）+64（淫乱）+8（反抗３）+24（通常）で160パターン…え、そんなに
+;以下メモ
+;基本的に魔族以外の扱いは悪い
+;200,战士,;物理戦闘が得意な職業
+;201,魔法师,;魔法によって敵を一掃する火力型
+;202,神官,;生贄
+;203,盗贼,;パワーではなく技で物理戦闘を有利に進める
+;204,肉便器,;勇者陥落の象徴
+;205,骑士,;ピンチに強い
+;206,巫女,;火力のもう一つの形
+;207,忍者,;マルチスキルで真価を発揮…のはずが地味
+;-------------------------------------------------
+;売却先加筆。@SELL_MATURO_K1を追加
+;異種姦メイン末路を追加
+;-------------------------------------------------
+@SELL_MATURO_K1
+#DIMS MATURO
+#DIM FAMILY,3
+
+
+FAMILY = CFLAG:TARGET:605
+FAMILY:1 = FAMILY % 10
+CALL SEARCH_FAMILY, TARGET
+FAMILY:2 = RESULT
+M = FAMILY:2
+
+	;反発刻印Lv3
+	IF MARK:3 == 3
+		;魔族
+		IF TALENT:TARGET:314 == 9
+			;魔族売値10万以上
+			IF S >= 100000
+				IF rand:2 == 0
+					LOCALS = 食脑魔的诸侯
+					LOCAL = 1
+				ELSE
+					LOCALS = 食脑魔的大神官
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;
+					IF LOCAL == 1
+						;レベル50以上
+						IF CFLAG:9 >= 50
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%受到了好事之徒的喜爱。
+							PRINTFORMW 脑子被改造，成为了唯命是从的奴隶。
+							PRINTFORMW %SAVESTR:TARGET%，现在作为优秀的指挥官，不断地流着爱液和口水履行着自己的职务。
+							MATURO = 脑改造指挥官
+						ELSE
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%被好事之徒改造了脑子。
+							PRINTFORMW 但是手术失败了，完全成为了废人，行为退行到婴幼儿一样。
+							PRINTFORMW 每天屎尿横流地，无忧无虑在玩耍……
+							MATURO = 白痴
+						ENDIF
+					;
+					ELSEIF LOCAL == 0
+						;神官＆巫女
+						IF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%成为了奇怪的教团的干部。
+							PRINTFORMW 现在，已经被洗脑成了顺从的神圣娼妓了。
+							PRINTFORMW %SAVESTR:TARGET%向信徒们大开双腿，述说着堕落神的慈爱。
+							MATURO = 堕落神的神圣娼妇
+						ELSE
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%被奇怪的教团选为祭品了。
+							PRINTFORMW 脑子的一部分被献给了堕落神，现在已经成为了完全顺从的神圣娼妓。
+							PRINTFORMW 口水和爱液不断地流出来，但是她却感到幸福……
+							MATURO = 堕落神的神圣娼妇
+						ENDIF
+					ENDIF
+			;魔族売値10万未満
+			ELSE
+				IF RAND:2 == 0
+					LOCALS = 恶魔的诸侯
+					LOCAL = 1
+				ELSE
+					LOCALS = 恶魔的大富豪
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					IF LOCAL == 1
+						IF RAND:2 == 0
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%成为了恶魔的玩具。
+							PRINTFORMW 性器被改造得乱七八糟，还弄出了阴茎，
+							PRINTFORMW 被恶魔们当成杂耍奴隶而存在着。
+							MATURO = 恶魔的玩具
+						ELSE
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%成为了肥料制造装置。
+							PRINTFORMW 嘴巴被强灌家畜用的饲料，不到一个小时就产生了优质的肥料。
+							PRINTFORMW 因为脱粪时的叫声很像叫床声，%SAVESTR:TARGET%被
+							PRINTFORMW 设置在开阔的农田中，作为展示物而被展示着。
+							MATURO = 脱粪肥料装置
+						ENDIF
+					ELSEIF LOCAL == 0
+						;巨乳、爆乳、超乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%被当作奶罐被饲养着畜舍里。
+							PRINTFORMW 原来就很有规模的乳房，被魔法和药物弄得更加夸张了，犹如史莱姆一般。
+							PRINTFORMW 每天都被强制地榨乳和播种，%SAVESTR:TARGET%口水和爱液持续不断地滴落下来。
+							MATURO = 奶罐
+						ELSE
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%被魔法夺取了作为人类的思考和语言能力。
+							PRINTFORMW 现在，无论有没有来客，她都被颈圈和锁链扣着，作为一只用四肢爬行的狗而存在。
+							PRINTFORMW 今晚，也在进行着与狗交配的表演。
+							PRINTFORMW %SAVESTR:TARGET%带着幸福的表情，积极地扭动着自己的腰肢。
+							MATURO = 无脑的牝犬
+						ENDIF
+					ENDIF
+			ENDIF
+		;それ以外の种族
+		ELSE
+			;それ以外の种族売値10万以上
+			IF S >= 100000
+				;种族ドラゴン
+				IF TALENT:TARGET:314 == 5
+					LOCALS = 高阶魔法研究所
+					LOCAL = 2
+				;战士＆盗贼
+				ELSEIF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 兽人的佣兵团
+					LOCAL = 1
+				ELSE
+					LOCALS = 吸血鬼的暗黑神殿
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;种族ドラゴン
+					IF LOCAL == 2
+						PRINTFORMW 反抗心很强的%SAVESTR:TARGET%被当作珍贵的异族关入了笼子里。
+						PRINTFORMW %SAVESTR:TARGET%被饲养在充满法师和魔女的魔法研究设施中。
+						PRINTFORMW 每天都有人定时采集她的血液及排泄物。
+						PRINTFORMW 被充分灌肠，在桶里排泄着的%SAVESTR:TARGET%，满眼泪光……
+						MATURO = 排泄实验素材
+					ELSEIF LOCAL == 1
+						;战士＆盗贼
+						PRINTFORMW %SAVESTR:TARGET%作为护卫剑士被雇佣了。
+								;レベル１００以上
+								IF CFLAG:9 >= 100
+									PRINTFORMW 靠着武艺高强和牙尖嘴利，%SAVESTR:TARGET%成为了兽人们大姐一样的角色。
+									PRINTFORMW 有时在训练的时候，还会直接用脚踢飞它们。
+									PRINTFORMW 「到底谁才是奴隶啊……」兽人们苦笑着……
+								ELSE
+									PRINTFORMW %SAVESTR:TARGET%没怎么反抗了，似乎适应了在佣兵团的生活。
+									PRINTFORMW 使用着和兽人一样的嚣张语气，不管问题都用拳头解决，训练的时候用木剑相互搏击……
+									PRINTFORMW 一天的辛劳过后，还会和兽人们一起裸体洗澡……
+									PRINTFORMW 看来很快%SAVESTR:TARGET%就会成为佣兵团里不可或缺的一员了吧。
+								ENDIF
+						MATURO = 护卫剑士
+					ELSEIF LOCAL == 0
+						;神官＆巫女
+						IF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%，被吸血鬼所洗礼，成了暗黑之神的信徒。
+							PRINTFORMW 由于已经被邪恶的仪式洗脑了几次，现在的她忠诚而得心应手地履行着职务。
+							PRINTFORMW 不过，由于使用了强烈的药物，她经常无意识地失禁，接着因此绝顶……
+							MATURO = 暗黑神的信徒
+						ELSE
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%，现在作为饮料机为吸血鬼提供着血液。
+							PRINTFORMW 全身被紧紧地拘束着，抽血的管子从胳膊处延伸出来。进食和排泄也都通过管子来处理。
+							PRINTFORMW 她唯一的乐趣，就是临睡前被爱抚至绝顶，每天有且仅有一次……
+							MATURO = 吸血鬼的饮料
+						ENDIF
+					ENDIF
+			;それ以外の种族売値10万未満
+			ELSE
+				IF RAND:2 == 0
+					LOCALS = 巨魔佣兵团
+					LOCAL = 1
+				ELSE
+					LOCALS = 恶魔的人间牧场
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					IF LOCAL == 1
+						IF RAND:2 == 0
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%被改造成适应巨魔佣兵团团长的阴茎的飞机杯。
+							PRINTFORMW 手脚都被切掉，私处被扩张至极限，用锁链绑在了巨魔的身上。
+							PRINTFORMW 子宫也完全的肉穴化了，变得无论怎么被弄都不会怀孕的样子……
+							MATURO = 巨魔的飞机杯
+						ELSE
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%被当成巨魔们的繁殖用便器。
+							PRINTFORMW %SAVESTR:TARGET%的子宫，像气球一样地夸张膨胀着，孕育着健康的巨魔婴儿。
+							PRINTFORMW 孩子到底是谁的，%SAVESTR:TARGET%自己也分不清楚了……
+							MATURO = 巨魔的繁殖便器
+						ENDIF
+					ELSEIF LOCAL == 0
+						;巨乳、爆乳、超乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%作为奶罐而被饲养着畜舍里。
+							PRINTFORMW 旁边排列着不知多少和她相似的裸体女人，全员的乳房都被逼近极限地肥大化了。
+							PRINTFORMW 淌着口水，一副高潮脸的%SAVESTR:TARGET%，和鼻子上的鼻环真相称呢～
+							MATURO = 奶罐
+						ELSE
+							PRINTFORMW 反抗心很强的%SAVESTR:TARGET%作为繁殖用牲畜而被饲养在畜舍里。
+							PRINTFORMW 也不知道哪里买回来的男奴，在她身上拼命地挺动着腰，锁链撞得啦啦作响。
+							PRINTFORMW %SAVESTR:TARGET%的自由和人权都被剥夺了，只能贪图着性交的快乐……
+							MATURO = 繁殖用家畜奴隶
+						ENDIF
+					ENDIF
+			ENDIF
+		ENDIF
+	;愛・淫乱
+	ELSEIF TALENT:85 || TALENT:76
+		;魔族
+		IF TALENT:TARGET:314 == 9
+			;魔族売値100万以上
+			IF S >= 1000000
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 暗黑龙
+					LOCAL = 3
+				;骑士＆忍者
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:207 == 1
+					LOCALS = 上级恶魔
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 异形之神的神殿
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 魔兽的研究设施
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;性爱狂
+						IF TALENT:TARGET:75 == 1 
+							PRINTFORMW %SAVESTR:TARGET%成为了暗黑龙的新娘，在龙的洞穴里生活着。
+							PRINTFORMW 接受着龙的挞伐和种子，帮助濒临绝种的龙延续后代而多次怀孕产子。
+							PRINTFORMW 最近，好像因为暗黑龙的播种过度而叫苦不迭。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了暗黑龙的新娘，在龙的洞穴里生活着。
+							PRINTFORMW 魔族的肉体接受着龙的挞伐和种子，孕育了几只龙的幼崽。
+							PRINTFORMW %SAVESTR:TARGET%的肉体，按照龙的想法在持续地被改造着。
+						ENDIF
+						MATURO = 暗黑龙的新娘
+					;騎士＆忍者
+					ELSEIF LOCAL == 2
+						;巨乳、爆乳、超乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW 有着伟岸胸部的%SAVESTR:TARGET%成为了上级恶魔的女仆。
+							PRINTFORMW 穿着露出乳头的衣服，乳头常年兴奋地勃起着。
+							PRINTFORMW 一但被主人发现乳头勃起，就要接受淫秽的惩罚，
+							PRINTFORMW 但是，即使是主人邪恶的催淫咒语，%SAVESTR:TARGET%也愉悦地享受着……
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了上级恶魔的女仆。
+							PRINTFORMW 只要犯错，就会触发主人的自慰诅咒，当场自慰起来。
+							PRINTFORMW 一直带着常人难以理解的紧张感在工作着。
+							PRINTFORMW 不过最近，%SAVESTR:TARGET%似乎故意犯错而主动地在公开自慰，主人为此十分苦恼。
+						ENDIF
+						MATURO = 上级恶魔的女仆
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;アナル狂い
+						IF TALENT:TARGET:77 == 1 
+							PRINTFORMW %SAVESTR:TARGET%在异形之神的神殿，照顾着变异的信徒。
+							PRINTFORMW 那些信徒，无论吃饭还是行走，都需要她的帮助。
+							PRINTFORMW 而且，如果那可怕的阴茎勃起的话，也是需要%SAVESTR:TARGET%用肛门去平复的。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在异形之神的神殿，照顾着变异的信徒。
+							PRINTFORMW 作为神的新娘，%SAVESTR:TARGET%的子宫是信徒们的公共财产。
+							PRINTFORMW 现在，也接受了异形的种子，怀上了异形宝宝。
+						ENDIF
+						MATURO = 异形之神的干事
+					;その他
+					ELSEIF LOCAL == 0
+						;话术LV5以上
+						IF ABL:15 >= 5
+							PRINTFORMW %SAVESTR:TARGET%用巧妙的话语说服了魔兽研究所的研究人员，
+							PRINTFORMW 让她主导了实验室里试验品的购买和使用。
+							PRINTFORMW 和魔兽、异形杂交用的奴隶，从各地被她购买回来，明天都在听着她们的悲鸣而手淫着。
+							MATURO = 实验室的采购
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为与魔兽交配用的奴隶被买回来了，现在也被强制与怪物交配着。
+							PRINTFORMW 最近，好像对魔兽们起了爱意，交配时会忘情地叫着实验魔兽的名字。
+							PRINTFORMW 扭动着腰，与魔兽相互亲吻着……
+							MATURO = 魔兽交配奴隶
+						ENDIF
+					ENDIF
+			;魔族売値50万以上
+			ELSEIF S >= 500000
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 食人魔佣兵团
+					LOCAL = 3
+				;骑士＆忍者
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:207 == 1
+					LOCALS = 半人马的骑士团
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 牛头人祭司
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 兽人富商
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;盗贼
+						IF TALENT:TARGET:203 == 1
+							PRINTFORMW %SAVESTR:TARGET%成为了食人魔佣兵团的一员，起到支援和后勤的作用。
+							PRINTFORMW 专心致志地，负责着资产管理、装备与物资的购买等工作。
+							PRINTFORMW 因为怀上了团长的孩子，肚子夸张地膨胀了起来，孕育着下一任的团长。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为佣兵团的战士而活跃着。
+							PRINTFORMW 比起奴隶时代，肌肉也好，筋骨也好，都更加强壮了。
+							PRINTFORMW 佣兵团的食人魔们看着这样的%SAVESTR:TARGET%，个个都情难自禁。
+							PRINTFORMW 强大的战斗力，对于它们来说才是最富吸引力的性魅力。
+						ENDIF
+						MATURO = 食人魔佣兵团员
+					;骑士＆忍者
+					ELSEIF LOCAL == 2
+						;巨乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%过着抚养半人马孩子的生活。
+							PRINTFORMW 丰满的乳房，不断地供给着母乳，尽显慈母姿态。
+							PRINTFORMW 半人马的孩子，和马一样，阴茎拥有令人咋舌的尺寸。
+							PRINTFORMW 看着青涩的果实逐渐成长，%SAVESTR:TARGET%忍不住舔了舔嘴唇。
+							PRINTFORMW 「今晚，也进行禁断的性教育吧……」
+							MATURO = 半人马的奶妈
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为骑士团的侍从，在打杂着。
+							PRINTFORMW 半人马的性欲很强，不允许她的下半身穿任何东西。
+							PRINTFORMW %SAVESTR:TARGET%经常因此突然间就被推倒、侵犯…………
+							MATURO = 半人马骑士侍从
+						ENDIF
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;アナル狂い
+						IF TALENT:TARGET:77 == 1
+							PRINTFORMW %SAVESTR:TARGET%作为优秀的祭典活动人，受到牛头人祭司们的肯定。
+							PRINTFORMW 作为暗黑神的使徒，在仪式的时候要一边用肛门自慰着，一边跳着淫乱的舞蹈。
+							PRINTFORMW 那个肛门，被扩张到了极限，通过奇妙的方式盛开着……
+							MATURO = 牛头人圣女
+						ELSE
+							PRINTFORMW 作为牛头人神殿的圣母，%SAVESTR:TARGET%怀上了牛头人的幼崽。
+							PRINTFORMW 为了产下混血又强大的牛头人，进行着仪式，
+							PRINTFORMW 现在，这位圣母正分娩着牛面之神的孩子……
+							MATURO = 牛头人圣母
+							
+						ENDIF
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW 作为宴客用肉便器，%SAVESTR:TARGET%在兽人的屋子里有着特殊的地位。
+							PRINTFORMW 拿勇者来当肉便器，充分满足了兽人富商的虚荣心。
+							PRINTFORMW 被放在书房角落的肉便器，经常在主人和客人的视线下毫无顾忌地疯狂自慰着。
+							PRINTFORMW 只是这样看着，就让兽人富商沉醉在像得到一切似的成就感……
+							MATURO = 宴客肉便器
+						ELSE
+							PRINTFORMW 作为爱人被买回来的%SAVESTR:TARGET%在兽人的屋子里有着特殊的地位。
+							PRINTFORMW 兽人富商完全倾心于%SAVESTR:TARGET%，每天都用珠宝华服打扮着她。
+							PRINTFORMW %SAVESTR:TARGET%穿着华丽的衣饰，似乎整个人连气质都变了。
+							MATURO = 兽人的爱人
+						ENDIF
+					ENDIF
+			;魔族売値10万以上
+			ELSEIF S >= 100000
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 六头海蛇的联防队
+					LOCAL = 3
+				;骑士＆魔法师
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:201 == 1
+					LOCALS = 黑暗精灵的学校
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 魔像的大农场
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 狼人的赌场
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;性爱狂
+						IF TALENT:TARGET:75 == 1 
+							PRINTFORMW %SAVESTR:TARGET%作为六头海蛇联防队的外雇战士被雇佣了。
+							PRINTFORMW 被调教过的%SAVESTR:TARGET%，顺从着命令，在联防队里表现活跃。
+							PRINTFORMW 然而，%SAVESTR:TARGET%的性欲太强了，经常在训练时偷偷地和其它的六头海蛇做爱。
+							PRINTFORMW 最近，她把全队的风气都搞得一团糟，终于被装上了贞操带，并严令不得在工作时间进行任何形式的性行为。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为六头海蛇联防队的外雇战士被雇佣了。
+							PRINTFORMW 被调教过的%SAVESTR:TARGET%，顺从着命令，在联防队里表现活跃。
+							PRINTFORMW 在共同的磨砺和战斗中，逐渐与其它六头海蛇建立起了信赖。
+							PRINTFORMW 最近，还传来了即将要和队里其中一只年轻的六头海蛇结婚的消息。
+						ENDIF
+						MATURO = 六头海蛇的联防队外籍战士
+					;骑士＆魔法师
+					ELSEIF LOCAL == 2
+						;巨乳or爆乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%在黑暗精灵的中学做讲师。
+							PRINTFORMW 胸部呼之欲出，%SAVESTR:TARGET%被少年们所憧憬着。
+							PRINTFORMW 最近，她和黑暗精灵少年的淫行被发现了。
+							PRINTFORMW 作为惩罚，%SAVESTR:TARGET%被刺上了【淫行老师】的刺青。
+							MATURO = 黑暗精灵学校的淫行老师
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在黑暗精灵的中学做讲师。
+							PRINTFORMW 经验丰富的%SAVESTR:TARGET%被少年们所憧憬着。
+							PRINTFORMW 与全班的男生都维持着性关系，%SAVESTR:TARGET%貌似对几名女生都出手了。
+							PRINTFORMW 据说在保健课上，与全班一起在搞性实习……
+							MATURO = 黑暗精灵学校的淫行老师
+						ENDIF
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;アナル狂い
+						IF TALENT:TARGET:77 == 1
+							PRINTFORMW %SAVESTR:TARGET%在魔像的大农场里，从事着生产肥料的工作。
+							PRINTFORMW 大量的剩菜残羹和饲料被灌入像孕妇一样发胀的肚子，在被改造过的内脏里发酵。
+							PRINTFORMW 然后，随着她的娇喘，优质的肥料就会被排泄出来。
+							MATURO = 肥料生产奴隶
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了魔像的生物部件在大农场里工作着。
+							PRINTFORMW %SAVESTR:TARGET%全身都被封入了魔像体内，大脑一片空白地操纵着魔像的行动。
+							PRINTFORMW 已经失去了所有的思考能力，只是永恒体验着在胯间和乳头的慰安装置带来的快乐。
+							MATURO = 魔像的生物部件
+						ENDIF
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW %SAVESTR:TARGET%在狼人的赌场里，当肉便器。
+							PRINTFORMW 被改造成能怀上犬类的%SAVESTR:TARGET%，正出演着被狼人侵犯的表演。
+							PRINTFORMW 「在被射第几次会怀孕呢？」带着这样的赌局，观众们纷纷投注。
+							MATURO = 赌场的兽奸女优
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在狼人的赌场里，当肉便器。
+							PRINTFORMW 被改造成扶她的%SAVESTR:TARGET%，在把女狼人弄高潮之前都不被允许射出来。
+							PRINTFORMW 「到底能干多少个女狼人才射呢？」带着这样的赌局，观众们纷纷投注。
+							MATURO = 赌场的扶她玩具
+						ENDIF
+					ENDIF
+			;魔族売値10万未満
+			ELSE
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 兽人佣兵团
+					LOCAL = 3
+				;骑士＆忍者
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:207 == 1
+					LOCALS = 巨魔的奴隶主
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 黑暗精灵的学者
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 街角的杂耍小屋
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;性爱狂
+						IF TALENT:TARGET:75 == 1 
+							PRINTFORMW %SAVESTR:TARGET%作为佣兵团的一员被招募了。
+							PRINTFORMW 喜欢性爱的%SAVESTR:TARGET%，经常在训练的时候偷偷给别的兽人口交。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为佣兵团的一员被招募了。
+							PRINTFORMW 被团长看上了，坚持要和她生个孩子，%SAVESTR:TARGET%每晚都被团长播种着……
+						ENDIF
+						MATURO = 兽人佣兵团员
+					;騎士＆忍者
+					ELSEIF LOCAL == 2
+						;巨乳＆爆乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%成为了巨魔苦力们的飞机杯。
+							PRINTFORMW 巨魔们完全不知道什么叫怜香惜玉，直接把她套在自己的阴茎上，疯狂地机械运动着。
+							PRINTFORMW 奶水从她丰满的胸部中被粗暴地挤出，用来给巨魔解渴。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了巨魔苦力的飞机杯。
+							PRINTFORMW 巨魔们完全不知道什么叫怜香惜玉，直接把她套在自己的阴茎上，疯狂地机械运动着。
+							PRINTFORMW 被改造成只能靠巨魔的精液生存。她经常带着淫荡的表情，脸都歪了。
+						ENDIF
+						MATURO = 巨魔的慰安妇
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;アナル狂い
+						IF TALENT:TARGET:77 == 1 
+							PRINTFORMW %SAVESTR:TARGET%成为了新的性拷问研究用实验体。
+							PRINTFORMW 肛门被特殊的假阳具，日以继夜地蹂躏着。
+							PRINTFORMW 这个新发明，据说是用来开发通过阴道无法感受的超强快感。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了新的性拷问研究用实验体。
+							PRINTFORMW 不断地被注射着新型的媚药，不断地重复令人发疯的绝顶高潮。
+							PRINTFORMW 最近，只是被风吹到，就能令她绝顶高潮了。于是为了研究忍耐快感的药物，学者们开始了反向的实验……
+						ENDIF
+						MATURO = 黑暗精灵学者的实验体
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW %SAVESTR:TARGET%的肉体被淫秽地改造了，被全身赤裸地放在店里招揽客人。
+							PRINTFORMW 被改造出了怪诞的性器官，乳房淫乱至极地膨胀着，吸引着街上行人的好奇心。
+							PRINTFORMW 最近，还和有着丑陋阴茎的扶她奴隶公开做爱。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%的肉体被淫秽地改造了，被全身赤裸地放在店里招揽客人。
+							PRINTFORMW 被改造出了奇形怪状的阴茎。被带到街边进行公开自慰表演。
+							PRINTFORMW 因为射精太多而阳痿了。最近，好像学会了如何把软趴趴的阴茎塞入阴道里自慰。
+						ENDIF
+						MATURO = 杂耍小屋的扶她便器
+					ENDIF
+			ENDIF
+		;それ以外の种族
+		ELSE
+			;それ以外の种族売値100万以上
+			IF S >= 1000000
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 堕天使的贵族
+					LOCAL = 3
+				;骑士＆忍者
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:207 == 1
+					LOCALS = 狮鹫快递
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 蛇妖的高级妓院
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 哥布林的大剧场
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;性爱狂
+						IF TALENT:TARGET:75 == 1 
+							PRINTFORMW %SAVESTR:TARGET%成为了堕天使的贵族少年的性教育者。
+							PRINTFORMW 对越堕落越强大的堕天使来说，教育最重要的一环，就是性实习。
+							PRINTFORMW 但是，连性欲旺盛的堕天使少年都忍不住发出了悲鸣，因为%SAVESTR:TARGET%每晚都疯狂地榨取着精液。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了堕天使的贵族少年的性教育者。
+							PRINTFORMW 对越堕落越强大的堕天使来说，教育最重要的一环，就是性实习。
+							PRINTFORMW %SAVESTR:TARGET%总是温柔地拥抱着因性欲旺盛而在自己身上拼命耸动腰身的堕天使少年。
+						ENDIF
+						MATURO = 堕天使少年的私教
+					;騎士＆忍者
+					ELSEIF LOCAL == 2
+						;巨乳＆爆乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%成为了狮鹫的骑手。
+							PRINTFORMW 表面上是送快递，实际上却是上门服务的应召女郎。
+							PRINTFORMW 有着迷人胸部的%SAVESTR:TARGET%，在屡次被指名后，成为看板娘了。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了狮鹫的骑手。
+							PRINTFORMW 表面上是送快递，实际上却是上门服务的应召女郎。
+							PRINTFORMW 进步很快的%SAVESTR:TARGET%，以超强的口交技术而闻名。
+						ENDIF
+						MATURO = 狮鹫骑士
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;アナル狂い
+						IF TALENT:TARGET:77 == 1
+							PRINTFORMW %SAVESTR:TARGET%成为了专卖菊花的妓女。
+							PRINTFORMW 在各色各样异种族名流聚集的蛇妖妓院里，%SAVESTR:TARGET%拥有很高的人气。
+							PRINTFORMW 在平常妓院会被拒之门外的异形客人，今天也聚集在%SAVESTR:TARGET%的门外企图一亲芳泽。
+							MATURO = 菊穴娼妇
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在异种族热衷的蛇妖妓院里工作着。
+							PRINTFORMW 哪怕怀上了异形的孩子，%SAVESTR:TARGET%依然要为一些喜欢孕妇的客人打开双腿。
+							PRINTFORMW 在平常妓院会被拒之门外的异形客人，今天也聚集在%SAVESTR:TARGET%的门外企图一亲芳泽。
+							MATURO = 异种奸娼妇
+						ENDIF
+					;その他
+					ELSEIF LOCAL == 0
+						;话术LV5以上
+						IF ABL:15 >= 5
+							PRINTFORMW %SAVESTR:TARGET%成为了哥布林们的偶像，现在也在大剧场里载歌载舞着。
+							PRINTFORMW %SAVESTR:TARGET%穿着欲盖弥彰的下流布条作为衣服，在舞台上唱着黄色歌曲。
+							PRINTFORMW 为了欣赏那淫荡的姿态，哥布林们把场馆都快挤爆了。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了哥布林们的偶像，现在也在大剧场里载歌载舞着。
+							PRINTFORMW %SAVESTR:TARGET%穿着欲盖弥彰的下流布条作为衣服，在舞台上扭动着纤腰。
+							PRINTFORMW 那淫荡的姿态，让哥布林粉丝越来越多。
+						ENDIF
+						MATURO = 哥布林的偶像
+					ENDIF
+			;それ以外の种族売値50万以上
+			ELSEIF S >= 500000
+				;忍者＆盗贼
+				IF TALENT:TARGET:207 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 黑暗精灵的暗杀公会
+					LOCAL = 3
+				;骑士＆战士
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:200 == 1
+					LOCALS = 六头海蛇的海盗船
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 大富豪蛇妖
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 暗黑兽人战士
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;忍者＆盗贼
+					IF LOCAL == 3
+						;盗贼
+						IF TALENT:TARGET:203 == 1
+							PRINTFORMW %SAVESTR:TARGET%成为了暗杀公会的情报人员。
+							PRINTFORMW 过往成了谜，%SAVESTR:TARGET%从不同的炮友身上不断地窃取着信息。
+							PRINTFORMW 在没有工作的日子里，每晚都焦急地等待着性拷问。
+							MATURO = 暗杀公会的情报员
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了暗杀公会的刺客。
+							PRINTFORMW 过往成了谜，和%SAVESTR:TARGET%睡过的男人，第二天总会发现已经惨死。
+							PRINTFORMW 在没有工作的日子里，每晚都焦急地等待着性拷问。
+							MATURO = 暗杀公会的刺客
+						ENDIF
+					;骑士＆战士
+					ELSEIF LOCAL == 2
+						;巨乳＆爆乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%成为了六头海蛇海贼团的船长。
+							PRINTFORMW 好像是因为那双引人入胜的漂亮乳房，被六头海蛇们推举上去的。
+							PRINTFORMW 现在，她正坐在船长室的高座上，享受着亲信的按摩。
+							MATURO = 女海贼团船长
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了六头海蛇海贼团的水手。
+							PRINTFORMW 船上的水手们，都是被掠夺来的奴隶。
+							PRINTFORMW %SAVESTR:TARGET%，向这些肮脏的水手分开双腿，缓和着他们的不满情绪。
+							MATURO = 女海贼团船员
+						ENDIF
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;アナル狂い
+						IF TALENT:TARGET:77 == 1
+							PRINTFORMW %SAVESTR:TARGET%每晚都被喜欢百合的蛇妖欺负着。
+							PRINTFORMW 喜欢玩弄后庭的蛇妖富豪，用她的灵活的长舌头捣弄着%SAVESTR:TARGET%的肛门。
+							PRINTFORMW %SAVESTR:TARGET%只感觉肛门都要融化了，每次都忍不住发出苦恼的喘息……
+							MATURO = 蛇妖的百合奴隶
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%每晚都被喜欢百合的蛇妖欺负着。
+							PRINTFORMW 蛇妖们喜欢用她修长的身体，缠绕着%SAVESTR:TARGET%。
+							PRINTFORMW 每次，%SAVESTR:TARGET%都忍不住发出苦闷的喘息，痛苦地扭动着。
+							MATURO = 蛇妖的百合奴隶
+						ENDIF
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW %SAVESTR:TARGET%全身都被刻上了奇怪的咒术刺青，在未开化的蛮族部落里生活着。
+							PRINTFORMW 乳头、私处、鼻子、耳朵统统穿满了环，完全不像以前的样子了。
+							PRINTFORMW %SAVESTR:TARGET%的背上，还刻着蛮族主人的名字。这种被拥有的感觉，让她觉得愉悦不已。
+							MATURO = 蛮族兽人的一员
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%全身都被刻上了奇怪的咒术刺青，在未开化的蛮族部落里生活着。
+							PRINTFORMW 乳头、私处、鼻子、耳朵统统穿满了环，完全不像以前的样子了。
+							PRINTFORMW 从那时起，%SAVESTR:TARGET%已经完全成为另一个人，总是满怀喜悦地拥抱着蛮族那宽广的胸膛。
+							MATURO = 蛮族兽人的一员
+						ENDIF
+					ENDIF
+			;それ以外の种族売値10万以上
+			ELSEIF S >= 100000
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 魔界的植物园
+					LOCAL = 3
+				;骑士＆魔法师
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:201 == 1
+					LOCALS = 兽人骑士团
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 鹰身女妖的奴隶中介
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 花妖炼金术师
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;性爱狂
+						IF TALENT:TARGET:75 == 1
+							PRINTFORMW %SAVESTR:TARGET%作为养分的供给，在培育着魔界的植物。
+							PRINTFORMW 魔界植物的根，深深地扎入了她的阴道，直接吸取体内的养分。
+							PRINTFORMW 喜欢做爱的%SAVESTR:TARGET%，无法抗拒那插入的感觉，通过阴道把自己的一切都献给植物了。
+							MATURO = 魔界植物的苗床
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为养分的供给，在培育着魔界的植物。
+							PRINTFORMW 魔界植物的根，深深地扎入了她的直肠，直接吸取体内的养分。
+							PRINTFORMW %SAVESTR:TARGET%培育出来的植物，发育得非常良好，甚至在品评会上得奖了。
+							MATURO = 魔界植物的苗床
+						ENDIF
+					;骑士＆魔法师
+					ELSEIF LOCAL == 2
+						;巨乳or爆乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%被兽人的骑士团拿来抚育和训练兽人的孩子。
+							PRINTFORMW 随着傲人双峰被改造，她负责了所有孩子的喂养。同时努力地给兽人的孩子进行战斗训练。
+							PRINTFORMW 村庄的深处，偶尔会传来作为母体的女人们的呻吟声……
+							PRINTFORMW 她一听就知道又有一个兽人的孩子出生了，自己又有工作了。
+							MATURO = 兽人的幼教
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为兽人骑士团的一员而战斗着。
+							PRINTFORMW 骑士团袭击了人类的村庄，掠夺着金钱和女人。
+							PRINTFORMW %SAVESTR:TARGET%发现了一个躲藏着的女人，将手里的人类战士首级丢出，把她吓了出来。
+							PRINTFORMW 带着拼命求饶的女人，%SAVESTR:TARGET%凯旋而归，回到了深爱的兽人丈夫身边。
+							MATURO = 兽人骑士团员
+						ENDIF
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;アナル狂い
+						IF TALENT:TARGET:77 == 1
+							PRINTFORMW %SAVESTR:TARGET%被鹰身女妖富豪作为照顾生活的奴隶买下了。
+							PRINTFORMW 她全身赤裸着，只戴着项圈，照顾着富豪的女儿。
+							PRINTFORMW 富豪的女儿，是个有名的性虐狂。%SAVESTR:TARGET%经常被塞上肛塞，享受着严格的排泄管理。
+							MATURO = 鹰身女妖富豪的奴隶
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%被鹰身女妖富豪作为照顾生活的奴隶买下了。
+							PRINTFORMW 她全身赤裸着，只戴着项圈，照顾着鹰身女妖一家的生活。
+							PRINTFORMW %SAVESTR:TARGET%为了生出新的奴隶，在工作的闲暇，还要与男奴隶交配。
+							MATURO = 鹰身女妖的奴隶
+						ENDIF
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW 作为肉便器的%SAVESTR:TARGET%为了收集实验用的精液，成为了公众便器。
+							PRINTFORMW 被肉体改造过的%SAVESTR:TARGET%，用她那奇形怪状的阴道，吸取着精液，将精液存储在气球一般膨胀的子宫内。
+							PRINTFORMW 这大量的精液，将来会参与人造人的实验与制作。
+							MATURO = 公众肉便器
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%为了进行魔法的素材收集，被肉体改造了。
+							PRINTFORMW %SAVESTR:TARGET%被弄出了巨大的阴囊，不停地生产着精液。
+							PRINTFORMW 永远勃起无法软下的巨大阴茎，被管子连通着，不断地被榨精。
+							PRINTFORMW 「今天的量已经过半了。还剩下五千次，加油哦！」
+							PRINTFORMW 肛门被侵犯着，%SAVESTR:TARGET%虚弱的身体不断颤抖，在这种折磨中持续地高潮。
+							MATURO = 生产精液的扶她奴隶
+						ENDIF
+					ENDIF
+			;それ以外の种族売値10万未満
+			ELSE
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 兽人的高级战士
+					LOCAL = 3
+				;骑士＆忍者
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:207 == 1
+					LOCALS = 蜥蜴人骑士
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 黑暗精灵的女神官
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 街边的公厕
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;性爱狂
+						IF TALENT:TARGET:75 == 1 
+							PRINTFORMW %SAVESTR:TARGET%与兽人的高级战士结婚了。
+							PRINTFORMW 迷上了兽人健壮的肉体，两人深深地相爱着。
+							PRINTFORMW 最近，作为丈夫的兽人，开始在性欲方面输给%SAVESTR:TARGET%了。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%与兽人的高级战士结婚了。
+							PRINTFORMW 迷上了兽人健壮的肉体，两人深深地相爱着。
+							PRINTFORMW 据说马上就要生第五个孩子了。
+						ENDIF
+						MATURO = 兽人高等战士的妻子
+					;騎士＆忍者
+					ELSEIF LOCAL == 2
+						;巨乳＆爆乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%与蜥蜴人骑士结婚了。
+							PRINTFORMW 陌生的鳞片式肌肤，也没能阻止两人的爱。
+							PRINTFORMW 丈夫因为%SAVESTR:TARGET%的巨乳而非常自豪，整天赞美着她。
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%与蜥蜴人骑士结婚了。
+							PRINTFORMW 陌生的鳞片式肌肤，也没能阻止两人的爱。
+							PRINTFORMW 随着一同度过的日子一天天过去，%SAVESTR:TARGET%越发被丈夫所溺爱着，总是被丈夫赞美。
+						ENDIF
+						MATURO = 蜥蜴人骑士的妻子
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;巨乳＆爆乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%在黑暗精灵女神官的指引下修行着。
+							PRINTFORMW 交换了姐妹契约，每天都过着奉献给暗黑之神的生活。
+							PRINTFORMW %SAVESTR:TARGET%的傲人双峰外露着，乳环上发出契约魔法的光芒。
+							MATURO = 邪教的姐妹信徒
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在黑暗精灵女神官的指引下修行着。
+							PRINTFORMW 交换了姐妹契约，每天都过着奉献给暗黑之神的生活。
+							PRINTFORMW %SAVESTR:TARGET%的性器被契约之环封闭着，应该再也不能接受阴茎了吧。
+							MATURO = 邪教的姐妹信徒
+						ENDIF
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW 在异种族的街道上，%SAVESTR:TARGET%作为公众便器被锁在公厕里。
+							PRINTFORMW %SAVESTR:TARGET%必须接受所有种族的阴茎，哪怕怀孕也不能休息。
+							PRINTFORMW 生下来的孩子，受孤儿院收养，进行着出色的教育，将来也会为街区作出贡献吧。
+							MATURO = 公众肉便器
+						ELSE
+							PRINTFORMW 在异种族的街道上，%SAVESTR:TARGET%作为公众便器被锁在公厕里。
+							PRINTFORMW %SAVESTR:TARGET%必须接受所有种族的阴茎，什么精液都要喝下去。
+							PRINTFORMW 据说，%SAVESTR:TARGET%成为了相当有名的便器女，后来被常客买走结婚了。
+							MATURO = 公众肉便器
+						ENDIF
+					ENDIF
+			ENDIF
+		ENDIF
+	;それ以外
+	ELSE
+		;魔族
+		IF TALENT:TARGET:314 == 9
+			;魔族売値50万以上
+			IF S >= 500000
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 食人魔佣兵团
+					LOCAL = 3
+				;骑士＆忍者
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:207 == 1
+					LOCALS = 半人马的骑士团
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 牛头人祭司
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 兽人富商
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;盗贼
+						IF TALENT:TARGET:203 == 1
+							PRINTFORMW %SAVESTR:TARGET%作为顾问，加入了食人魔佣兵团。
+							PRINTFORMW 食人魔们服从着%SAVESTR:TARGET%，将佣兵团的运营完全交给了她。
+							PRINTFORMW 前任团长手下的战士，则在偷偷地密谋，
+							PRINTFORMW 通过自己的巨根令%SAVESTR:TARGET%服从，从而获得佣兵团里更大的权力。
+							MATURO = 食人魔佣兵团顾问
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为保镖，加入了食人魔佣兵团。
+							PRINTFORMW 在佣兵团进行掠夺的时候，%SAVESTR:TARGET%自豪地挥舞着自己的武器。
+							PRINTFORMW 有着魔族力量的她，单手就把女骑士之类的撂倒了。
+							PRINTFORMW 抓回来的女人，则作为佣兵团的公共财产，被当作任意使用的肉便器。
+							MATURO = 食人魔佣兵团保镖
+						ENDIF
+					;骑士＆忍者
+					ELSEIF LOCAL == 2
+						;巨乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%作为教职人员，加入了半人马的骑士团。
+							PRINTFORMW 教导着半人马的孩子们如何做一个合格的魔族。
+							PRINTFORMW 丰满的乳房，分泌出魔族的母乳，常常令孩子们勃起。
+							PRINTFORMW 这种时候，%SAVESTR:TARGET%总会温柔地用手帮他们处理。
+							MATURO = 半人马的幼教
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为教职人员，加入了半人马的骑士团。
+							PRINTFORMW 教导着半人马的孩子们如何做一个合格的魔族。
+							PRINTFORMW 半人马的孩子，沐浴在%SAVESTR:TARGET%的魔族的力量里，常常情不自禁地勃起。
+							PRINTFORMW 这种时候，%SAVESTR:TARGET%就会扭动着腰，帮他们处理。	
+							MATURO = 半人马的幼教
+						ENDIF
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;アナル狂い
+						IF TALENT:TARGET:77 == 1
+							PRINTFORMW %SAVESTR:TARGET%每晚都在牛头人神官们的仪式上奉献着后庭。
+							PRINTFORMW 被牛头人的巨根侵犯着的肛门，已经被扩张到了极限。
+							PRINTFORMW 括约肌完全松弛，没有肛门制动器的话，相信会对她的日常生活带来困扰吧。
+							MATURO = 牛头人神殿的贡品
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%接受了牛头人的信仰，成为了牛头人神殿的圣母。
+							PRINTFORMW 今天，性欲高涨的牛头人信徒们，又来到神殿了。
+							PRINTFORMW %SAVESTR:TARGET%一边听着他们的烦恼与告解，一边用手和嘴巴帮他们解决。
+							
+							MATURO = 牛头人神殿的圣母
+						ENDIF
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW %SAVESTR:TARGET%作为宴客用的肉便器，在屋子里像家畜似的被养着。
+							PRINTFORMW 全身都被写满了淫贱的话语，每天都被扶她奴隶侵犯着。
+							PRINTFORMW 肉体被下流地改造过的扶她奴隶，因为思考能力已经完全被性欲所掩盖，而疯狂地侵犯着%SAVESTR:TARGET%。
+							PRINTFORMW 「等到客人们也厌倦%SAVESTR:TARGET%的时候，就把她也改造成扶她奴隶吧……」
+							MATURO = 宴客肉便器
+						ELSE
+							PRINTFORMW 作为情人被买回来的%SAVESTR:TARGET%，温顺地顺从着自己的主人。
+							PRINTFORMW 兽人富商，几乎每天都买漂亮的衣服和饰品给%SAVESTR:TARGET%穿戴。
+							PRINTFORMW 没过多久，她就爱上了兽人富商，子宫里孕育着半兽人的婴儿。
+							MATURO = 兽人商人的情人
+						ENDIF
+					ENDIF
+			;魔族売値10万以上
+			ELSEIF S >= 100000
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 六头海蛇的联防队
+					LOCAL = 3
+				;骑士＆忍者
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:207 == 1
+					LOCALS = 黑暗精灵的学校
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 魔像的大农场
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 魔界的大监狱
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;性爱狂
+						IF TALENT:TARGET:75 == 1
+							PRINTFORMW %SAVESTR:TARGET%作为六头海蛇联防队的外雇战士被雇佣了。
+							PRINTFORMW 工作结束后，%SAVESTR:TARGET%常常被六头海蛇的前辈命令做性处理服侍。
+							PRINTFORMW 喜欢做爱的%SAVESTR:TARGET%，没有一丝犹豫，
+							PRINTFORMW 今天的她也搔首弄姿地，在休息室里等候着……
+							MATURO = 六头海蛇的联防队外籍战士
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为六头海蛇联防队的外雇战士被雇佣了。
+							PRINTFORMW 工作结束后，%SAVESTR:TARGET%常常被六头海蛇的前辈命令做性处理服侍。
+							PRINTFORMW 现在，已经完全适应了六头海蛇那与众不同的阴茎了。
+							MATURO = 六头海蛇的联防队外籍战士
+						ENDIF
+					;骑士＆忍者
+					ELSEIF LOCAL == 2
+						;巨乳or爆乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%在黑暗精灵的中学做保健老师。
+							PRINTFORMW 胸部呼之欲出，%SAVESTR:TARGET%被少年们所憧憬着。
+							PRINTFORMW 有烦恼的青少年们，都会去找她倾诉，被学生们信赖着。
+							PRINTFORMW 秉承着如果发泄掉性欲，那么烦恼就会消失的信条，保健室被弄得像妓院似的……
+							MATURO = 黑暗精灵学校的保健老师
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在黑暗精灵的中学做保健老师。
+							PRINTFORMW 经验丰富的%SAVESTR:TARGET%被少年们所憧憬着。
+							PRINTFORMW 有恋爱烦恼的少年少女们，都会去找她做性启蒙。
+							PRINTFORMW 保健室拜此所赐，被弄得像情人旅馆似的……
+							MATURO = 黑暗精灵学校的保健老师
+						ENDIF
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;アナル狂い
+						IF TALENT:TARGET:77 == 1
+							PRINTFORMW %SAVESTR:TARGET%在魔像的大农场里，从事着魔像维护的工作。
+							PRINTFORMW %SAVESTR:TARGET%的肉体被改造了，吃了的东西会在肠内变成魔像的燃料。
+							PRINTFORMW 然后，肛门被插入了管子，去供应魔像的活动。
+							MATURO = 魔像的维护工
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在魔像的大农场里，从事着看守作物的工作。
+							PRINTFORMW %SAVESTR:TARGET%用探照魔法，照亮入侵的野生动物和盗贼，然后引导安保部队去处理。
+							PRINTFORMW 休息的时间，则在保安室里小睡，几乎没有任何的娱乐。
+							PRINTFORMW 只能拜托作为同事的奴隶，靠激烈的性爱来消磨时间。
+							MATURO = 农场保安
+						ENDIF
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW 为了让牛头人和半人马之类性欲旺盛的种族不造反。
+							PRINTFORMW %SAVESTR:TARGET%作为犯人的娱乐用具而被监狱买回来了，继续从事着肉便器的工作。
+							PRINTFORMW %SAVESTR:TARGET%接受着各种各样异种族的阴茎，几乎没有哪个现存种族的阴茎她没有品尝过了。
+							MATURO = 囚犯便器
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为犯人的娱乐用具而被监狱买回来了，继续从事着肉便器的工作。
+							PRINTFORMW 忍耐多时的犯人们毫不客气，用尽她身上的每一个部位来让自己舒服。
+							PRINTFORMW 据说和因猥亵罪而被捕的变态兽人相爱，准备要在监狱里结婚。
+							MATURO = 兽人囚犯的妻子
+						ENDIF
+						
+					ENDIF
+			;魔族売値10万未満
+			ELSE
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 兽人佣兵团
+					LOCAL = 3
+				;骑士＆忍者
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:207 == 1
+					LOCALS = 巨魔的奴隶主
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 黑暗精灵的学者
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 街角的杂耍小屋
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;私处感觉ＬＶ5以上
+						IF ABL:2 >= 5
+							PRINTFORMW %SAVESTR:TARGET%成为了兽人佣兵团的备品。
+							PRINTFORMW 她被绑在马车里，无休止地被侵犯着。
+							MATURO = 兽人佣兵团的备品
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了兽人佣兵团的性处理器。
+							PRINTFORMW 每天都要为全员进行口交，清洁着大家的阴茎。
+							MATURO = 兽人佣兵团的性处理器
+						ENDIF
+						
+					;骑士＆忍者
+					ELSEIF LOCAL == 2
+						;巨乳＆爆乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%在巨魔奴隶的工厂里作为慰安婦而工作着。
+							PRINTFORMW %SAVESTR:TARGET%用那迷人的巨乳，安抚着巨魔们的巨根。
+							PRINTFORMW 今天也是，工作完之后，巨魔们又在%SAVESTR:TARGET%面前排起了长队。
+							MATURO = 苦力巨魔的慰安妇
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在巨魔奴隶的工厂里作为慰安婦而工作着。
+							PRINTFORMW 有着巨大阴囊的巨魔们，性欲是非常旺盛的，得不到发泄就会捣乱。
+							PRINTFORMW %SAVESTR:TARGET%被镶嵌在墙上，只露出屁股。今天，又会被多少巨根蹂躏呢？
+							MATURO = 苦力巨魔的慰安妇
+						ENDIF
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;A感覚3以上
+						IF ABL:肛门感觉 >= 3
+							PRINTFORMW %SAVESTR:TARGET%成为了新媚药的实验体。
+							PRINTFORMW 肛门被涂上了烈性的新药，令人发疯的快感将她的一切思考能力都吹散了。
+							MATURO = 媚药实验体
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%成为了新媚药的实验体。
+							PRINTFORMW 阴蒂被涂上了烈性的新药，一整天都不断地绝顶高潮着。
+							MATURO = 媚药实验体
+						ENDIF
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW %SAVESTR:TARGET%作为魔族奴隶，在杂耍小屋里全裸地被戏弄着。
+							PRINTFORMW 和肮脏的兽人公开做爱，为店里集聚了一点人气。
+							MATURO = 杂耍小屋的肉便器
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为魔族奴隶，在杂耍小屋里全裸地被戏弄着。
+							PRINTFORMW 身体被改造，还穿上了环，刻了刺青，为店里集聚了一点人气。
+							MATURO = 杂耍小屋的肉便器
+						ENDIF
+						
+					ENDIF
+			ENDIF
+		;それ以外の种族
+		ELSE
+			;それ以外の种族売値50万以上
+			IF S >= 500000
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 食人魔佣兵团
+					LOCAL = 3
+				;骑士＆忍者
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:207 == 1
+					LOCALS = 半人马的骑士团
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 牛头人祭司
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 兽人富商
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;性爱狂
+						IF TALENT:TARGET:75 == 1
+							PRINTFORMW %SAVESTR:TARGET%作为高级性奴隶，加入了食人魔佣兵团。
+							PRINTFORMW 食人魔们恋慕着%SAVESTR:TARGET%，像对圣母一样对待她。
+							PRINTFORMW 前任团长手下的战士，则在偷偷地密谋，
+							PRINTFORMW 通过自己的巨根令%SAVESTR:TARGET%服从，从而获得佣兵团里更大的权力。
+							MATURO = 食人魔佣兵团的高级性奴
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为保镖，加入了食人魔佣兵团。
+							PRINTFORMW 经验丰富的%SAVESTR:TARGET%，成为了佣兵团的剑，在前线作战着。
+							PRINTFORMW 她也不是对食人魔没有性魅力，因此为了不做性奴隶，
+							PRINTFORMW %SAVESTR:TARGET%也常常抢夺女人，用她们来代替自己成为肉便器。
+							MATURO = 食人魔佣兵团保镖
+						ENDIF
+						
+					;骑士＆忍者
+					ELSEIF LOCAL == 2
+						;巨乳＆爆乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%作为教职人员，加入了半人马的骑士团。
+							PRINTFORMW 教导着半人马的孩子们如何做一个合格的战士。
+							PRINTFORMW 有着巨乳的%SAVESTR:TARGET%，非常受孩子们的欢迎，经常被缠着要喝母乳。
+							MATURO = 半人马的幼教
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为教职人员，加入了半人马的骑士团。
+							PRINTFORMW 教导着半人马的孩子们如何做一个合格的战士。
+							PRINTFORMW 作为异种族的%SAVESTR:TARGET%，早早地就被孩子们舔遍全身，成为了班级里的共用便器了。
+							MATURO = 半人马的幼教
+						ENDIF
+						
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;アナル狂い
+						IF TALENT:TARGET:77 == 1
+							PRINTFORMW %SAVESTR:TARGET%被牛头人神官作为祭品买回来了。
+							PRINTFORMW 虽然不需要奉献生命，但是每天都要在祭坛上奉献肛门。
+							PRINTFORMW 作为奴隶与其它奴隶一起卑微地戴着项圈，通过锁链被连在一起，等待着被侵犯。
+							MATURO = 牛头人的性祭品
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%被牛头人神官作为祭品买回来了。
+							PRINTFORMW 虽然不需要奉献生命，但是每天都要在祭坛上做爱。
+							PRINTFORMW 和性欲旺盛的青年疯狂地做爱，如果怀孕了就把孩子当奴隶卖掉。
+							
+							MATURO = 牛头人的性祭品
+						ENDIF
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW %SAVESTR:TARGET%作为宴客用的肉便器，在屋子里像家畜似得养着。
+							IF TALENT:扶她
+								PRINTFORMW 身为扶她的%SAVESTR:TARGET%被改造出巨根，不停地侵犯着其它的奴隶。
+							ELSE
+								PRINTFORMW 被改造成扶她的%SAVESTR:TARGET%，不停地侵犯着其它的奴隶。
+							ENDIF
+							PRINTFORMW 思考能力经过洗脑后完全被性欲所掩盖了，不再考虑射精以外的事情。
+							MATURO = 扶她便器
+						ELSE
+							PRINTFORMW 作为情人被买回来的%SAVESTR:TARGET%，温顺地服从着自己的主人。
+							PRINTFORMW 兽人富商溺爱着%SAVESTR:TARGET%，两人过着幸福的生活。
+							PRINTFORMW 没过多久，她就爱上了兽人富商，子宫里孕育着半兽人的婴儿。
+							MATURO = 兽人的情人
+						ENDIF
+					ENDIF
+			;それ以外の种族売値10万以上
+			ELSEIF S >= 100000
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 六头海蛇的联防队
+					LOCAL = 3
+				;骑士＆忍者
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:207 == 1
+					LOCALS = 黑暗精灵的学校
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 魔像的大农场
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 哥布林赌场
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;私处感觉ＬＶ5以上
+						IF ABL:2 >= 5
+							PRINTFORMW %SAVESTR:TARGET%作为六头海蛇联防队的外雇战士被雇佣了。
+							PRINTFORMW 工作结束后，%SAVESTR:TARGET%总会被战斗心激昂的六头海蛇抓去泄欲。
+							MATURO = 六头海蛇的联防队外籍战士
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为六头海蛇联防队的杂役被雇佣了。
+							PRINTFORMW 被命令打磨铠甲的%SAVESTR:TARGET%，如果工作有怠慢，屁股就会挨鞭子。
+							MATURO = 六头海蛇的联防队的打杂
+						ENDIF
+						
+					;骑士＆忍者
+					ELSEIF LOCAL == 2
+						;巨乳＆爆乳
+						IF TALENT:TARGET:110 == 1 || TALENT:TARGET:114 == 1 || TALENT:TARGET:119 == 1
+							PRINTFORMW %SAVESTR:TARGET%在黑暗精灵的中学做备品。
+							PRINTFORMW 拥有漂亮巨乳的%SAVESTR:TARGET%，在肉体改造的实验课上，被作为实验品摆上实验台了。
+							MATURO = 黑暗精灵中学的备品
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在黑暗精灵的中学做备品。
+							PRINTFORMW 在肉体改造的实验课上，被作为实验品摆上实验台了，接下来要进行的是异种交配的控制实验。
+							MATURO = 黑暗精灵中学的备品
+						ENDIF
+						
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;动物耳朵
+						IF TALENT:TARGET:124
+							PRINTFORMW %SAVESTR:TARGET%因为外形接近动物，因此作为繁殖用家畜，被饲养在马厩里。
+							PRINTFORMW 子宫被改造了，现在每三天就能生下一只家畜。
+							PRINTFORMW 这样的子宫，在分娩的时候，有着产生常人难以理解的快感的副作用，让%SAVESTR:TARGET%的思考能力接近崩溃了。
+							MATURO = 繁殖用家畜奴隶
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在农场里照看牲口。
+							PRINTFORMW 所谓的牲口，其实也是被家畜化改造过的肉便器。肥大化的乳房，方便被榨乳。
+							PRINTFORMW 有时，为了检查牲口是否健康，要把手伸进她们的肛门里，这时候，肉便器们的娇喘总是此起彼伏着。
+							MATURO = 家畜便器的管理员
+						ENDIF
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW 作为肉便器的%SAVESTR:TARGET%，主持着赌场里受欢迎的赌局。
+							PRINTFORMW 哥布林们投注后，各自把精液装在一排的酒杯里，让%SAVESTR:TARGET%喝掉，然后猜哪杯是谁的。
+							PRINTFORMW 被猜中的那个哥布林，就能独得所有人的投注。
+							MATURO = 赌场的玩具
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在赌场里穿着兔女郎装做荷官。
+							PRINTFORMW 如果客人赢了，就能获得%SAVESTR:TARGET%的一次口交。
+							PRINTFORMW 因此，她的那桌总是很受欢迎，排着长队。
+							MATURO = 赌场的兔女郎
+						ENDIF
+						
+					ENDIF
+			;それ以外の种族売値10万未満
+			ELSE
+				;战士＆盗贼
+				IF TALENT:TARGET:200 == 1 || TALENT:TARGET:203 == 1
+					LOCALS = 兽人的公共澡堂
+					LOCAL = 3
+				;骑士＆忍者
+				ELSEIF TALENT:TARGET:205 == 1 || TALENT:TARGET:207 == 1
+					LOCALS = 巨魔的奴隶主
+					LOCAL = 2
+				;巫女＆神官
+				ELSEIF TALENT:TARGET:202 == 1 || TALENT:TARGET:206 == 1
+					LOCALS = 黑暗精灵的大学生
+					LOCAL = 1
+				;その他
+				ELSE
+					LOCALS = 哥布林的村庄
+					LOCAL = 0
+				ENDIF
+				PRINTFORMW %LOCALS%买下%SAVESTR:TARGET%之后………
+				PRINTFORMW ………
+				PRINTFORMW ……
+				PRINTFORMW …
+					;战士＆盗贼
+					IF LOCAL == 3
+						;私处感觉ＬＶ5以上
+						IF ABL:2 >= 5
+							PRINTFORMW %SAVESTR:TARGET%在公共澡堂里为兽人们按摩。
+							PRINTFORMW 如果在%SAVESTR:TARGET%的手法下勃起了的话，只要加一点钱就能狠操%SAVESTR:TARGET%一顿。
+							MATURO = 公共浴场的按摩师
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%在公共澡堂里为兽人们按摩。
+							PRINTFORMW 虽然经常累得肩膀生痛，但很受客人们的好评。
+							MATURO = 公共浴场的按摩师
+						ENDIF
+						
+					;骑士＆忍者
+					ELSEIF LOCAL == 2
+						;反感污臭・鈍感
+						IF TALENT:TARGET:不怕污臭 == 1 || TALENT:TARGET:反感污臭 == 1
+							PRINTFORMW %SAVESTR:TARGET%被当做巨魔奴隶的清洁工。
+							PRINTFORMW %SAVESTR:TARGET%每天都要用身体，漂亮地擦干净那些脏得不行的巨魔们的屁股。
+							MATURO = 苦力巨魔的慰安妇
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%被当做巨魔奴隶的清洁工。
+							PRINTFORMW %SAVESTR:TARGET%每天都要用湿毛巾把那些不愿洗澡的巨魔们擦干净。
+							MATURO = 苦力巨魔的慰安妇
+						ENDIF
+						
+					;巫女＆神官
+					ELSEIF LOCAL == 1
+						;元学生
+						IF TALENT:TARGET:成为勇者前的生活 == 1
+							PRINTFORMW 黑暗精灵的大学生，居然是%SAVESTR:TARGET%原来的同学。
+							PRINTFORMW 结果，两人结婚了，过着幸福的生活。
+							MATURO = 黑暗精灵学生的妻子
+						ELSE
+							PRINTFORMW 黑暗精灵的大学生，把%SAVESTR:TARGET%当做宿舍里的共用便器。
+							PRINTFORMW 结果那间宿舍，每天都有很多人来串门。
+							MATURO = 黑暗精灵学生的宿舍便器
+						ENDIF
+						
+					;その他
+					ELSEIF LOCAL == 0
+						;肉便器
+						IF TALENT:TARGET:204 == 1
+							PRINTFORMW %SAVESTR:TARGET%作为生育便器被哥布林们宠爱着。
+							PRINTFORMW 据说学会了哥布林的语言，幸福地为它们生下了孩子。
+							MATURO = 哥布林的生育便器
+						ELSE
+							PRINTFORMW %SAVESTR:TARGET%作为打杂受到了哥布林们的喜爱。
+							PRINTFORMW 据说学会了哥布林的语言，过着平淡而又幸福的生活。
+							MATURO = 哥布林的打杂
+						ENDIF
+					ENDIF
+			ENDIF
+		ENDIF
+	ENDIF
+	
+	SIF FAMILY:2 >= 0
+		CSTR:(FAMILY:2):5 = %MATURO%%SAVESTR:TARGET%
+	TSTR:30 = %MATURO%%SAVESTR:TARGET%
+	;結びの文、特殊な文を入れたくなったら後で分岐を入れよう
+	PRINTFORML
+	PRINTFORMW 就这样，%NAME:MASTER%和%SAVESTR:TARGET%再也没有见面……
+	PRINTFORML
+	CALL VIDEO_MATURO
+RETURN 0
+
+
+

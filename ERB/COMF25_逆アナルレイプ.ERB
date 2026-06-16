@@ -1,0 +1,384 @@
+﻿;
+;-------------------------------------------------
+;逆肛门强奸 
+;アナルセックス系コマンド：調教対象のペニスを調教者のアナルに挿入
+;-------------------------------------------------
+@COM25
+
+PRINTL 逆肛门强奸
+
+CALL COM25_CHECK
+SIF !RESULT
+	RETURN 0
+
+CALL TRAIN_MESSAGE_B
+
+;調教者の射精チェック
+CALL COM_EJAC_PLAYER_ANALSEX
+
+CALL COM25_SRC
+
+CALL COM25_POST
+
+RETURN 1
+
+
+
+@COM25_CHECK
+;-------------------------------------------------
+;実行できるかの判定
+;-------------------------------------------------
+A = 0
+S = 0
+
+;すべての命令に共通の要素を考慮
+;(顺从が高いと命令に従いやすいなど)
+CALL COM_ORDER
+
+;ABL:欲望
+IF ABL:11
+	SIF S
+		PRINT  + 
+	A += ABL:11 * 2
+	PRINTS ABLNAME:11
+	PRINTV 'LV,ABL:11,'(,ABL:11 * 2,')
+	S = 1
+ENDIF
+;ABL:侍奉精神
+IF ABL:16
+	SIF S
+		PRINT  + 
+	A += ABL:16 * 4
+	PRINTS ABLNAME:16
+	PRINTV 'LV,ABL:16,'(,ABL:16 * 4,')
+	S = 1
+ENDIF
+
+IF MARK:1
+	SIF S
+		PRINT  + 
+	A += MARK:1 * 2
+	PRINTS MARKNAME:1
+	PRINTV 'LV,MARK:1,'(,MARK:1 * 2,')
+	S = 1
+ENDIF
+
+
+;PALAM:欲情
+IF PALAM:5 < PALAMLV:1
+	L = 0
+ELSEIF PALAM:5 < PALAMLV:2
+	L = 1
+ELSEIF PALAM:5 < PALAMLV:3
+	L = 2
+ELSEIF PALAM:5 < PALAMLV:4
+	L = 3
+ELSEIF PALAM:5 < PALAMLV:5
+	L = 4
+ELSE
+	L = 5
+ENDIF
+IF L
+	SIF S
+		PRINT  + 
+	A += L * 2
+	PRINTS PALAMNAME:5
+	PRINTV 'LV,L,'(,L * 2,')
+	S = 1
+ENDIF
+;ABL:抖S气质
+IF ABL:20
+	SIF S
+		PRINT  + 
+	A += ABL:20*2
+	PRINTS ABLNAME:20
+	PRINTV 'LV,ABL:20,'(,ABL:20*2,')
+	S = 1
+ENDIF
+;害羞
+IF TALENT:35
+	PRINT  - 
+	A -= 1
+	PRINTS TALENTNAME:35
+	PRINTV '(,1,')
+	S = 1
+ENDIF
+;献身的
+IF TALENT:63
+	SIF S
+		PRINT  + 
+	A += 6
+	PRINTS TALENTNAME:63
+	PRINTV '(,6,')
+	S = 1
+ENDIF
+;接受快感
+IF TALENT:70
+	SIF S
+		PRINT  + 
+	A += 2
+	PRINTS TALENTNAME:70
+	PRINTV '(,2,')
+	S = 1
+ENDIF
+;否定快感
+IF TALENT:71
+	PRINT  - 
+	A -= 2
+	PRINTS TALENTNAME:71
+	PRINTV '(,2,')
+	S = 1
+ENDIF
+;男人婆
+IF TALENT:79 && TALENT:PLAYER:122 == 0
+	PRINT  - 
+	A -= 5
+	PRINTS TALENTNAME:79
+	PRINTV '(,5,')
+	S = 1
+ENDIF
+;爱慕
+IF TALENT:85 && ASSIPLAY == 0
+	SIF S
+		PRINT  + 
+	A += 5
+	PRINTS TALENTNAME:85
+	PRINTV '(,5,')
+	S = 1
+ENDIF
+
+;合計を表示(40以上で実行)
+PRINT  = 
+PRINTV A
+
+V = 40
+SIF A < V
+	PRINT  < 
+SIF A == V
+	PRINT  = 
+SIF A > V
+	PRINT  > 
+PRINT 实行值
+PRINTV V
+
+WAIT
+
+;実行できない
+SIF A < V
+	RETURN 0
+
+RETURN 1
+
+@COM25_SRC
+;-------------------------------------------------
+;ソースの計算
+;-------------------------------------------------
+LOSEBASE:0 += 50
+LOSEBASE:1 += 200
+
+SOURCE:12 = 220
+SOURCE:14 = 50
+
+;ABL:阴蒂感觉をみる
+IF ABL:0 == 0
+	SOURCE:0 = 50
+ELSEIF ABL:0 == 1
+	SOURCE:0 = 200
+ELSEIF ABL:0 == 2
+	SOURCE:0 = 800
+ELSEIF ABL:0 == 3
+	SOURCE:0 = 1600
+ELSEIF ABL:0 == 4
+	SOURCE:0 = 2400
+ELSE
+	SOURCE:0 = 3200
+ENDIF
+
+
+;ABL:侍奉精神をみる
+IF ABL:16 == 0
+	SOURCE:0 = 800
+	SOURCE:4 = 1600
+	SOURCE:5 = 200
+ELSEIF ABL:16 == 1
+	SOURCE:0 = 1400
+	SOURCE:4 = 1900
+	SOURCE:5 = 400
+ELSEIF ABL:16 == 2
+	SOURCE:0 = 2000
+	SOURCE:4 = 2300
+	SOURCE:5 = 750
+ELSEIF ABL:16 == 3
+	SOURCE:0 = 2500
+	SOURCE:4 = 2700
+	SOURCE:5 = 1150
+ELSEIF ABL:16 == 4
+	SOURCE:0 = 2900
+	SOURCE:4 = 3100
+	SOURCE:5 = 1750
+ELSE
+	SOURCE:0 = 3200
+	SOURCE:4 = 3500
+	SOURCE:5 = 2500
+ENDIF
+
+
+;ABL:技巧をみる
+IF ABL:12 == 0
+	TIMES SOURCE:0 , 0.50
+	TIMES SOURCE:4 , 0.50
+	TIMES SOURCE:5 , 0.50
+ELSEIF ABL:12 == 1
+	TIMES SOURCE:0 , 0.50
+	TIMES SOURCE:4 , 0.80
+	TIMES SOURCE:5 , 0.80
+ELSEIF ABL:12 == 2
+	TIMES SOURCE:0 , 0.50
+	TIMES SOURCE:4 , 1.00
+	TIMES SOURCE:5 , 1.00
+ELSEIF ABL:12 == 3
+	TIMES SOURCE:0 , 0.50
+	TIMES SOURCE:4 , 1.50
+	TIMES SOURCE:5 , 1.50
+ELSEIF ABL:12 == 4
+	TIMES SOURCE:0 , 0.50
+	TIMES SOURCE:4 , 2.00
+	TIMES SOURCE:5 , 2.00
+ELSEIF ABL:12 == 5
+	TIMES SOURCE:0 , 0.50
+	TIMES SOURCE:4 , 2.50
+	TIMES SOURCE:5 , 2.50
+ELSEIF ABL:12 == 6
+	TIMES SOURCE:0 , 0.50
+	TIMES SOURCE:4 , 3.00
+	TIMES SOURCE:5 , 3.00
+ELSEIF ABL:12 == 7
+	TIMES SOURCE:0 , 0.50
+	TIMES SOURCE:4 , 3.50
+	TIMES SOURCE:5 , 3.50
+ELSE
+	TIMES SOURCE:0 , 0.50
+	TIMES SOURCE:4 , 4.00
+	TIMES SOURCE:5 , 4.00
+ENDIF
+
+;調教対象・助手が共に女ならABL:百合气质をみる
+IF TALENT:122 == 0 && TALENT:PLAYER:122 == 0
+	IF ABL:22 == 0
+		TIMES SOURCE:4 , 0.20
+		TIMES SOURCE:5 , 0.20
+	ELSEIF ABL:22 == 1
+		TIMES SOURCE:4 , 0.40
+		TIMES SOURCE:5 , 0.40
+	ELSEIF ABL:22 == 2
+		TIMES SOURCE:4 , 0.60
+		TIMES SOURCE:5 , 0.60
+	ELSEIF ABL:22 == 3
+		TIMES SOURCE:4 , 0.80
+		TIMES SOURCE:5 , 0.80
+	ELSEIF ABL:22 == 4
+		TIMES SOURCE:4 , 1.00
+		TIMES SOURCE:5 , 1.00
+	ELSE
+		TIMES SOURCE:4 , 1.20
+		TIMES SOURCE:5 , 1.20
+	ENDIF
+ENDIF
+
+;調教対象・助手が共に男人ならABL:ホモっ気をみる
+IF TALENT:122 && TALENT:PLAYER:122
+	IF ABL:23 == 0
+		TIMES SOURCE:4 , 0.20
+		TIMES SOURCE:5 , 0.20
+	ELSEIF ABL:23 == 1
+		TIMES SOURCE:4 , 0.40
+		TIMES SOURCE:5 , 0.40
+	ELSEIF ABL:23 == 2
+		TIMES SOURCE:4 , 0.60
+		TIMES SOURCE:5 , 0.60
+	ELSEIF ABL:23 == 3
+		TIMES SOURCE:4 , 0.80
+		TIMES SOURCE:5 , 0.80
+	ELSEIF ABL:23 == 4
+		TIMES SOURCE:4 , 1.00
+		TIMES SOURCE:5 , 1.00
+	ELSE
+		TIMES SOURCE:4 , 1.20
+		TIMES SOURCE:5 , 1.20
+	ENDIF
+ENDIF
+
+
+@COM25_POST
+;-------------------------------------------------
+;経験上昇
+;-------------------------------------------------
+;レズ・ホモ経験
+IF TALENT:122 == 0 && TALENT:PLAYER:122 == 0
+	PRINTFORM %SAVESTR:TARGET%与%SAVESTR:PLAYER%的
+	PRINTS EXPNAME:40
+	PRINTL +3
+	EXP:40 += 3
+	EXP:PLAYER:40 += 3
+ELSEIF TALENT:122 == 1 && TALENT:PLAYER:122 == 1
+	PRINTFORM %SAVESTR:TARGET%与%SAVESTR:PLAYER%的
+	PRINTS EXPNAME:41
+	PRINTL +3
+	EXP:41 += 3
+	EXP:PLAYER:41 += 3
+ENDIF
+
+;調教者の経験
+EXP:PLAYER:1 += 1
+
+CALL EVENT_SEITSU_A
+
+;爱情经验
+IF TALENT:122
+	E = 2
+ELSE
+	E = 1
+ENDIF
+IF CFLAG:2 >= 1000 && ASSIPLAY == 0
+	PRINTFORML %EXPNAME:23%+{E}
+	EXP:23 += E
+ENDIF
+E = 0
+
+IF TALENT:119 || TALENT:121 || TALENT:122
+	;奴隷のＰ⇔調教者のＡの汚れが移動
+	STAIN:2 |= STAIN:PLAYER:4
+	STAIN:PLAYER:4 |= STAIN:2
+ENDIF
+
+
+;屈服刻印２に相当
+TFLAG:200 = 2
+
+RETURN 1
+
+
+
+
+;-------------------------------------------------
+;精通
+;-------------------------------------------------
+@EVENT_SEITSU_A
+A = NO:PLAYER
+;【男人】か【扶她】であり【未熟】
+SIF (TALENT:121 == 0 && TALENT:122 == 0) || TALENT:135 == 0
+	RETURN 0
+;更に［Ｃ感度］５以上で触手調教や兽奸でなく
+SIF ABL:0 <= 4 || TEQUIP:90 || TEQUIP:89
+	RETURN 0
+;「調教対象」から「調教者」への関係が150以上
+SIF RELATION:TARGET:A < 150
+	RETURN 0
+PRINTFORML %SAVESTR:PLAYER%的直肠被侵犯着，%SAVESTR:TARGET%开始精通这个了…
+TALENT:135 = 0
+
+RETURN 1
+;
+;
+;
+

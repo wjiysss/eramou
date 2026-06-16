@@ -1,0 +1,183 @@
+﻿;安全套関係をこのファイルに分離
+;あんまり至れり尽くせりにしてもしょうがないので
+;安全套を持ってないなら基本的には生でしてしまう
+;-------------------------------------------------
+;CFLAG:61 = キャラ毎の安全套の自動使用設定
+;(0:使う度に確認,1:ある限り自動的に使う,2:使わない)
+;-------------------------------------------------
+;調教メニュー内・安全套設定
+;-------------------------------------------------
+@CONDOM_SETTINGS
+SIF TARGET < 1
+	RETURN 1
+PRINTFORML 和%SAVESTR:TARGET%做爱要戴套吗？
+PRINTFORML 现在：%LOCALS:(CFLAG:61)%
+DRAWLINE
+PRINTL [0] 每次都问
+PRINTL [1] 有套就用
+PRINTL [2] 每次都直接来，来个痛快
+PRINTL [9] 返回
+$INPUT_LOOP_01
+INPUT
+SELECTCASE RESULT
+	CASE 9
+		RETURN 0
+	CASE 0
+		PRINTW 每次确认。
+		CFLAG:61 = 0
+	CASE 1
+		PRINTW 使用安全套。
+		CFLAG:61 = 1
+	CASE 2
+		PRINTFORMW 和%SAVESTR:TARGET%直接做。
+		CFLAG:61 = 2
+	CASEELSE
+		GOTO INPUT_LOOP_01
+ENDSELECT
+RETURN 0
+
+;-------------------------------------------------
+;安全套を使うかの確認
+;-------------------------------------------------
+@CONFIRM_CONDOM
+;TEQUIP:35 = マスターが安全套装着
+;TEQUIP:36 = 助手が安全套装着
+;-------------------
+;RETURN 1:コマンド続行
+;RETURN 0:中止
+;-------------------
+
+;安全套使わない設定なら続行
+SIF CFLAG:61 == 2
+	RETURN 1
+;兽奸なら続行
+SIF TEQUIP:89
+	RETURN 1
+;死斗场なら続行
+SIF TEQUIP:55
+	RETURN 1
+;調教者が男でも扶她でもないなら続行
+SIF !TALENT:PLAYER:121 && !TALENT:PLAYER:122
+	RETURN 1
+;調教者が既に安全套してるなら続行
+SIF (!ASSIPLAY && TEQUIP:35) || (ASSIPLAY && TEQUIP:36)
+	RETURN 1
+
+;毎回確認かつ安全套所持の場合、確認する
+IF CFLAG:61 == 0 && ITEM:24
+	IF !ASSIPLAY
+		PRINTL 要戴套吗？
+		PRINTL  [0] - 戴
+		PRINTL  [1] - 不戴
+	ELSE
+		PRINTL 让使用安全套吗？
+		PRINTL  [0] - 使用
+		PRINTL  [1] - 不使用
+	ENDIF
+	PRINTL  [2] - 今后都直接来，来个痛快
+	PRINTL  [3] - 今后都戴套
+	
+	$INPUT_LOOP_01
+	INPUT
+	SELECTCASE RESULT
+		CASE 0
+			ITEM:24 -= 1
+			IF !ASSIPLAY
+				PRINTFORML %SAVESTR:PLAYER%戴着套。
+				TEQUIP:35 = 1
+			ELSE
+				PRINTFORML 让%SAVESTR:PLAYER%戴着套。
+				TEQUIP:36 = 1
+			ENDIF
+			RETURN 1
+		CASE 1
+			RETURN 1
+		CASE 2
+			PRINTFORML 今后和%SAVESTR:TARGET%做都是直接来。
+			CFLAG:61 = 2
+			RESTART
+		CASE 3
+			PRINTFORML 今后有套就用。
+			CFLAG:61 = 1
+			RESTART
+		CASEELSE
+			GOTO INPUT_LOOP_01
+	ENDSELECT
+ENDIF
+
+;自動で使う場合
+IF CFLAG:61 == 1
+	;安全套があるか
+	IF ITEM:24 > 0
+		;あるなら使う
+		ITEM:24 -= 1
+		IF !ASSIPLAY
+			PRINTFORML %SAVESTR:PLAYER%戴着套。
+			TEQUIP:35 = 1
+		ELSE
+			PRINTFORML 让%SAVESTR:PLAYER%戴着套。
+			TEQUIP:36 = 1
+		ENDIF
+		RETURN 1
+	ELSE
+		;ない場合、魔王さまの技巧Lvが5未満だと生でしてしまう
+		;理由:その方がバカっぽいので
+		IF ABL:MASTER:12 > 4
+			PRINTFORM 没有安全套，直接来。
+			IF !ASSIPLAY
+				PRINTFORML 来吗？
+			ELSE
+				PRINTFORML 让吗？
+			ENDIF
+			PRINTL  [0] - 好的(下次也继续确认)
+			PRINTL  [1] - 好的(今后都直接来)
+			PRINTL  [2] - 不要
+			
+			$INPUT_LOOP_02
+			INPUT
+			SELECTCASE RESULT
+				CASE 0
+					RETURN 1
+				CASE 1
+					PRINTFORML 今后对%SAVESTR:TARGET%不再确认。
+					CFLAG:61 = 2
+					RETURN 1
+				CASE 2
+					RETURN 0
+				CASEELSE
+					GOTO INPUT_LOOP_02
+			ENDSELECT
+		ELSE
+			PRINTL 因为没有安全套所以直接插入。
+			RETURN 1
+		ENDIF
+	ENDIF
+ENDIF
+
+;全パターン拾えてなかったら申し訳程度のメッセージを出す
+;PRINTW ※COMF_CONDOM.ERB/@CONFIRM_CONDOM/分岐漏れ
+RETURN 1
+
+;-------------------------------------------------
+;安全套を使うかの確認2
+;COM65「逆侵犯助手」のためのもの
+;-------------------------------------------------
+@CONFIRM_CONDOM2
+$INPUT_LOOP_02
+IF TEQUIP:37 == 0 && ITEM:24 && (TALENT:TARGET:121 || TALENT:TARGET:122) && CFLAG:MASTER:61 != 2
+	PRINTFORML %SAVESTR:TARGET%使用安全套吗？
+	PRINTL  [0] - 用
+	PRINTL  [1] - 这次直接来
+	INPUT
+	IF RESULT == 0
+		PRINTFORML %SAVESTR:TARGET%戴着套
+		ITEM:24 -= 1
+		TEQUIP:37 = 1
+	ELSEIF RESULT == 1
+		CFLAG:MASTER:61 = 2
+	ELSEIF RESULT != 1
+		GOTO INPUT_LOOP_02
+	ENDIF
+ENDIF
+RETURN 1
+

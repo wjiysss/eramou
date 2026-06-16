@@ -1,0 +1,1103 @@
+﻿;------------------------------------------
+@MUSEUM
+#DIM LV
+#DIMS MATURO
+#DIM FAMILY,3
+;ZはTARGETを保存してるため使用禁止
+;------------------------------------------
+;処刑コマンド
+
+;FLAG:84  調度品の数
+
+SIF A == 0
+	RETURN 0
+B = A
+
+FAMILY = CFLAG:A:605
+FAMILY:1 = FAMILY % 10
+CALL SEARCH_FAMILY, A
+FAMILY:2 = RESULT
+
+;	MATURO = 対象の末路
+;大きいカテゴリにしたけど、細分化したいときはこの辺の処理を変えてみてください
+
+
+PRINTW 要制作成什么样的展品呢？
+PRINTL 
+PRINTL [0] 石像
+PRINTL [1] 标本
+PRINTL [2] 蜡像
+PRINTL [3] 人体模型人偶
+PRINTL [4] 球型关节人偶
+PRINTL [5] 金属雕像
+PRINTL [6] 冰雕
+PRINTL [7] 宝石像
+PRINTL [8] 屋内家具
+PRINTL [9] 画像
+PRINTL  
+PRINTL [100] 返回
+
+$INPUT_LOOP
+INPUT
+IF RESULT < 0
+	GOTO INPUT_LOOP
+ELSEIF RESULT >= 10 && RESULT != 100
+	GOTO INPUT_LOOP
+ENDIF
+
+IF RESULT == 100
+	TARGET = FLAG:1
+	RETURN 0
+ENDIF
+
+TARGET = A
+IF TALENT:TARGET:220 != 1 && EX_TALENT:TARGET:1 != 1 
+	EX_FLAG:99 += 2
+	PRINTFORML 威望值增加
+	ELSE
+	EX_FLAG:99 -= 10
+	PRINTFORML 威望值减少
+	ENDIF
+TFLAG:500 = RESULT
+
+CALL MUSEUM_KOUJO
+
+IF TFLAG:500 == 0
+	FLAG:84 += 1
+	SIF TALENT:A:57 || TALENT:A:121 || TALENT:A:122 || TALENT:A:130
+		FLAG:611 += 1
+	FLAG:600 += 1
+	PRINTFORML %SAVESTR:A%被封印了全部的力量，站在邪恶的魔法阵中央。
+	PRINTW 然后，一束光芒闪过，
+	PRINT 她的身体变成了
+	MATURO = 
+		IF RAND:3 == 0
+			;白い石膏像いいよね…
+			PRINT 石膏
+			MATURO += "石膏"
+		ELSEIF RAND:3 == 1
+			;何か豪華そうなちょっと白めのやつ
+			PRINT 大理石
+			MATURO += "大理石"
+		ELSE
+			;普通の灰色の
+			PRINT 石
+			MATURO += "石"
+		ENDIF
+	PRINTW 像。
+	MATURO += "像"
+	LOCALS = 
+		;噴水像に出来る？
+		IF TALENT:A:57 || TALENT:A:121 || TALENT:A:122 || TALENT:A:130
+			PRINTFORMW %SAVESTR:MASTER%为了让%SAVESTR:A%的像喷水而特地亲手改造了魔法阵。
+			;ふたなり噴水
+			IF TALENT:A:121 || TALENT:A:122
+				PRINTFORMW %SAVESTR:A%的勃起的男根如预定的那样变换成了喷水装置，前端激烈的喷着水…
+				LOCALS = "射精"
+				;ふたなりかつ母乳体質な石噴水
+				IF TALENT:A:130				
+					PRINTFORMW 稍微一碰就会喷出母乳的%SAVESTR:A%的乳首也被变换、从勃起的尖端喷出了水…
+					LOCALS += "喷乳"
+				ENDIF
+				;以下資質分岐
+				IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+					;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+					PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+					PRINTW 但是无力抵抗的她只能就这样被变成喷水像、在大众面前露出着难看的姿态…
+				ELSEIF MARK:3 == 3
+					;反発刻印Lv3
+					PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+					PRINTW 不过，无法反抗的她最后还是被做成了喷水像，将那美丽的肢体呈现在大众眼前。
+				ELSEIF TALENT:A:85
+					;愛
+					PRINTFORMW %SAVESTR:A%虽然被变成了喷水像、但却温和的微笑着…
+				ELSEIF TALENT:A:153
+					;妊娠中
+					PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了喷水像装饰了起来…
+					LOCALS += "妊娠"
+				ELSEIF TALENT:A:60 || TALENT:A:80
+					;自慰しやすい・倒錯的
+					PRINTFORMW 因为处在特殊的状况下、性的兴奋超过了恐怖的%SAVESTR:A%就那样带着兴奋的表情被变成了喷水像…
+				ELSEIF TALENT:A:28 || TALENT:A:89
+					;目立ちたがり・露出狂
+					PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+				ELSEIF TALENT:A:14 || TALENT:A:26
+					;悲観的・大人しい
+					PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+				ELSEIF TALENT:A:35
+					;恥じらい
+					PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+					PRINTW 因为遮挡的途中被石化、手停在了不上不下的位置挡不住关键的部位
+					PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的喷水像被装饰了起来
+				ELSEIF TALENT:A:136
+					;牝犬
+					PRINTFORMW %SAVESTR:A%大概是因为无意识的想起被当做野兽时的行为、
+					PRINTW 四肢着地后、被变成了狗小便那样抬起单腿的姿势的喷水像装饰了起来…
+					LOCALS += "牝犬"
+				ELSEIF TALENT:A:113
+					;魅惑
+					PRINTFORMW 变成喷水像的%SAVESTR:A%散发着说不出的美丽…
+					LOCALS += "魅惑"
+				ELSE
+					;上記素質以外
+					PRINTFORMW 变成喷水像的%SAVESTR:A%被用正在小便的孩子的姿势装饰了起来…
+				ENDIF
+			
+			ELSEIF TALENT:A:130
+				;母乳体質なら胸噴水
+				PRINTFORMW 时常滴着母乳的%SAVESTR:A%乳首、如%SAVESTR:MASTER%所想的那样变换成了从顶端喷出水的样子…
+				LOCALS = "喷乳"
+				IF TALENT:A:57
+					;母乳体質でおむらし癖の小便少女噴水
+					PRINTFORMW 然后有放尿癖的%SAVESTR:A%、从尿道的地方也断断续续的流出水来…
+					LOCALS += "漏尿"
+				ENDIF
+				IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+					;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+					PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+					PRINTW 但是无力抵抗的她只能就这样被变成喷水像、在大众面前露出着难看的姿态…
+				ELSEIF MARK:3 == 3
+					;反発刻印Lv3
+					PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+					PRINTW 不过，无法反抗的她最后还是被做成了喷水像，将那美丽的肢体呈现在大众眼前。
+				ELSEIF TALENT:A:85
+					;愛
+					PRINTFORMW %SAVESTR:A%虽然被变成了喷水像、但却温和的微笑着…
+				ELSEIF TALENT:A:153
+					;妊娠中
+					PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了喷水像装饰了起来…
+					LOCALS += "妊娠"
+				ELSEIF TALENT:A:60 || TALENT:A:80
+					;自慰しやすい・倒錯的
+					PRINTFORMW 因为处在特殊的状况下、性的兴奋超过了恐怖的%SAVESTR:A%就那样带着兴奋的表情被变成了喷水像…
+				ELSEIF TALENT:A:28 || TALENT:A:89
+					;目立ちたがり・露出狂
+					PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+				ELSEIF TALENT:A:14 || TALENT:A:26
+					;悲観的・大人しい
+					PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+				ELSEIF TALENT:A:35
+					;恥じらい
+					PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+					PRINTW 因为遮挡的途中被石化、手停在了不上不下的位置挡不住关键的部位
+					PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的喷水像被装饰了起来
+				ELSEIF TALENT:A:136
+					;牝犬
+					PRINTFORMW %SAVESTR:A%大概是因为无意识的想起被当做野兽时的行为、
+					PRINTW 四肢着地后、被变成了狗小便那样抬起单腿的姿势的喷水像装饰了起来…
+					LOCALS += "牝犬"
+				ELSEIF TALENT:A:113
+					;魅惑
+					PRINTFORMW 变成喷水像的%SAVESTR:A%散发着说不出的美丽…
+					LOCALS += "魅惑"
+				ELSE
+					;上記素質以外
+					PRINTFORMW 变成喷水像的%SAVESTR:A%、以用膝盖顶起突出着胸部的姿势被装饰了起来……
+				ENDIF
+				
+			ELSEIF TALENT:A:57
+				;おむらし癖だったらシンプルに小便少女で
+				PRINTFORMW 尿道宽松的%SAVESTR:A%的尿道的地方变换成了喷水装置、%SAVESTR:A%要在人们面前永远不停地放尿了…
+				LOCALS += "漏尿"
+				IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+					;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+					PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+					PRINTW 但是无力抵抗的她只能就这样被变成喷水像、在大众面前露出着难看的姿态…
+				ELSEIF MARK:3 == 3
+					;反発刻印Lv3
+					PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+					PRINTW 不过，无法反抗的她最后还是被做成了喷水像，将那美丽的肢体呈现在大众眼前。
+				ELSEIF TALENT:A:85
+					;愛
+					PRINTFORMW %SAVESTR:A%虽然被变成了喷水像、但却温和的微笑着…
+				ELSEIF TALENT:A:153
+					;妊娠中
+					PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了喷水像装饰了起来…
+					LOCALS += "妊娠"
+				ELSEIF TALENT:A:60 || TALENT:A:80
+					;自慰しやすい・倒錯的
+					PRINTFORMW 因为处在特殊的状况下、性的兴奋超过了恐怖的%SAVESTR:A%就那样带着兴奋的表情被变成了喷水像…
+				ELSEIF TALENT:A:28 || TALENT:A:89
+					;目立ちたがり・露出狂
+					PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+				ELSEIF TALENT:A:14 || TALENT:A:26
+					;悲観的・大人しい
+					PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+				ELSEIF TALENT:A:35
+					;恥じらい
+					PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+					PRINTW 因为遮挡的途中被石化、手停在了不上不下的位置挡不住关键的部位
+					PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的喷水像被装饰了起来
+				ELSEIF TALENT:A:136
+					;牝犬
+					PRINTFORMW %SAVESTR:A%大概是因为无意识的想起被当做野兽时的行为、
+					PRINTW 四肢着地后、被变成了狗小便那样抬起单腿的姿势的喷水像装饰了起来…
+					LOCALS += "牝犬"
+				ELSEIF TALENT:A:113
+					;魅惑
+					PRINTFORMW 变成喷水像的%SAVESTR:A%散发着说不出的美丽…
+					LOCALS += "魅惑"
+				ELSEIF TALENT:A:153
+					;妊娠中
+					PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了喷水像装饰了起来…
+					LOCALS += "妊娠"
+				ELSEIF RAND:8 == 0
+					;たまに小便小僧っぽく
+					PRINTFORMW 变成喷水像的%SAVESTR:A%，不知为何被摆成尿尿小僧的形象。
+					PRINTW 一条拱形的水柱，从她的下体潺潺而出。
+					LOCALS += "小便"
+				ELSE
+					;上記素質以外
+					PRINTFORMW 变成喷水像的%SAVESTR:A%，腰和腿摆成大大的Ｍ字形被装饰起来了。
+				ENDIF
+			ENDIF
+		
+		;噴水像に出来なかった石像
+		ELSE
+			IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+				;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+				PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+				PRINTW 但是无力抵抗的她只能就这样被变成石像、在大众面前露出着难看的姿态…
+			ELSEIF MARK:3 == 3
+				;反発刻印Lv3
+				PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+				PRINTW 不过，无法反抗的她最后还是被做成了石像，将那美丽的肢体呈现在大众眼前。
+			ELSEIF TALENT:A:85
+				;愛
+				PRINTFORMW %SAVESTR:A%虽然被变成了石像、但却温和的微笑着…
+			ELSEIF TALENT:A:153
+				;妊娠中
+				PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了石像装饰了起来…
+				LOCALS += "妊娠"
+			ELSEIF TALENT:A:60 || TALENT:A:80
+				;自慰しやすい・倒錯的
+				PRINTFORMW 因为处在特殊的状况下、性的兴奋超过了恐怖的%SAVESTR:A%就那样带着兴奋的表情被变成了石像…
+			ELSEIF TALENT:A:28 || TALENT:A:89
+				;目立ちたがり・露出狂
+				PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+			ELSEIF TALENT:A:14 || TALENT:A:26
+				;悲観的・大人しい
+				PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+			ELSEIF TALENT:A:35
+				;恥じらい
+				PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+				PRINTW 因为遮挡的途中被石化、手停在了不上不下的位置挡不住关键的部位
+				PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的石像被装饰了起来
+			ELSEIF TALENT:A:136
+				;牝犬
+				PRINTFORMW %SAVESTR:A%大概是因为无意识的想起被当做野兽时的行为、
+				PRINTW 以「坐下」的姿势、就那样以等待着下个命令的状态被变成石像装饰了起来…
+				LOCALS += "牝犬"
+			ELSEIF TALENT:A:113
+				;魅惑
+				PRINTFORMW 变成石像的%SAVESTR:A%散发着说不出的美丽…
+				LOCALS += "魅惑"
+			ENDIF
+		ENDIF
+	SIF TALENT:A:57 || TALENT:A:121 || TALENT:A:122 || TALENT:A:130
+		PRINTFORMW 现在石制喷水像的数量…{FLAG:611}个
+	PRINTFORMW 现在石像数量…{FLAG:600}个
+	
+			MATURO = %LOCALS%%MATURO%
+	
+ELSEIF TFLAG:500 == 1
+	FLAG:84 += 1
+	FLAG:601 += 1
+	PRINTFORML 被从天花板上拉下来的锁链扣着四肢，魔物接近了%SAVESTR:A%。
+	PRINTW 用小刀将她肢解、放血。
+	PRINTW 凄厉的惨叫声回响不已。
+	PRINTW 她的身体，变成漂亮的标本了。
+	MATURO = 标本
+	LOCALS =
+		IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+			;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+			PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+			PRINTW 但是无力抵抗的她就那样被做成了标本、被当做家具一样装饰在了墙壁上…
+		ELSEIF MARK:3 == 3
+			;反発刻印Lv3
+			PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+			PRINTW 不过，无法反抗的她最后还是被做成了标本，作为装饰品挂在墙上。
+		ELSEIF TALENT:A:85
+			;愛
+			PRINTFORMW 被做成标本的%SAVESTR:A%平静的微笑着…
+		ELSEIF TALENT:A:35
+			;恥じらい
+			PRINTFORMW %SAVESTR:A%的标本浮现出满脸通红的困惑表情、被装饰在了墙壁上…
+		ELSEIF TALENT:A:28 || TALENT:A:89
+			;目立ちたがり・露出狂
+			PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%的标本露出恍惚的表情、被装饰在了墙壁上…
+		ELSEIF TALENT:A:14 || TALENT:A:26
+			;悲観的・大人しい
+			PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情被装饰在了墙壁上…
+		ELSEIF TALENT:A:153
+			;妊娠中・書いておいてなんだけど妊婦の剥製ってすっごいファンタジーな代物だなぁ
+			PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态、被装饰在了墙壁上…
+			LOCALS = 妊娠
+		ELSEIF TALENT:A:113
+			;魅惑
+			PRINTFORMW 被做成标本的%SAVESTR:A%散发着说不出的美丽…
+			LOCALS = 魅惑
+		ENDIF
+	PRINTFORMW 现在的标本数量…{FLAG:601}个
+	
+	
+	
+		MATURO = %LOCALS%%MATURO%
+	
+	
+ELSEIF TFLAG:500 == 2
+	FLAG:84 += 1
+	FLAG:602 += 1
+	PRINTFORML %SAVESTR:A%被封印了全部的力量，站在台座上。
+	PRINTW 属下的魔物收到指示，将大量的蜡倾倒而下。
+	PRINTW 最初的激烈惨叫声，随着时间和不停倾倒的蜡渐渐变小了。
+	PRINTW 在悲鸣完全听不到后又过了一段时间，将多余的蜡仔细地刮掉…
+	PRINTW 现在，她的身体成为蜡像了。
+	MATURO = 蜡像
+	LOCALS = 
+		IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+			;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+			PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+			PRINTW 但是无力抵抗的她就这样被做成了蜡像、在大众面前露出着难看的姿态…
+		ELSEIF MARK:3 == 3
+			;反発刻印Lv3
+			PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+			PRINTW 不过，无法反抗的她最后还是被做成了蜡像，将那美丽的肢体呈现在大众眼前。
+		ELSEIF TALENT:A:85
+			;愛
+			PRINTFORMW 被做成蜡像的%SAVESTR:A%平静的微笑着
+		ELSEIF TALENT:A:35
+			;恥じらい
+			PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+			PRINTW 因为遮挡的途中蜡化完成、手停在了不上不下的位置挡不住关键的部位
+			PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的蜡像被装饰了起来
+		ELSEIF TALENT:A:28 || TALENT:A:89
+			;目立ちたがり・露出狂
+			PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+		ELSEIF TALENT:A:14 || TALENT:A:26
+			;悲観的・大人しい
+			PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+		ELSEIF TALENT:A:153
+			;妊娠中
+			PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被做成了蜡像装饰了起来…
+			LOCALS = 妊娠
+		ELSEIF TALENT:A:113
+			;魅惑
+			PRINTFORMW 被做成蜡像的%SAVESTR:A%散发着说不出的美丽…
+			LOCALS = 魅惑
+		ENDIF
+
+	PRINTFORMW 现在的蜡像数量…{FLAG:602}个
+	
+	
+	
+		MATURO = %LOCALS%%MATURO%
+	
+	
+ELSEIF TFLAG:500 == 3
+	FLAG:84 += 1
+	FLAG:603 += 1
+	PRINT 被封印一切力量的
+	;体型別にしてみた
+		IF TALENT:A:308 <= 201
+			;グラマー
+			PRINT 肉感的
+			MATURO = 肉感
+		ELSEIF TALENT:A:308 >= 100
+			;スレンダー
+			PRINT 苗条的
+			MATURO = 纤细
+		ELSE
+			;標準
+			PRINT 标准体型的
+			MATURO =
+		ENDIF
+	PRINTFORM %SAVESTR:A%，得到了
+		;チャームポイントがあればそれを強調
+		IF TALENT:A:312 == 12
+			;美乳
+			PRINT 突出美乳
+			MATURO += "美乳"
+		ELSEIF TALENT:A:312 == 13
+			;くびれ
+			PRINT 突出腰线
+			MATURO += "细腰"
+		ELSEIF TALENT:A:312 == 14
+			;ヒップライン
+			PRINT 突出臀部
+			MATURO += "翘臀"
+		ELSEIF TALENT:A:312 == 15
+			;脚線美
+			PRINT 突出腿部曲线
+			MATURO += "美腿"
+		ELSEIF TALENT:A:312 == 23
+			;大きな尻
+			PRINT 突出大屁股
+			MATURO += "巨尻"
+		ELSE
+			;上記以外
+			PRINT 指定姿势
+		ENDIF
+	PRINTW 的指示。
+	PRINTW 魔物接近了被固定姿势的她，咏唱着她听不懂的咒语。
+		IF RAND:3 == 0
+			PRINTW 她对魔物的行为感到疑惑，但一瞬间，她就无法思考了。
+			PRINTW 全身表皮都似变成了塑料，覆盖着整个美丽的肢体。
+			PRINTW 仔细看的话，在各处关节位置均出现了细细的缝隙。
+			PRINTW 下半身固定着，以腰线为界，上半身能转动或拿下来。
+		ELSE
+			PRINTW 只见她整个人颤动了一下，然后就什么声音都听不见了。
+			PRINTW 全身表皮都似变成了塑料，覆盖着整个美丽的肢体。
+			PRINTW 体态和形状发生了微妙的变化，完全感觉不到一丝生气。
+			PRINTW 表情凝固的她，被轻轻地抬走，放到了展示台上。
+		ENDIF
+	PRINTW 就这样，她被变为漂亮的人体模型人偶了。
+	MATURO += "模型人偶"
+	LOCALS = 
+		IF TALENT:A:85
+			;愛
+			PRINTFORMW 变成人体模型人偶的%SAVESTR:A%，时而会被前来参观的魔物偷走身上的各部件。
+			PRINTFORMW %SAVESTR:A%脖子以上的部件浮现出了好像接受被玩弄似的温和的笑容…
+		ELSEIF TALENT:A:60 || TALENT:A:80
+			;自慰しやすい・倒錯的
+			PRINTFORMW 在这种特异的情况下，性兴奋反而战胜了恐怖。%SAVESTR:A%成为了带有兴奋表情的人体模型人偶了……
+		ELSEIF TALENT:A:28 || TALENT:A:89
+			;目立ちたがり・露出狂
+			PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+		ELSEIF TALENT:A:153
+			;妊娠中
+			PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了人体模型人偶装饰了起来…
+			LOCALS = 妊娠
+		ELSEIF TALENT:A:113
+			;魅惑
+			PRINTFORMW 变成人体模型人偶的%SAVESTR:A%，酝酿出一种难以言表的美…
+			LOCALS = 魅惑
+		ENDIF
+		
+	PRINTFORMW 人体模型人偶数量…{FLAG:603}个
+	
+	
+	
+		MATURO = %LOCALS%%MATURO%
+	
+	
+ELSEIF TFLAG:500 == 4
+	FLAG:84 += 1
+	FLAG:604 += 1
+	PRINTFORML 被封印全部力量的%SAVESTR:A%身边站满魔物，正在吟唱着奇特的咒语。
+	PRINTW 她试图逃离这些魔物，却发现自己的动作越来越迟钝了。
+	PRINTW 她的身体，一点一点地失去着温度，从人体的肌肤转为无机质。关节部位，变成了球体。
+	PRINTW 完全不能理解自己身上发生了什么，她持续挣扎着。
+	PRINTW 几分钟后，她变成了精巧的球型关节人偶了。
+	MATURO = 球型关节人偶
+	LOCALS = 
+		IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+			;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+			PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+			PRINTW 但是无力抵抗的她只能就这样被变成球形关节人偶、在大众面前露出着难看的姿态…
+		ELSEIF MARK:3 == 3
+			;反発刻印Lv3
+			PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+			PRINTW 不过，无法反抗的她最后还是被做成了球形关节人偶，四肢被摆成了向观众献媚的姿势。
+		ELSEIF TALENT:A:85
+			;愛
+			PRINTFORMW %SAVESTR:A%虽然被变成了球形关节人偶、但却温和的微笑着…
+		ELSEIF TALENT:A:35
+			;恥じらい
+			PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+			PRINTW 因为遮挡的途中人形化完成、手停在了不上不下的位置挡不住关键的部位
+			PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的球形人偶被装饰了起来
+		ELSEIF TALENT:A:28 || TALENT:A:89
+			;目立ちたがり・露出狂
+			PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+		ELSEIF TALENT:A:14 || TALENT:A:26
+			;悲観的・大人しい
+			PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+		ELSEIF TALENT:A:153
+			;妊娠中
+			PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了球形关节人偶装饰了起来…
+			LOCALS = "妊娠的"
+		ELSEIF TALENT:A:113
+			;魅惑
+			PRINTFORMW 变成球形关节人偶的%SAVESTR:A%散发着说不出的美丽…
+			LOCALS = "魅惑的"
+		ENDIF
+	PRINTFORMW 球型关节人偶数量…{FLAG:604}个
+	
+	
+	
+		MATURO = %LOCALS%%MATURO%
+	
+	
+ELSEIF TFLAG:500 == 5
+	FLAG:84 += 1
+	SIF TALENT:A:57 || TALENT:A:121 || TALENT:A:122 || TALENT:A:130
+		FLAG:612 += 1
+	FLAG:605 += 1
+	PRINTFORML %SAVESTR:A%被封印了全部的力量，站在邪恶的魔法阵中央。
+	PRINTW 属下的魔物收到指示，瞬间，耀眼的光芒包围了她。
+	PRINTW 在光芒里，她感到自己心中的什么东西，充实地被满足了。
+	PRINTW 不知何来的充实感及满足感，使踌躇的她感到舒适，将身心都委托给了这种感觉。
+	PRINTW 不一会儿，光芒消失。
+	PRINT 她的身体变成了
+		IF RAND:8 == 0
+				;プラチナ
+				PRINT 白金
+				MATURO = 白金
+		ELSEIF RAND:8 == 1
+				;ゴールド
+				PRINT 黄金
+				MATURO = 黄金
+		ELSEIF RAND:8 == 2
+				;シルバー
+				PRINT 白银
+				MATURO = 白银
+		ELSEIF RAND:8 == 3
+				;カッパー
+				PRINT 赤铜
+				MATURO = 赤铜
+		ELSEIF RAND:8 == 4
+				;…メタル？
+				PRINT 钢铁
+				MATURO = 钢铁
+		ELSE
+				;ブロンズ
+				PRINT 青铜
+				MATURO = 青铜
+		ENDIF
+	PRINTW 像。
+	MATURO += "像"
+	LOCALS = 
+		;噴水像に出来る？
+		IF TALENT:A:57 || TALENT:A:121 || TALENT:A:122 || TALENT:A:130
+			PRINTFORMW %SAVESTR:MASTER%为了让%SAVESTR:A%的像喷水而特地亲手改造了魔法阵。
+			
+			;ふたなり噴水
+			IF TALENT:A:121 || TALENT:A:122
+				PRINTFORMW %SAVESTR:A%的勃起的男根如预定的那样变换成了喷水装置，前端激烈的喷着水…
+				LOCALS = 射精
+				IF TALENT:A:130
+				;ふたなりかつ母乳体質な金属噴水
+				PRINTFORMW 稍微一碰就会喷出母乳的%SAVESTR:A%的乳首也被变换、从勃起的尖端喷出了水…
+				LOCALS += "喷乳"
+				ENDIF
+				;以下資質分岐
+				IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+					;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+					PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+					PRINTW 但是无力抵抗的她只能就这样被变成喷水像、在大众面前露出着难看的姿态…
+				ELSEIF MARK:3 == 3
+					;反発刻印Lv3
+					PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+					PRINTW 不过，无法反抗的她最后还是被做成了喷水像，将那美丽的肢体呈现在大众眼前。
+				ELSEIF TALENT:A:85
+					;愛
+					PRINTFORMW %SAVESTR:A%虽然被变成了喷水像、但却温和的微笑着…
+				ELSEIF TALENT:A:153
+					;妊娠中
+					PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了喷水像装饰了起来…
+					LOCALS += "妊娠"
+				ELSEIF TALENT:A:60 || TALENT:A:80
+					;自慰しやすい・倒錯的
+					PRINTFORMW 因为处在特殊的状况下、性的兴奋超过了恐怖的%SAVESTR:A%就那样带着兴奋的表情被变成了喷水像…
+				ELSEIF TALENT:A:28 || TALENT:A:89
+					;目立ちたがり・露出狂
+					PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+				ELSEIF TALENT:A:14 || TALENT:A:26
+					;悲観的・大人しい
+					PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+				ELSEIF TALENT:A:35
+					;恥じらい
+					PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+					PRINTW 因为遮挡的途中被石化、手停在了不上不下的位置挡不住关键的部位
+					PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的喷水像被装饰了起来
+				ELSEIF TALENT:A:136
+					;牝犬
+					PRINTFORMW %SAVESTR:A%大概是因为无意识的想起被当做野兽时的行为、
+					PRINTW 四肢着地后、被变成了狗小便那样抬起单腿的姿势的喷水像装饰了起来…
+					LOCALS += "牝犬"
+				ELSEIF TALENT:A:113
+					;魅惑
+					PRINTFORMW 变成喷水像的%SAVESTR:A%散发着说不出的美丽…
+					LOCALS += "魅惑"
+				ELSE
+					;上記素質以外
+					PRINTFORMW 变成喷水像的%SAVESTR:A%被用正在小便的孩子的姿势装饰了起来…
+				ENDIF
+			
+			ELSEIF TALENT:A:130
+				;母乳体質なら胸噴水
+				PRINTFORMW 时常滴着母乳的%SAVESTR:A%乳首、如%SAVESTR:MASTER%所想的那样变换成了从顶端喷出水的样子…
+				LOCALS = 喷乳
+				IF TALENT:A:57
+					;母乳体質でおむらし癖の小便少女噴水
+					PRINTFORMW 然后有放尿癖的%SAVESTR:A%、从尿道的地方也断断续续的流出水来…
+					LOCALS += "漏尿"
+				ENDIF
+				IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+					;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+					PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+					PRINTW 但是无力抵抗的她只能就这样被变成喷水像、在大众面前露出着难看的姿态…
+				ELSEIF MARK:3 == 3
+					;反発刻印Lv3
+					PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+					PRINTW 不过，无法反抗的她最后还是被做成了喷水像，将那美丽的肢体呈现在大众眼前。
+				ELSEIF TALENT:A:85
+					;愛
+					PRINTFORMW %SAVESTR:A%虽然被变成了喷水像、但却温和的微笑着…
+				ELSEIF TALENT:A:153
+					;妊娠中
+					PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了喷水像装饰了起来…
+					LOCALS += "妊娠"
+				ELSEIF TALENT:A:60 || TALENT:A:80
+					;自慰しやすい・倒錯的
+					PRINTFORMW 因为处在特殊的状况下、性的兴奋超过了恐怖的%SAVESTR:A%就那样带着兴奋的表情被变成了喷水像…
+				ELSEIF TALENT:A:28 || TALENT:A:89
+					;目立ちたがり・露出狂
+					PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+				ELSEIF TALENT:A:14 || TALENT:A:26
+					;悲観的・大人しい
+					PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+				ELSEIF TALENT:A:35
+					;恥じらい
+					PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+					PRINTW 因为遮挡的途中被金属化、手停在了不上不下的位置挡不住关键的部位
+					PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的喷水像被装饰了起来
+				ELSEIF TALENT:A:136
+					;牝犬
+					PRINTFORMW %SAVESTR:A%大概是因为无意识的想起被当做野兽时的行为、
+					PRINTW 四肢着地后、以露出腹部表达服从的意思的姿势被做成了喷水像装饰了起来…
+					LOCALS += "牝犬"
+				ELSEIF TALENT:A:113
+					;魅惑
+					PRINTFORMW 变成喷水像的%SAVESTR:A%散发着说不出的美丽…
+					LOCALS += "魅惑"
+				ELSE
+					;上記素質以外
+					PRINTFORMW 变成喷水像的%SAVESTR:A%、以用膝盖顶起突出着胸部的姿势被装饰了起来…
+				ENDIF
+				
+			ELSEIF TALENT:A:57
+				;おむらし癖だったらシンプルに小便少女で
+				PRINTFORMW 尿道宽松的%SAVESTR:A%的尿道的地方变换成了喷水装置、%SAVESTR:A%要在人们面前永远不停地放尿了…
+				LOCALS += "漏尿"
+				IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+					;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+					PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+					PRINTW 但是无力抵抗的她只能就这样被变成喷水像、在大众面前露出着难看的姿态…
+				ELSEIF MARK:3 == 3
+					;反発刻印Lv3
+					PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+					PRINTW 不过，无法反抗的她最后还是被做成了喷水像，将那美丽的肢体呈现在大众眼前。
+				ELSEIF TALENT:A:85
+					;愛
+					PRINTFORMW %SAVESTR:A%虽然被变成了喷水像、但却温和的微笑着…
+				ELSEIF TALENT:A:153
+					;妊娠中
+					PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了喷水像装饰了起来…
+					LOCALS += "妊娠"
+				ELSEIF TALENT:A:60 || TALENT:A:80
+					;自慰しやすい・倒錯的
+					PRINTFORMW 因为处在特殊的状况下、性的兴奋超过了恐怖的%SAVESTR:A%就那样带着兴奋的表情被变成了喷水像…
+				ELSEIF TALENT:A:28 || TALENT:A:89
+					;目立ちたがり・露出狂
+					PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+				ELSEIF TALENT:A:14 || TALENT:A:26
+					;悲観的・大人しい
+					PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+				ELSEIF TALENT:A:35
+					;恥じらい
+					PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+					PRINTW 因为遮挡的途中被石化、手停在了不上不下的位置挡不住关键的部位
+					PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的喷水像被装饰了起来
+				ELSEIF TALENT:A:136
+					;牝犬
+					PRINTFORMW %SAVESTR:A%大概是因为无意识的想起被当做野兽时的行为、
+					PRINTW 四肢着地后、被变成了狗小便那样抬起单腿的姿势的喷水像装饰了起来…
+					LOCALS += "牝犬"
+				ELSEIF TALENT:A:113
+					;魅惑
+					PRINTFORMW 变成喷水像的%SAVESTR:A%散发着说不出的美丽…
+					LOCALS += "魅惑"
+				ELSE
+					;上記素質以外
+					PRINTFORMW 被变成喷水像的%SAVESTR:A%、被以沉下腰，两膝大大的分开的姿势被装饰了起来…
+				ENDIF
+			ENDIF
+		
+		;噴水像に出来なかった金属像
+		ELSE
+			IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+				;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+				PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+				PRINTW 但是无力抵抗的她只能就这样被变成金属像、在大众面前露出着难看的姿态…
+			ELSEIF MARK:3 == 3
+				;反発刻印Lv3
+				PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+				PRINTW 不过，无法反抗的她最后还是被做成了金属像，将那美丽的肢体呈现在大众眼前。
+			ELSEIF TALENT:A:85
+				;愛
+				PRINTFORMW %SAVESTR:A%虽然被变成了金属像、但却温和的微笑着…
+			ELSEIF TALENT:A:153
+				;妊娠中
+				PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了金属像装饰了起来…
+				LOCALS += "妊娠"
+			ELSEIF TALENT:A:60 || TALENT:A:80
+				;自慰しやすい・倒錯的
+				PRINTFORMW 因为处在特殊的状况下、性的兴奋超过了恐怖的%SAVESTR:A%就那样带着兴奋的表情被变成了金属像…
+			ELSEIF TALENT:A:28 || TALENT:A:89
+				;目立ちたがり・露出狂
+				PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+			ELSEIF TALENT:A:14 || TALENT:A:26
+				;悲観的・大人しい
+				PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+			ELSEIF TALENT:A:35
+				;恥じらい
+				PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+				PRINTW 因为遮挡的途中被金属化、手停在了不上不下的位置挡不住关键的部位
+				PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的金属像被装饰了起来
+			ELSEIF TALENT:A:136
+				;牝犬
+				PRINTFORMW %SAVESTR:A%大概是因为无意识的想起被当做野兽时的行为、
+				PRINTW 以「坐下」的姿势、就那样以等待着下个命令的状态被变成金属像装饰了起来…
+				LOCALS += "牝犬"
+			ELSEIF TALENT:A:113
+				;魅惑
+				PRINTFORMW 变成金属像的%SAVESTR:A%散发着说不出的美丽…
+				LOCALS += "魅惑"
+			ENDIF
+		ENDIF
+	SIF TALENT:A:57 || TALENT:A:121 || TALENT:A:122 || TALENT:A:130
+		PRINTFORMW 现在金属喷水像的数量…{FLAG:612}个
+	PRINTFORMW 现在金属像的数量……{FLAG:605}个
+	
+	
+	
+		MATURO = %LOCALS%%MATURO%
+	
+	
+ELSEIF TFLAG:500 == 6
+	FLAG:84 += 1
+	FLAG:606 += 1
+	PRINTFORML %SAVESTR:A%被封印了全部的力量，站在巨型的魔法阵中央。
+	PRINTW 属下的魔物收到指示，维持魔法阵的全体魔物，一起发出了极端强烈的冷气。
+	PRINTW 不一会儿，冷气平息，魔法阵的中央，
+	PRINT 她的身体
+		IF RAND:4 == 0
+				;表面に氷が張ってる？くらいの　30～45%凍結封印？
+				PRINT 彻底被冰封住了
+				MATURO = 冰封
+		ELSEIF RAND:4 == 1
+				;完全に氷になっちゃった系の氷像　100%氷結
+				PRINT 变成了透明的冰雕像
+				MATURO = 透明
+		ELSE
+				;普通の氷像　60%くらい凍結
+				PRINT 变成了漂亮的冰雕像
+				MATURO = 
+		ENDIF
+	PRINTW 。
+		MATURO += "冰雕"
+		LOCALS = 
+		IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+			;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+				PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+				PRINTW 但是无力抵抗的她只能就这样被变成冰雕像、在大众面前露出着难看的姿态…
+		ELSEIF MARK:3 == 3
+			;反発刻印Lv3
+			PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+			PRINTW 不过，无法反抗的她最后还是被做成了冰雕，将那美丽的肢体呈现在大众眼前。
+		ELSEIF TALENT:A:85
+			;愛
+			PRINTFORMW 被变成冰雕像的%SAVESTR:A%平静的微笑着
+		ELSEIF TALENT:A:153
+			;妊娠中
+			PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了冰雕像装饰了起来…
+			LOCALS = 妊娠
+		ELSEIF TALENT:A:35
+			;恥じらい
+			PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+			PRINTW 因为遮挡的途中被冻结、手停在了不上不下的位置挡不住关键的部位
+			PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的冰雕像被装饰了起来
+		ELSEIF TALENT:A:28 || TALENT:A:89
+			;目立ちたがり・露出狂
+			PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+		ELSEIF TALENT:A:14 || TALENT:A:26
+			;悲観的・大人しい
+			PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+		ELSEIF TALENT:A:113
+			;魅惑
+			PRINTFORMW 变成冰雕像的%SAVESTR:A%被用正在小便的孩子的姿势装饰了起来…
+			LOCALS = 魅惑
+		ENDIF
+	PRINTFORMW 現在冰雕像的数量…{FLAG:606}個
+	
+	
+	
+		MATURO = %LOCALS%%MATURO%
+	
+	
+ELSEIF TFLAG:500 == 7
+	FLAG:84 += 1
+	FLAG:607 += 1
+	PRINTFORML %SAVESTR:A%被封印了全部的力量，站在邪恶的魔法阵中央。
+	PRINTW 属下的魔物收到指示，瞬间，耀眼的光芒包围了她。
+	PRINTW 在光芒里，她感到自己心中突然一片澄清，再也没有一丝杂质。
+	PRINTW 不知何来的爽快感及清爽感，使踌躇的她感到舒适，将身心都委托给了这种感觉。
+	PRINTW 不一会儿，光芒消失。
+	PRINT 她的身体变成了
+		IF RAND:8 == 0
+				;オパール
+				PRINT 蛋白石
+				MATURO = 蛋白石
+		ELSEIF RAND:8 == 1
+				;エメラルド
+				PRINT 翡翠
+				MATURO = 翡翠
+		ELSEIF RAND:8 == 2
+				;ルビー
+				PRINT 红宝石
+				MATURO = 红宝石
+		ELSEIF RAND:8 == 3
+				;サファイア
+				PRINT 绿宝石
+				MATURO = 绿宝石
+		ELSEIF RAND:8 == 4
+				;アクアマリン
+				PRINT 蓝宝石
+				MATURO = 蓝宝石
+		ELSEIF RAND:8 == 5
+				;アメジスト
+				PRINT 紫水晶
+				MATURO = 紫水晶
+		ELSE
+				;ガラス
+				PRINT 玻璃
+				MATURO = 玻璃
+		ENDIF
+	PRINTW 雕像。
+	MATURO += "雕像"
+		IF MARK:3 == 3  &&  (TALENT:A:11 || TALENT:A:12 || TALENT:A:16 || TALENT:A:34)
+			;反発刻印Lv3+（反抗的・気丈・生意気・抵抗）
+				PRINTFORMW %SAVESTR:A%带着险恶的表情盯着这边，散发出稍有空隙就会马上袭击过来的气氛
+				PRINTW 但是无力抵抗的她只能就这样被变成宝石像、在大众面前露出着难看的姿态…
+		ELSEIF MARK:3 == 3
+			;反発刻印Lv3
+			PRINTFORMW %SAVESTR:A%用严峻的神色瞪着%SAVESTR:MASTER%，一副宁死不屈的姿态。
+			PRINTW 不过，无法反抗的她最后还是被做成了宝石像，将那美丽的肢体呈现在大众眼前。
+		ELSEIF TALENT:A:85
+			;愛
+			PRINTFORMW %SAVESTR:A%虽然被变成了宝石像、但却温和的微笑着…
+		ELSEIF TALENT:A:153
+			;妊娠中
+			PRINTFORMW 妊娠的%SAVESTR:A%、就那样以腹部膨胀起来的状态被变成了宝石像装饰了起来…
+			LOCALS = 妊娠
+		ELSEIF TALENT:A:60 || TALENT:A:80
+			;自慰しやすい・倒錯的
+			PRINTFORMW 在这种特异的情况下，性兴奋反而战胜了恐怖。%SAVESTR:A%成为了带有兴奋表情的宝石像了……
+		ELSEIF TALENT:A:28 || TALENT:A:89
+			;目立ちたがり・露出狂
+			PRINTFORMW 一直隐藏露出癖的%SAVESTR:A%浮现出恍惚的表情、以好像在卖弄自己的身体一样的姿势被装饰在了台座上…
+		ELSEIF TALENT:A:14 || TALENT:A:26
+			;悲観的・大人しい
+			PRINTFORMW %SAVESTR:A%好像早早地就接受了自己的状况、带着混入了顿悟和达观的表情静静地伫立在那里…
+		ELSEIF TALENT:A:35
+			;恥じらい
+			PRINTFORMW %SAVESTR:A%因为很害羞、用两手拼命地想遮住自己的身体
+			PRINTW 因为遮挡的途中被宝石化、手停在了不上不下的位置挡不住关键的部位
+			PRINTW 因为她那混入了羞耻和困惑的表情而风格独特的宝石像被装饰了起来
+		ELSEIF TALENT:A:136
+			;牝犬
+				PRINTFORMW %SAVESTR:A%大概是因为无意识的想起被当做野兽时的行为、
+				PRINTW 以「坐下」的姿势、就那样以等待着下个命令的状态被变成宝石像装饰了起来…
+				LOCALS = 牝犬
+		ELSEIF TALENT:A:113
+			;魅惑
+			PRINTFORMW 变成宝石像的%SAVESTR:A%散发着说不出的美丽…
+			LOCALS = 魅惑
+		ENDIF
+	PRINTFORMW 现在的宝石像数量…{FLAG:607}个
+	
+	
+		MATURO = %LOCALS%%MATURO%
+	
+	
+ELSEIF TFLAG:500 == 8
+	FLAG:84 += 1
+	FLAG:608 += 1
+	PRINTFORML %SAVESTR:A%被封印了全部的力量，站在邪恶的魔法阵中央。
+	PRINTW 属下的魔物收到指示，瞬间，耀眼的光芒包围了她。
+	PRINTW 在光芒里，她感到自己全身都被肢解了，肢体被再构筑成了家具。
+	PRINTW 剧烈的痛楚，被魔法转换成了快感，充斥着她的身心。
+	PRINTFORMW 被无法想象的快感所笼罩，%SAVESTR:A%渐渐地接受了自己被构筑的事实。
+	PRINTW 不一会儿，光芒消失。
+	PRINT 她的身体变成了
+		IF RAND:8 == 0
+				;机化
+				PRINT 桌子
+				MATURO = 人形桌子
+		ELSEIF RAND:8 == 1
+				;椅子化
+				PRINT 椅子
+				MATURO = 人形椅子
+		ELSEIF RAND:8 == 2
+				;ロウソクを乗せる用の台
+				PRINT 烛台
+				MATURO = 人形烛台
+		ELSEIF RAND:8 == 3
+				;タンス
+				PRINT 柜子
+				MATURO = 人形柜子
+		ELSE
+				;れ、レディポット…
+				PRINT 花瓶
+				MATURO = 人形花瓶
+		ENDIF
+	PRINTW 的样子。
+	PRINTFORMW 现在的家具数量…{FLAG:608}个
+	
+
+	
+ELSEIF TFLAG:500 == 9
+	FLAG:84 += 1
+	FLAG:609 += 1
+	PRINTFORML %SAVESTR:A%被封印了全部的力量，站在邪恶的魔法阵中央。
+	PRINTW 在她后面的墙上，用上等画框裱着的纸上面，画着同样的魔法阵。
+	PRINTW 属下的魔物收到指示，魔法阵之间产生了奇怪的共鸣。瞬间，耀眼的光芒包围了她。
+	PRINTW …在光芒里，她感到自己从脚开始正慢慢地化为了粒子，粒子随着魔力，流动到不知什么地方。
+	PRINTW 很快，她的全身都被粒子化了，粒子沿着魔力的流动，渐渐汇聚在画框里，一瞬间，她明白了一切。
+	PRINTW 【我要在这光芒中永远消失了吗？】抱着这样的恐惧，但在她想出答案之间，意识就消失了。
+	PRINTW 不一会儿，光芒消失。画框中的魔法阵，渐渐在画纸上变成了一些风景和生物。
+	PRINT 她变成了题材为
+		Z = RAND:8
+		IF TALENT:A:85
+				;愛・「」王様（…の分身？）と思う存分イチャラブックス！
+				PRINT 「依偎着魔王的魔王侧室」
+				MATURO = 魔王侧室
+		ELSEIF TALENT:TARGET:317 == 4 || TALENT:TARGET:315 == 21
+				;故郷の恋人が好き・人妻・最愛の人（…の幻）とフフフ、セックス！
+				PRINT 「与爱人并立的女人」
+				MATURO = 人妻
+		ELSEIF TALENT:TARGET:315 == 1
+				;学生・教師とか実習生とか委員長とかアイドル的存在とかその他一般生徒全部含めて学生ックス！
+				PRINT 「课堂上听课的学生」
+				MATURO = 学生
+		ELSEIF TALENT:TARGET:315 == 2 || TALENT:TARGET:315 == 12
+				;天界(笑)で天使(偽)に襲われそのままレイプ！聖母(偽)に襲わレズレイプ！
+				PRINT 「天使与圣母指引前往天界的圣职者」
+				MATURO = 升天
+		ELSEIF Z == 0
+				;森の中で獣姦、妖精ックス、花とか触手によるレイプ！
+				PRINT 「林间与动物、妖精嬉戏的爱花女人」
+				MATURO = 森女
+		ELSEIF Z == 1
+				;森とかにある湖で水浴びしてたら野盗とかに羅生門される絵！
+				PRINT 「湖畔水浴的裸妇」
+				MATURO = 裸妇
+		ELSEIF Z == 2
+				;街中で娼婦のドレスとか着て道行く人を片っ端から誘惑即レイプ！レイプ！レイプ！ダメよ、もうおよしになって！
+				PRINT 「街道上引人注目的女人」
+				MATURO = 娼妇
+		ELSEIF Z == 3
+				;年に数度の祭りの日なので村人のテンションが最高潮！そこかしこで大乱交スペルマブラザーズ！
+				PRINT 「收获祭典上欢乐的民众」
+				MATURO = 群交
+		ELSEIF Z == 4
+				;王室…というか高貴な部屋でMっ気のある召使をレズレイプ！
+				PRINT 「关怀仆人的女贵族」
+				MATURO = 贵族
+		ELSEIF Z == 5
+				;水中でイカとかタコにレイプされる人魚！…この絵だけ何故か人魚だけど別にいいよね
+				PRINT 「海中与鱼虾嬉戏的人鱼」
+				MATURO = 人鱼
+		ELSE
+				;もし狂王に調教されて、爱がついて嫁扱いになってたらというイメージ
+				PRINT 「依偎着狂王的裸妇」
+				MATURO = 狂王性奴
+		ENDIF
+	PRINTW 的画中的一部分。
+	PRINTFORMW %SAVESTR:A%作为画中世界的居民，将永远在画里生活下去。
+	SIF TALENT:A:85
+		PRINTFORMW 在画里面，%SAVESTR:A%正甜蜜地笑着，小鸟依人地依偎着你。
+	PRINTFORMW 现在的画像数量…{FLAG:609}幅
+	
+	
+	
+		MATURO += "像"
+	
+	
+ENDIF
+
+SIF FAMILY:2 >= 0
+	CSTR:(FAMILY:2):5 = %MATURO%
+
+TSTR:30 = %MATURO%%SAVESTR:A%
+CALL VIDEO_MATURO	
+	
+A = TARGET
+
+;武器解除
+W:0 = CFLAG:A:550
+CALL EQUIP_GET
+CFLAG:A:550 = -1
+;指輪解除
+W:0 = CFLAG:A:551
+CALL EQUIP_GET
+CFLAG:A:551 = -1
+;指輪解除
+W:0 = CFLAG:A:552
+CALL EQUIP_GET
+CFLAG:A:552 = -1
+
+LV = CFLAG:A:9
+
+X = NO:A + 199
+FLAG:X = 1
+
+;前回の助手・調教対象だった場合はフラグを空に
+SIF FLAG:1 == TARGET
+	FLAG:1 = -1
+SIF FLAG:2 == TARGET
+	FLAG:2 = -1
+
+;前回の助手・調教対象より前だった場合はフラグを減算
+SIF FLAG:1 > TARGET
+	FLAG:1 -= 1
+SIF FLAG:2 > TARGET
+	FLAG:2 -= 1
+
+TARGET = FLAG:1
+ASSI = FLAG:2
+
+CALL PARTY_CHAR_DEL, A
+
+DELCHARA A
+
+CALL NAME_RESET
+
+
+FLAG:80 += 1
+
+LV += 1
+LV *= 50
+
+EXP:0:80 += LV
+PRINTFORMW 《封印吸取了勇者的力量，获得了{LV}点的经验值！》
+
+IF FLAG:84 >= 20 && DAY < 60 && TALENT:MASTER:329 == 0
+	PRINTFORMW 派遣讨伐魔王的勇者、似乎让城市渐渐过上了安宁的日子……
+	PRINTFORMW 某日、传出了在地下城附近建起了、以来自魔王的「友好之证」为名的博物馆之类的传闻
+	PRINTFORMW 「勇者……和魔王交涉过了吗？」
+	PRINTFORMW 「打成什么样了啊？」
+	PRINTFORMW 城里的外交官在护卫的引导下来到了博物馆
+	PRINTFORMW 在那里人们见到的是……已然面目全非的「勇者」们
+	PRINTFORMW …………
+	PRINTFORMW ……
+	PRINTFORMW 你获得了%TALENTNAME:329%
+	TALENT:MASTER:329 = 1
+ENDIF
+
+TARGET = -1
+RETURN 0
+
+

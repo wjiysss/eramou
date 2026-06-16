@@ -1,0 +1,1057 @@
+﻿;--------------------------------------------------
+;@CALLME雄霸天
+@DUNGEON, ARG:0
+#DIM WALK
+#DIM TURN
+#DIM SIDEA
+#DIM SIDEB
+#DIM TURNEND
+#DIM FLOOR
+#DIM NO_BATTLE
+#DIM ROOM
+#DIMS MAPC
+;--------------------------------------------------
+;A・ARG:0が攻略中のキャラ（リーダー）
+;D:20が侵攻度 D:1=1で帰還 D:4はトラップ試行回数
+;D:0は上書きされないように欠番
+;TURN      = 侵攻カウンタ
+;SIDEA     = 仲間A
+;SIDEB     = 仲間B
+;TURNEND   = 誰かが敗北して冒険が中断されるフラグ
+;FLOOR     = 现在階層
+;NO_BATTLE = 戦闘が発生しないフラグ
+MAPC = 地下城
+SIF CFLAG:(ARG:0):1 == 12
+	MAPC = 迷宮
+;行動完了の場合飛ばす
+IF CFLAG:(ARG:0):530 == 1
+	;迎撃中の場合、潜入行動
+	SIF CFLAG:(ARG:0):1 == 3
+		CALL DUNGEON_SPY, ARG:0
+	RETURN 0
+ENDIF
+
+SIDEA = CFLAG:(ARG:0):531
+SIDEB = CFLAG:(ARG:0):532
+;进击了要
+TARGET = ARG:0
+D:20 = CFLAG:(ARG:0):502
+D:1 = 0
+IF FLAG:5 & 32
+	PRINTL  
+	DRAWLINE
+	IF CFLAG:(ARG:0):1 == 3 && CFLAG:(ARG:0):507 == 0
+		PRINTFORML %SAVESTR:(ARG:0)%的队伍，开始迎击勇者了！！
+	;迎撃時体力が回復していると迎撃再開
+	ELSEIF CFLAG:(ARG:0):1 == 3 && CFLAG:(ARG:0):507 == 1
+		IF (BASE:(ARG:0):0 * 100 / MAXBASE:(ARG:0):0 > 80) && (BASE:(ARG:0):1 * 100 / MAXBASE:(ARG:0):1 > 80)
+			PRINTFORML 体力恢复了的%SAVESTR:(ARG:0)%，再次开始迎击勇者！！
+			CFLAG:(ARG:0):507 = 0
+		ELSE
+			PRINTFORML %SAVESTR:(ARG:0)%仍然在恢复体力。
+		ENDIF
+	ELSEIF CFLAG:(ARG:0):507 == 1
+		PRINTFORML %SAVESTR:(ARG:0)%的队伍，想要逃离%MAPC%。
+	ELSE
+		PRINTFORML %SAVESTR:(ARG:0)%的队伍开始攻略%MAPC%！！
+	ENDIF
+	DRAWLINE
+
+	PRINTL  
+	;コンフィグ「戦闘ログでのSKIP中断」がONなら強制停止
+	IF GETBIT(FLAG:5,9)
+		FORCEWAIT
+	ELSE
+		WAIT
+	ENDIF
+ENDIF
+
+;フラグオフ
+CFLAG:(ARG:0):503 = 0
+SIF SIDEA > 0
+	CFLAG:SIDEA:503 = 0
+SIF SIDEB > 0
+	CFLAG:SIDEB:503 = 0
+
+	
+	
+FOR TURN, 0, 5
+	;バランス調整のため侵攻は一回で終了
+	SIF TURN > 0
+		BREAK
+	
+	;戦闘が発生しないフラグ初期化
+	NO_BATTLE = 0
+	
+	IF FLAG:5 & 32
+		PRINTFORM %SAVESTR:(ARG:0)%%MAPC%
+	ENDIF
+	
+	IF CFLAG:(ARG:0):507 == 0
+		WALK = RAND:20
+		WALK += RAND:20
+	ELSE
+		WALK = RAND:20
+		WALK += RAND:20
+		WALK += RAND:20
+		WALK *= -1
+	ENDIF
+	
+	;装備効果(侵攻)
+	W:8 = 17
+	CALL EQUIP_CHECK
+	SIF RESULT > 0
+		WALK *= 2
+	
+	;装備効果(試練)
+	W:8 = 19
+	CALL EQUIP_CHECK
+	SIF RESULT > 0
+		WALK /= 2
+	
+	;迷惑状態
+	IF CFLAG:(ARG:0):509 == 1
+		IF RAND:3 == 0
+			;たまに回復
+			;ハメを防ぐため先に判定する
+			CFLAG:(ARG:0):509 = 0
+		ELSE
+			WALK = 0
+		ENDIF
+		
+		
+	ENDIF
+	
+	FLOOR = CFLAG:(ARG:0):501
+	IF FLAG:400
+		;イベントダンジョン
+		CALL CAMPAIGN_ROOM,FLOOR
+		ROOM = RESULT
+	ELSE
+		ROOM = FLAG:(FLOOR + 349)
+	ENDIF
+	
+	IF FLAG:5 & 32
+		IF ROOM == 507 && TALENT:(ARG:0):180
+			;娼館街かつ娼婦
+			PRINTL 挑选着客人……
+			WALK = 0
+		ELSEIF WALK >= 1
+			PRINTL 前进着。
+		ELSEIF WALK <= -1
+			PRINTL 急速撤退着。
+		ELSE
+			PRINTL 迷路了。
+		ENDIF
+		
+		WAIT
+		
+		PRINTL ----------------------
+		PRINTFORML    %MAPC%深处
+		PRINTL ----------------------
+		
+		PRINTFORM 第{FLOOR}阶层
+	ENDIF
+	IF CFLAG:(ARG:0):1 == 2 || CFLAG:(ARG:0):1 == 12
+		D:20 += WALK
+	ELSE
+		X *= 2
+		D:20 -= WALK
+	ENDIF
+	IF FLAG:5 & 32
+		BARL D:20,100,50
+	ENDIF
+	
+	;ダンジョン侵攻度チェック
+	IF D:20 >= 100
+		;階層滞在カウントをリセット
+		CFLAG:(ARG:0):514 = 0
+		IF CFLAG:(ARG:0):1 == 2 || CFLAG:(ARG:0):1 == 12
+			IF FLAG:400 && CFLAG:(ARG:0):1 == 12
+				;イベント中は踏破できるか判定がある
+				CALL CAMPAIGN_QUEST,ARG:0
+				IF RESULT
+					;攻略成功
+					PRINTFORML %SAVESTR:(ARG:0)%踏破这一层了！
+				ELSE
+					;攻略失敗。追い返される
+					PRINTFORML %SAVESTR:(ARG:0)%放弃探索，开始回头了。
+					CFLAG:(ARG:0):507 = 1
+					D:20 = 95
+				ENDIF
+			ELSE
+				PRINTFORML %SAVESTR:(ARG:0)%踏破这一层了！
+			ENDIF
+			
+			SIF FLAG:5 & 32
+				PRINTFORML 搜刮战利品中…
+			
+			CALL ADD_EX_ITEM, -1, ARG:0, 0
+			
+			SIF FLAG:5 & 32 && RESULT == 0
+				PRINTFORML 没找到什么有用的。
+			
+			IF FLAG:400 > 0 && FLOOR >= 6
+				PRINTFORML 到達了%MAPC%的盡頭………
+				CALL CAMPAIGN_ENDING,ARG:0
+				D:20 = 0
+				BREAK
+				
+			ELSEIF FLOOR >= 9
+				PRINTL 这里是魔王的房间………
+				IF TALENT:(ARG:0):122 == 0
+					JUMP ENDING_2
+				ELSEIF TALENT:(ARG:0):122
+					PRINTFORML 作为冒险者而非勇者的他深知自己无法击败魔王。
+					IF RAND:4 == 0
+						PRINTFORML 但%SAVESTR:(ARG:0)%仍是向魔王发起了挑战。
+						IF (TALENT:MASTER:122 == 0 && ABL:MASTER:11 > 3) || (ABL:MASTER:11 > 3 && TALENT:MASTER:122 && ABL:MASTER:23 > 3) || ABL:MASTER:11 > 6
+						;女魔王且欲望大于3、男魔王欲望3基3、欲求不满的欲望6
+							PRINTFORM %SAVESTR:0%察觉到了%SAVESTR:(ARG:0)%的气息。
+							CALL BEDROOM_BATTLE_MALE,ARG:0
+						ELSE
+							PRINTFORML 可想而知%SAVESTR:(ARG:0)%失败了、成为了%MAPC%里众多奴隶的一员。
+							CFLAG:(ARG:0):1 = 0
+						ENDIF
+					ELSE
+						PRINTFORML %SAVESTR:(ARG:0)%放弃了成为英雄的念头，开始回头了。
+						PRINTFORML 再次鼓起勇气来到这里可能会花些时间了。
+						CFLAG:(ARG:0):507 = 1
+						CFLAG:(ARG:0):508 = 7
+						CFLAG:(ARG:0):521 = 7
+						CFLAG:(ARG:0):520 = 8
+					ENDIF
+				ENDIF
+				D:20 = 0
+			ELSE
+				IF CFLAG:(ARG:0):520 < FLOOR
+					PRINTFORML %SAVESTR:(ARG:0)%放弃探索，开始回头了。
+					CFLAG:(ARG:0):507 = 1
+					;到達階層を記憶
+					SIF CFLAG:(ARG:0):521 < FLOOR
+						CFLAG:(ARG:0):521 = FLOOR
+					D:20 = 95
+				ELSE
+					CFLAG:(ARG:0):501 += 1
+					CFLAG:(ARG:0):508 += 1
+					FLOOR += 1
+					PRINTFORML %SAVESTR:(ARG:0)%向第{FLOOR}阶层发起挑战。
+					D:20 = 0
+				ENDIF
+			ENDIF
+		ELSE
+			IF FLOOR >= 9
+				PRINTFORML %SAVESTR:(ARG:0)%返回了魔王的房间。
+				D:20 = 100
+				CFLAG:(ARG:0):507 = 0
+			ELSE
+				CFLAG:(ARG:0):501 += 1
+				FLOOR += 1
+				PRINTFORML %SAVESTR:(ARG:0)%回到了第{FLOOR}阶层。
+				D:20 = 10
+			ENDIF
+		CFLAG:(ARG:0):503 += 1
+		SIF SIDEA > 0
+			CFLAG:SIDEA:503 += 1
+		SIF SIDEB > 0
+			CFLAG:SIDEB:503 += 1
+		BREAK
+		ENDIF
+	ELSEIF D:20 <=0
+		;階層滞在カウントをリセット
+		CFLAG:(ARG:0):514 = 0
+		IF CFLAG:(ARG:0):1 == 2 || CFLAG:(ARG:0):1 == 12
+			IF FLOOR <= 1
+				PRINTFORML %SAVESTR:(ARG:0)%回到了%MAPC%外面。
+				D:20 = 0
+				
+				;街でのイベント
+				CALL DUNGEON_TOWN,ARG:0
+				
+				; ;アイテムの購入
+				; SIF FLAG:5 & 32
+					; PRINTFORML %SAVESTR:(ARG:0)%的队伍到道具屋补给…
+				
+				; CALL ADD_EX_ITEM, -3, ARG:0, 1
+				
+				; IF SIDEA > 0
+					; A = SIDEA
+					; CALL ADD_EX_ITEM, -3, ARG:0, 1
+				; ENDIF
+				
+				; IF SIDEB > 0
+					; A = SIDEB
+					; CALL ADD_EX_ITEM, -3, ARG:0, 1
+				; ENDIF
+				
+				; A = ARG:0
+				
+			ELSE
+				CFLAG:(ARG:0):501 -= 1
+				FLOOR -= 1
+				PRINTFORML %SAVESTR:(ARG:0)%回到了第{FLOOR}阶层。
+				D:20 = 90
+			ENDIF
+			CFLAG:(ARG:0):503 += 1
+			SIF SIDEA > 0
+				CFLAG:SIDEA:503 += 1
+			SIF SIDEB > 0
+				CFLAG:SIDEB:503 += 1
+			BREAK
+		ELSE
+			PRINTFORML %SAVESTR:(ARG:0)%踏破了这一层！
+			
+			;拡張任務の失敗判定
+			IF CFLAG:(ARG:0):500 == 3
+				PRINTFORML %SAVESTR:(ARG:0)%企图扩张设施，失败了……
+				PRINTFORMW %SAVESTR:(ARG:0)%使用回城魔法回来了。
+				CFLAG:(ARG:0):1 = 6
+				RETURN 0
+			ENDIF
+			
+			IF FLOOR <= 1
+				PRINTFORMW 再往前走就走出%MAPC%了………
+				PRINTFORMW %SAVESTR:(ARG:0)%使用回城魔法回来了。
+				IF CFLAG:(ARG:0):505 > 0
+					CFLAG:(ARG:0):1 = 5
+				ELSE
+					CFLAG:(ARG:0):1 = 6
+				ENDIF
+				RETURN 0
+			ELSE
+				CFLAG:(ARG:0):501 -= 1
+				FLOOR -= 1
+				PRINTFORML %SAVESTR:(ARG:0)%向夺回第{FLOOR}阶层发起挑战。
+				D:20 = 90
+			ENDIF
+		ENDIF
+	ELSE
+		;階層移動がない分岐
+		;階層滞在カウントを+1
+		CFLAG:(ARG:0):514 += 1
+		
+		;奴隷の場合カウントが溜まると帰還する
+		IF CFLAG:(ARG:0):1 == 3 && CFLAG:(ARG:0):514 > 15
+			PRINTFORML %SAVESTR:(ARG:0)%在此长期滞留感到十分疲乏……
+			PRINTFORMW %SAVESTR:(ARG:0)%使用了归还魔法回程了。
+			IF CFLAG:(ARG:0):505 > 0
+				CFLAG:(ARG:0):1 = 5
+			ELSE
+				CFLAG:(ARG:0):1 = 6
+			ENDIF
+			CFLAG:(ARG:0):514 = 0
+			RETURN 0
+		ENDIF
+		
+	ENDIF
+	;SIF FLAG:5 & 32
+	;	WAIT
+	
+	;设施効果
+	;1/3の確率で受けるキャラが変わる
+	IF RAND:3 == 0 && SIDEA > 0
+		A = SIDEA
+	ELSEIF RAND:2 == 0 && SIDEB > 0
+		A = SIDEB
+	ELSE
+		A = ARG:0
+	ENDIF
+	CALL DUNGEON_ROOM,A
+	;戦闘无なら1が加算される
+	NO_BATTLE += RESULT
+	
+	;陷阱処理
+	;1/3の確率で受けるキャラが変わる
+	IF RAND:3 == 0 && SIDEA > 0
+		A = SIDEA
+	ELSEIF RAND:2 == 0 && SIDEB > 0
+		A = SIDEB
+	ELSE
+		A = ARG:0
+	ENDIF
+	
+	;装備効果(陷阱誘発)
+	W:8 = 20
+	CALL EQUIP_CHECK
+	IF RESULT > 0
+		D:4 = RESULT
+		CALL DUNGEON_TRAP
+	ELSE
+		D:4 = 0
+		;装備効果(陷阱避け)
+		W:8 = 16
+		CALL EQUIP_CHECK
+		SIF RESULT < RAND:10
+			CALL DUNGEON_TRAP
+	ENDIF
+	
+	A = ARG:0
+	;シュートでPTが分断された時のためにここで一度SIDEA・SIDEBを再定義
+	;ちょっと乱暴だけどここはSIFで分岐させる必要はない…ハズ
+	SIDEA = CFLAG:(ARG:0):531
+	SIDEB = CFLAG:(ARG:0):532
+	
+	;戦闘フェイズ
+	
+	IF CFLAG:(ARG:0):1 == 2
+		IF FLAG:5 & 16
+			SIF FLAG:5 & 32
+				PRINTW 因为没有敌人所以进行了训练。（经验值增加）
+			EXP:(ARG:0):80 += CFLAG:MASTER:9
+			SIF SIDEA > 0
+				EXP:SIDEA:80 += CFLAG:MASTER:9
+			SIF SIDEB > 0
+				EXP:SIDEB:80 += CFLAG:MASTER:9
+		ELSEIF NO_BATTLE > 0
+			;戦闘未発生フラグ
+			SIF FLAG:5 & 32
+				PRINTW 因为没有敌人所以进行了训练。（经验值増加）
+			EXP:(ARG:0):80 += CFLAG:MASTER:9
+			SIF SIDEA > 0
+				EXP:SIDEA:80 += CFLAG:MASTER:9
+			SIF SIDEB > 0
+				EXP:SIDEB:80 += CFLAG:MASTER:9
+		ELSE
+			TURNEND = 0
+			CALL DUNGEON_PARTY_BATTLE, ARG:0
+			;陥落したか否か
+			IF CFLAG:(ARG:0):1 != 2 && CFLAG:(ARG:0):1 != 3
+				PRINTFORML %SAVESTR:(ARG:0)%被抓住了…
+				MONEY += 100 * CFLAG:(ARG:0):9
+				EX_FLAG:4444 += 100 * CFLAG:(ARG:0):9
+				PRINTFORML 获得{100 * CFLAG:(ARG:0):9}G！
+				CFLAG:(ARG:0):506 = 1
+				CFLAG:(ARG:0):507 = 0
+				;善恶值が低いと、仲間を売って助かろうとする
+				;そのうち口上も挟みたい……
+				IF CFLAG:(ARG:0):151 <= -50 && (SIDEA > 0 || SIDEB > 0)
+					PRINTFORML %SAVESTR:(ARG:0)%背叛了同伴，开始透露她们的位置。
+					PRINTFORMW 带着谄媚的神情出卖着同伴，拼死地乞求着饶命……
+					SIF SIDEA > 0 && CFLAG:SIDEA:1 == 2
+						CFLAG:SIDEA:1 = 0
+					SIF SIDEB > 0 && CFLAG:SIDEB:1 == 2
+						CFLAG:SIDEB:1 = 0
+				ENDIF
+				CALL PARTY_DEL, ARG:0
+				TURNEND += 1
+			ENDIF
+			
+			;仲間Aが陥落したかどうか
+			IF SIDEA > 0 && CFLAG:SIDEA:1 != 2 && CFLAG:SIDEA:1 != 3
+				PRINTFORML %SAVESTR:SIDEA%被抓住了…
+				MONEY += 100 * CFLAG:SIDEA:9
+				EX_FLAG:4444 += 100 * CFLAG:SIDEA:9
+				PRINTFORML 获得{100 * CFLAG:SIDEA:9}G！
+				CFLAG:SIDEA:506 = 1
+				CFLAG:SIDEA:507 = 0
+				
+				CALL PARTY_DEL, SIDEA
+				TURNEND += 1
+			ENDIF
+			
+			;仲間Bが陥落したかどうか
+			IF SIDEB > 0 && CFLAG:SIDEB:1 != 2 && CFLAG:SIDEB:1 != 3
+				PRINTFORML %SAVESTR:SIDEB%被抓住了…
+				MONEY += 100 * CFLAG:SIDEB:9
+				EX_FLAG:4444 += 100 * CFLAG:SIDEB:9
+				PRINTFORML 获得{100 * CFLAG:SIDEB:9}G！
+				CFLAG:SIDEB:506 = 1
+				CFLAG:SIDEB:507 = 0
+				
+				CALL PARTY_DEL, SIDEB
+				TURNEND += 1
+			ENDIF
+			
+			SIF TURNEND > 0
+				BREAK
+		ENDIF
+		
+		TURNEND = 0
+		
+		;善恶值によっては魔王に寝返る
+		IF CFLAG:(ARG:0):151 <= -150 && CFLAG:(ARG:0):1 == 2
+			PRINTFORML %SAVESTR:(ARG:0)%背叛了使命，向魔王军投诚了……
+			MONEY += 100 * CFLAG:(ARG:0):9
+			EX_FLAG:4444 += 100 * CFLAG:(ARG:0):9
+			PRINTFORML 获得{100 * CFLAG:(ARG:0):9}G！
+			CFLAG:(ARG:0):1 = 0
+			CFLAG:(ARG:0):506 = 1
+			CFLAG:(ARG:0):507 = 0
+			IF SIDEA > 0 || SIDEB > 0
+				PRINTFORML %SAVESTR:(ARG:0)%背叛了同伴，开始透露她们的位置。
+				PRINTFORMW 似乎想把同伴当成投诚的礼物……
+				SIF SIDEA > 0 && CFLAG:SIDEA:1 == 2
+					CFLAG:SIDEA:1 = 0
+				SIF SIDEB > 0 && CFLAG:SIDEB:1 == 2
+					CFLAG:SIDEB:1 = 0
+			ENDIF
+			CALL PARTY_DEL, ARG:0
+			
+			;仲間Aが陥落したかどうか
+			IF SIDEA > 0 && CFLAG:SIDEA:1 != 2 && CFLAG:SIDEA:1 != 3
+				PRINTFORML %SAVESTR:SIDEA%被抓住了…
+				MONEY += 100 * CFLAG:SIDEA:9
+				EX_FLAG:4444 += 100 * CFLAG:SIDEA:9
+				PRINTFORML 获得{100 * CFLAG:SIDEA:9}G！
+				CFLAG:SIDEA:506 = 1
+				CFLAG:SIDEA:507 = 0
+				
+				CALL PARTY_DEL, SIDEA
+			ENDIF
+			
+			;仲間Bが陥落したかどうか
+			IF SIDEB > 0 && CFLAG:SIDEB:1 != 2 && CFLAG:SIDEB:1 != 3
+				PRINTFORML %SAVESTR:SIDEB%被抓住了…
+				MONEY += 100 * CFLAG:SIDEB:9
+				EX_FLAG:4444 += 100 * CFLAG:SIDEB:9
+				PRINTFORML 获得{100 * CFLAG:SIDEB:9}G！
+				CFLAG:SIDEB:506 = 1
+				CFLAG:SIDEB:507 = 0
+				
+				CALL PARTY_DEL, SIDEB
+			ENDIF
+			TURNEND += 1
+		ENDIF
+		
+		IF SIDEA > 0 && CFLAG:SIDEA:151 <= -150 && CFLAG:SIDEA:1 == 2
+			PRINTFORML %SAVESTR:SIDEA%背叛了使命，向魔王军投诚了……
+			MONEY += 100 * CFLAG:SIDEA:9
+			EX_FLAG:4444 += 100 * CFLAG:SIDEA:9
+			PRINTFORML 获得{100 * CFLAG:SIDEA:9}G！
+			CFLAG:SIDEA:1 = 0
+			CFLAG:SIDEA:506 = 1
+			CFLAG:SIDEA:507 = 0
+			
+			CALL PARTY_DEL, SIDEA
+			TURNEND += 1
+		ENDIF
+		
+		IF SIDEB > 0 && CFLAG:SIDEB:151 <= -150 && CFLAG:SIDEB:1 == 2
+			PRINTFORML %SAVESTR:SIDEB%背叛了使命，向魔王军投诚了……
+			MONEY += 100 * CFLAG:SIDEB:9
+			EX_FLAG:4444 += 100 * CFLAG:SIDEB:9
+			PRINTFORML 获得{100 * CFLAG:SIDEB:9}G！
+			CFLAG:SIDEB:1 = 0
+			CFLAG:SIDEB:506 = 1
+			CFLAG:SIDEB:507 = 0
+			
+			CALL PARTY_DEL, SIDEB
+			TURNEND += 1
+		ENDIF
+		
+		SIF TURNEND > 0
+			BREAK
+	ELSEIF CFLAG:(ARG:0):1 == 12
+		;イベントダンジョン
+		IF NO_BATTLE > 0
+			;戦闘未発生フラグ
+			SIF FLAG:5 & 32
+				PRINTW 因沒有敵人而自己进行了训练（经验值增加）
+			EXP:(ARG:0):80 += CFLAG:MASTER:9
+			SIF SIDEA > 0
+				EXP:SIDEA:80 += CFLAG:MASTER:9
+			SIF SIDEB > 0
+				EXP:SIDEB:80 += CFLAG:MASTER:9
+		ELSE
+			TURNEND = 0
+			CALL DUNGEON_PARTY_BATTLE, ARG:0
+			;陥落したか否か
+			IF CFLAG:(ARG:0):1 != 2 && CFLAG:(ARG:0):1 != 3 && CFLAG:(ARG:0):1 != 12
+				PRINTFORML %SAVESTR:(ARG:0)%被抓住了…
+				CFLAG:(ARG:0):507 = 0
+				CALL PARTY_DEL, ARG:0
+				TURNEND += 1
+			ENDIF
+			
+			;仲間Aが陥落したかどうか
+			IF SIDEA > 0 && CFLAG:SIDEA:1 != 2 && CFLAG:SIDEA:1 != 3 && CFLAG:SIDEA:1 != 12
+				PRINTFORML %SAVESTR:SIDEA%被抓住了…
+				CFLAG:SIDEA:507 = 0
+				CALL PARTY_DEL, SIDEA
+				TURNEND += 1
+			ENDIF
+			
+			;仲間Bが陥落したかどうか
+			IF SIDEB > 0 && CFLAG:SIDEB:1 != 2 && CFLAG:SIDEB:1 != 3 && CFLAG:SIDEB:1 != 12
+				PRINTFORML %SAVESTR:SIDEB%被抓住了…
+				CFLAG:SIDEB:507 = 0
+				CALL PARTY_DEL, SIDEB
+				TURNEND += 1
+			ENDIF
+			
+			SIF TURNEND > 0
+				BREAK
+		ENDIF
+	;勇者と元勇者の戦闘
+	ELSE
+		CALL DUNGEON_BATTLE2_PARTY, ARG:0
+		;陥落したか否か
+		IF RESULT == 2
+			PRINTFORML %SAVESTR:B%被抓住了…
+			MONEY += 100 * CFLAG:B:9
+			EX_FLAG:4444 += 100 * CFLAG:B:9
+			PRINTFORMW 获得{100 * CFLAG:B:9}G！
+			CFLAG:(ARG:0):505 += 1
+			CFLAG:B:506 = 1
+			CFLAG:B:507 = 0
+			CALL PARTY_DEL, B
+		ELSEIF RESULT == 1
+			;NTR以外なら勇者討伐数をチェックしてご褒美の有無
+			CFLAG:(ARG:0):507 = 0
+			IF CFLAG:(ARG:0):1 == 0
+				IF CFLAG:(ARG:0):505 > 0
+					CFLAG:(ARG:0):1 = 5
+				ELSE
+					CFLAG:(ARG:0):1 = 6
+				ENDIF
+			ENDIF
+			;NTRれたなら勇者討伐数を０に
+			SIF CFLAG:(ARG:0):1 == 9
+				CFLAG:(ARG:0):505 = 0
+			CALL PARTY_DEL, ARG:0
+			TARGET = -1
+			RETURN 0
+		ENDIF
+	ENDIF
+	
+	IF CFLAG:(ARG:0):1 == 3 && FLAG:5 & 16 && CFLAG:MASTER:9 > 0
+		SIF FLAG:5 & 32
+			PRINTFORMW %SAVESTR:ARG%和怪物们进行了训练（经验值增加）
+		EXP:(ARG:0):80 += CFLAG:MASTER:9
+		;訓練行動と合わせて1.5倍に増加
+		SIF CFLAG:(ARG:0):500 == 5
+			EXP:(ARG:0):80 += CFLAG:MASTER:9 / 2
+	ELSEIF CFLAG:(ARG:0):1 == 3 && CFLAG:(ARG:0):500 == 5 && CFLAG:MASTER:9 > 0
+		;迎撃時の訓練行動
+		SIF FLAG:5 & 32
+			PRINTFORMW %SAVESTR:ARG%和怪物们进行了训练（经验值增加）
+		EXP:(ARG:0):80 += CFLAG:MASTER:9
+	ENDIF
+	
+	;貞操帯のカギを探す
+	IF CFLAG:(ARG:0):1 == 3 && CFLAG:(ARG:0):49 == 1 && CFLAG:(ARG:0):50 == 0
+		PRINTL
+		PRINTFORMW 探索%MAPC%的时候，在洞穴角落里发现了发光的东西。%SAVESTR:(ARG:0)%在意地把它捡起来了。
+		IF RAND:2 == 0
+			PRINTFORMW ………是个旧奖章么，这种东西没有价值啊。%SAVESTR:(ARG:0)%把它丢掉了。
+		ELSEIF RAND:2 == 0
+			PRINTFORMW ………是个被压坏了的戒指么，想必是哪个被怪物袭击的牺牲者的吧。%SAVESTR:(ARG:0)%把它丢掉了。
+		ELSEIF RAND:2 == 0
+			PRINTFORMW ………罐头的盖子么，这种东西没有价值啊。%SAVESTR:(ARG:0)%把它丢掉了。
+		ELSEIF RAND:2 == 0
+			PRINTFORMW ………金属片啊，想必是铠甲或者盾牌的碎片吧。%SAVESTR:(ARG:0)%把它丢掉了。
+		ELSEIF RAND:2 == 0
+			PRINTFORMW ………注意到有细细的线连着诱导陷阱的机关！
+			PRINTFORMW 但是机关却没有发动，似乎是时间久远已经坏掉了。%SAVESTR:(ARG:0)%咒骂着把它丢掉了。
+		ELSEIF RAND:2 == 0
+			PRINTFORMW ………是脏了的钻戒吗。但是对%SAVESTR:(ARG:0)%来说，完全是多余的东西。
+		ELSE
+			PRINTFORMW ………没有看错，是那时候被%NAME:MASTER%丢掉的贞操带钥匙。%SAVESTR:(ARG:0)%终于找到了贞操带钥匙！
+			PRINTFORMW %SAVESTR:(ARG:0)%带着陶醉的神情，郑重地把它放到怀里了………（%SAVESTR:(ARG:0)%拿着贞操带钥匙）
+			CFLAG:(ARG:0):50 = 1
+		ENDif
+	ENDIF
+	
+	;冒険の疲れ
+	BASE:(ARG:0):1 -= RAND:6
+	SIF SIDEA > 0
+		BASE:SIDEA:1 -= RAND:6
+	SIF SIDEB > 0
+		BASE:SIDEB:1 -= RAND:6
+	
+	;状态判定
+	CALL CHECK_STATUS,ARG:0
+
+	;帰還するかどうか
+	IF CFLAG:(ARG:0):507 == 1
+		;すでに帰還中である
+		PRINTFORML %SAVESTR:(ARG:0)%在%MAPC%内撤退（现在第{FLOOR}层）
+	;帰還フラグを立てる判定
+	;帰還フラグを立て、挫折した階層を記憶する
+	ELSE
+		IF SIDEA > 0 && SIDEB > 0
+			IF result:3 >= 1
+				PRINTFORML 有人濒死，%SAVESTR:(ARG:0)%决定后退。
+				CFLAG:(ARG:0):507 = 1
+				CFLAG:(ARG:0):520 = FLOOR - 2
+			ELSEIF result:2 >= 2
+				PRINTFORML 大部分人重伤，%SAVESTR:(ARG:0)%决定后退。
+				CFLAG:(ARG:0):507 = 1
+				CFLAG:(ARG:0):520 = FLOOR - 2
+			ELSEIF result:1 >= 3
+				PRINTFORML 全员轻伤，%SAVESTR:(ARG:0)%决定后退。
+				CFLAG:(ARG:0):507 = 1
+				CFLAG:(ARG:0):520 = FLOOR - 1
+			ELSEIF RESULT:5 >= 2 
+				PRINTFORML 全员身体状况不佳，%SAVESTR:(ARG:0)%决定后退。
+				CFLAG:(ARG:0):507 = 1
+				CFLAG:(ARG:0):520 = FLOOR - 1
+			ELSE
+				;攻略を続ける
+				PRINTFORML %SAVESTR:(ARG:0)%决定继续在%MAPC%内前进……（现在第{FLOOR}层）
+			ENDIF
+		ELSEIF SIDEA > 0 || SIDEB > 0
+			IF result:3 >= 1
+				PRINTFORML 有人濒死，%SAVESTR:(ARG:0)%决定后退。
+				CFLAG:(ARG:0):507 = 1
+				CFLAG:(ARG:0):520 = FLOOR - 2
+			ELSEIF result:2 >= 1 && result:1 >= 1
+				PRINTFORML 各种伤势，%SAVESTR:(ARG:0)%决定后退。
+				CFLAG:(ARG:0):507 = 1
+				CFLAG:(ARG:0):520 = FLOOR - 2
+			ELSEIF RESULT:5 >= 2 
+				PRINTFORML 全员身体状况不佳，%SAVESTR:(ARG:0)%决定后退。
+				CFLAG:(ARG:0):507 = 1
+				CFLAG:(ARG:0):520 = FLOOR - 1
+			ELSE
+				;攻略を続ける
+				PRINTFORML %SAVESTR:(ARG:0)%决定继续在%MAPC%内前进……（现在第{FLOOR}层）
+			ENDIF
+		ELSE
+			IF CFLAG:(ARG:0):534 >= 2 && TALENT:(ARG:0):10 == 1
+				PRINTFORML 胆小的%SAVESTR:(ARG:0)%虽然只是受到轻伤，依然决定撤退。
+				CFLAG:(ARG:0):507 = 1
+				CFLAG:(ARG:0):520 = FLOOR - 1
+			ELSEIF CFLAG:(ARG:0):534 >= 3
+				PRINTFORML %SAVESTR:(ARG:0)%重伤了，决定撤退。
+				CFLAG:(ARG:0):507 = 1
+				CFLAG:(ARG:0):520 = FLOOR - 1
+			ELSEIF CFLAG:(ARG:0):534 == 4 && (TALENT:(ARG:0):12 == 1 || TALENT:(ARG:0):161 == 1 )
+				PRINTFORML 坚毅的%SAVESTR:(ARG:0)%陷入濒死，迫不得已决定撤退了。
+				CFLAG:(ARG:0):507 = 1
+				CFLAG:(ARG:0):520 = FLOOR - 1
+			ELSE
+				PRINTFORML %SAVESTR:(ARG:0)%决定继续在%MAPC%内前进……（现在第{FLOOR}层）
+			ENDIF
+		ENDIF
+		
+		;防止后退过度
+		SIF !CFLAG:(ARG:0):520
+			CFLAG:(ARG:0):520 = 1
+	ENDIF
+NEXT
+
+;戦闘後探索
+;1/3の確率で受けるキャラが変わる
+IF RAND:3 == 0 && SIDEA > 0
+	LOCAL = SIDEA
+ELSEIF RAND:2 == 0 && SIDEB > 0
+	LOCAL = SIDEB
+ELSE
+	LOCAL = ARG:0
+ENDIF
+
+CALL DUNGEON_BITCH(LOCAL)
+CALL GET_JUNK_ITEM(LOCAL)
+
+;宝箱を見つける
+SIF CFLAG:(ARG:0):1 == 2 && RAND:4 == 0
+	CALL EQUIP_SELECT
+IF SIDEA > 0 && CFLAG:SIDEA:1 == 2 && RAND:4 == 0
+	A = SIDEA
+	CALL EQUIP_SELECT
+ENDIF
+IF SIDEB > 0 && CFLAG:SIDEB:1 == 2 && RAND:4 == 0
+	A = SIDEB
+	CALL EQUIP_SELECT
+ENDIF
+
+A = ARG:0
+
+;アイテムの使用
+CALL USE_EX_ITEM,"战斗后"
+IF SIDEA > 0
+	A = SIDEA
+	CALL USE_EX_ITEM,"战斗后"
+ENDIF
+IF SIDEB > 0
+	A = SIDEB
+	CALL USE_EX_ITEM,"战斗后"
+ENDIF
+
+A = ARG:0
+
+;移動を反映
+CFLAG:(ARG:0):502 = D:20
+SIF SIDEA > 0
+	CFLAG:SIDEA:502 = D:20
+SIF SIDEB > 0
+	CFLAG:SIDEB:502 = D:20
+
+;階層を反映
+FLOOR = CFLAG:(ARG:0):501
+SIF SIDEA > 0
+	CFLAG:SIDEA:501 = FLOOR
+SIF SIDEB > 0
+	CFLAG:SIDEB:501 = FLOOR
+
+;休憩フェイズ
+
+;勇者に紛れ込んだ奴隷が暗躍します
+IF SIDEA > 0 && CFLAG:SIDEA:1 == 3
+	PRINTFORML %SAVESTR:SIDEA%在大家都熟睡后开始了奇妙的仪式……（同伴的善良值-1）
+	CALL KARMA, ARG:0, -1
+	SIF SIDEB > 0
+		CALL KARMA, SIDEB, -1
+ENDIF
+
+IF SIDEB > 0 && CFLAG:SIDEB:1 == 3
+	PRINTFORML %SAVESTR:SIDEB%在大家都熟睡后开始了奇妙的仪式……（同伴的善良值-1）
+	CALL KARMA, ARG:0, -1
+	SIF SIDEA > 0
+		CALL KARMA, SIDEA, -1
+ENDIF
+
+
+;装備効果(キャンプ)
+W:8 = 18
+CALL EQUIP_CHECK
+IF RESULT > 0
+	IF CFLAG:A:503 & 1
+	ELSE
+		CFLAG:A:503 += 1
+	ENDIF
+ENDIF
+
+IF SIDEA > 0
+	A = SIDEA
+	W:8 = 18
+	CALL EQUIP_CHECK
+	IF RESULT > 0
+		IF CFLAG:A:503 & 1
+		ELSE
+			CFLAG:A:503 += 1
+		ENDIF
+	ENDIF
+ENDIF
+IF SIDEB > 0
+	A = SIDEB
+	W:8 = 18
+	CALL EQUIP_CHECK
+	IF RESULT > 0
+		IF CFLAG:A:503 & 1
+		ELSE
+			CFLAG:A:503 += 1
+		ENDIF
+	ENDIF
+ENDIF
+
+A = ARG:0
+
+
+;装備効果(キャンプ禁止)
+W:8 = 19
+CALL EQUIP_CHECK
+SIF CFLAG:A:503 & 1 && RESULT > 0
+	CFLAG:A:503 -= 1
+IF SIDEA > 0
+	A = SIDEA
+	;装備効果(キャンプ禁止)
+	W:8 = 19
+	CALL EQUIP_CHECK
+	SIF CFLAG:A:503 & 1 && RESULT > 0
+		CFLAG:A:503 -= 1
+ENDIF
+IF SIDEB > 0
+	A = SIDEB
+	;装備効果(キャンプ禁止)
+	W:8 = 19
+	CALL EQUIP_CHECK
+	SIF CFLAG:A:503 & 1 && RESULT > 0
+		CFLAG:A:503 -= 1
+ENDIF
+
+A = ARG:0
+
+
+IF CFLAG:(ARG:0):1 == 2 && CFLAG:(ARG:0):503 & 1 && FLOOR > 1
+	IF FLAG:5 & 32
+		PRINTL  
+		DRAWLINE
+		PRINTFORMW %SAVESTR:(ARG:0)%躲起来休息。
+		DRAWLINE
+		PRINTL 
+	ENDIF
+ENDIF
+SIF FLAG:5 & 32
+	PRINTL  
+TARGET = -1
+RETURN 0
+[SKIPSTART]
+;---------------------------------
+@CHECK_STATUS,ARG:0
+#DIM SIDEA
+#DIM SIDEB
+#DIM STATUS,7
+#DIM S1_HP
+#DIM S1_MP
+#DIM S2_HP
+#DIM S2_MP
+#DIM S3_HP
+#DIM S3_MP
+;---------------------------------
+;ARG:0 = パーティーリーダー
+;SIDEA = 仲間A
+;SIDEB = 仲間B
+;S1_HP = 轻伤HP百分比
+;S1_MP = 轻伤MP百分比
+;S2_HP = 重伤HP百分比
+;S2_MP = 重伤MP百分比
+;S3_HP = 濒死HP百分比
+;S3_MP = 濒死MP百分比
+
+SIDEA = CFLAG:(ARG:0):531
+SIDEB = CFLAG:(ARG:0):532
+S1_HP = 60
+S1_MP = 50
+S2_HP = 35
+S2_MP = 30
+S3_HP = 20
+S3_MP = 10
+varset STATUS
+
+IF CFLAG:(ARG:0):1 == 2 || CFLAG:(ARG:0):1 == 3
+	IF BASE:(ARG:0):0 * 100 / MAXBASE:(ARG:0):0 < S1_HP || BASE:(ARG:0):1 * 100 / MAXBASE:(ARG:0):1 < S1_MP
+		PRINTFORML %SAVESTR:(ARG:0)%轻伤。
+		CFLAG:(ARG:0):534 = 2
+		STATUS:1 += 1
+	ELSEIF BASE:(ARG:0):1 * 100 / MAXBASE:(ARG:0):1 < S1_MP
+		PRINTFORML %SAVESTR:(ARG:0)%身体抱恙。
+		CFLAG:(ARG:0):534 = 2
+		STATUS:4 += 1
+	ELSEIF BASE:(ARG:0):0 * 100 / MAXBASE:(ARG:0):0 < S2_HP || BASE:(ARG:0):1 * 100 / MAXBASE:(ARG:0):1 < S2_MP
+		PRINTFORML %SAVESTR:(ARG:0)%重伤。
+		CFLAG:(ARG:0):534 = 3
+		STATUS:2 += 1
+	ELSEIF BASE:(ARG:0):1 * 100 / MAXBASE:(ARG:0):1 < S2_MP
+		PRINTFORML %SAVESTR:(ARG:0)%头脑发昏。
+		CFLAG:(ARG:0):534 = 3
+		STATUS:5 += 1
+	ELSEIF BASE:(ARG:0):0 * 100 / MAXBASE:(ARG:0):0 < S3_HP && BASE:(ARG:0):1 * 100 / MAXBASE:(ARG:0):1 < S3_MP
+		PRINTFORML %SAVESTR:(ARG:0)%濒死。
+		CFLAG:(ARG:0):534 = 4
+		STATUS:3 += 1
+	ELSEIF BASE:(ARG:0):0 * 100 / MAXBASE:(ARG:0):0 < S3_HP
+		PRINTFORML %SAVESTR:(ARG:0)%濒死。
+		CFLAG:(ARG:0):534 = 4
+		STATUS:3 += 1
+	ELSEIF BASE:(ARG:0):1 * 100 / MAXBASE:(ARG:0):1 < S3_MP
+		PRINTFORML %SAVESTR:(ARG:0)%气绝。
+		CFLAG:(ARG:0):534 = 4
+		STATUS:6 += 1
+	ELSE
+		PRINTFORML %SAVESTR:(ARG:0)%元气满满。
+		CFLAG:(ARG:0):534 = 1
+		STATUS:0 += 1
+	ENDIF
+	IF  SIDEA > 0
+		IF BASE:(SIDEA):0 * 100 / MAXBASE:(SIDEA):0 < S1_HP || BASE:(SIDEA):1 * 100 / MAXBASE:(SIDEA):1 < S1_MP
+			PRINTFORML %SAVESTR:(SIDEA)%轻伤。
+			CFLAG:(SIDEA):534 = 2
+			STATUS:1 += 1
+		ELSEIF BASE:(SIDEA):1 * 100 / MAXBASE:(SIDEA):1 < S1_MP
+			PRINTFORML %SAVESTR:(SIDEA)%身体抱恙。
+			CFLAG:(SIDEA):534 = 2
+			STATUS:4 += 1
+		ELSEIF BASE:(SIDEA):0 * 100 / MAXBASE:(SIDEA):0 < S2_HP || BASE:(SIDEA):1 * 100 / MAXBASE:(SIDEA):1 < S2_MP
+			PRINTFORML %SAVESTR:(SIDEA)%重伤。
+			CFLAG:(SIDEA):534 = 3
+			STATUS:2 += 1
+		ELSEIF BASE:(SIDEA):1 * 100 / MAXBASE:(SIDEA):1 < S2_MP
+			PRINTFORML %SAVESTR:(SIDEA)%头脑发昏。
+			CFLAG:(SIDEA):534 = 3
+			STATUS:5 += 1
+		ELSEIF BASE:(SIDEA):0 * 100 / MAXBASE:(SIDEA):0 < S3_HP && BASE:(SIDEA):1 * 100 / MAXBASE:(SIDEA):1 < S3_MP
+			PRINTFORML %SAVESTR:(SIDEA)%濒死。
+			CFLAG:(SIDEA):534 = 4
+			STATUS:3 += 1
+		ELSEIF BASE:(SIDEA):0 * 100 / MAXBASE:(SIDEA):0 < S3_HP
+			PRINTFORML %SAVESTR:(SIDEA)%濒死。
+			CFLAG:(SIDEA):534 = 4
+			STATUS:3 += 1
+		ELSEIF BASE:(SIDEA):1 * 100 / MAXBASE:(SIDEA):1 < S3_MP
+			PRINTFORML %SAVESTR:(SIDEA)%气绝。
+			CFLAG:(SIDEA):534 = 4
+			STATUS:6 += 1
+		ELSE
+			PRINTFORML %SAVESTR:(SIDEA)%元气满满。
+			CFLAG:(SIDEA):534 = 1
+			STATUS:0 += 1
+		ENDIF
+	ENDIF
+	IF  SIDEB > 0
+		IF BASE:(SIDEB):0 * 100 / MAXBASE:(SIDEB):0 < S1_HP || BASE:(SIDEB):1 * 100 / MAXBASE:(SIDEB):1 < S1_MP
+			PRINTFORML %SAVESTR:(SIDEB)%轻伤。
+			CFLAG:(SIDEB):534 = 2
+			STATUS:1 += 1
+		ELSEIF BASE:(SIDEB):1 * 100 / MAXBASE:(SIDEB):1 < S1_MP
+			PRINTFORML %SAVESTR:(SIDEB)%身体抱恙。
+			CFLAG:(SIDEB):534 = 2
+			STATUS:4 += 1
+		ELSEIF BASE:(SIDEB):0 * 100 / MAXBASE:(SIDEB):0 < S2_HP || BASE:(SIDEB):1 * 100 / MAXBASE:(SIDEB):1 < S2_MP
+			PRINTFORML %SAVESTR:(SIDEB)%重伤。
+			CFLAG:(SIDEB):534 = 3
+			STATUS:2 += 1
+		ELSEIF BASE:(SIDEB):1 * 100 / MAXBASE:(SIDEB):1 < S2_MP
+			PRINTFORML %SAVESTR:(SIDEB)%头脑发昏。
+			CFLAG:(SIDEB):534 = 3
+			STATUS:5 += 1
+		ELSEIF BASE:(SIDEB):0 * 100 / MAXBASE:(SIDEB):0 < S3_HP && BASE:(SIDEB):1 * 100 / MAXBASE:(SIDEB):1 < S3_MP
+			PRINTFORML %SAVESTR:(SIDEB)%濒死。
+			CFLAG:(SIDEB):534 = 4
+			STATUS:3 += 1
+		ELSEIF BASE:(SIDEB):0 * 100 / MAXBASE:(SIDEB):0 < S3_HP
+			PRINTFORML %SAVESTR:(SIDEB)%濒死。
+			CFLAG:(SIDEB):534 = 4
+			STATUS:3 += 1
+		ELSEIF BASE:(SIDEB):1 * 100 / MAXBASE:(SIDEB):1 < S3_MP
+			PRINTFORML %SAVESTR:(SIDEB)%气绝。
+			CFLAG:(SIDEB):534 = 4
+			STATUS:6 += 1
+		ELSE
+			PRINTFORML %SAVESTR:(SIDEB)%元气满满。
+			CFLAG:(SIDEB):534 = 1
+			STATUS:0 += 1
+		ENDIF
+	ENDIF
+ENDIF
+
+RETURN STATUS,STATUS:1,STATUS:2,STATUS:3,STATUS:4,STATUS:5,STATUS:6
+[SKIPEND]
+;計算式の変更
+;基礎収入に勇者のレベルを影響させる
+;最終結果に現在の階層を影響させる
+;------------------------------------
+@GET_JUNK_ITEM,ARG
+;------------------------------------
+;手に入れる換金アイテム
+;ダンジョンレベルが高いほど高収入のチャンス
+;LOCAL = RAND:(CFLAG:MASTER:9 + 1) + 100
+LOCAL = 100 + CFLAG:ARG:9 * RAND:(SQRT(CFLAG:MASTER:9 + CFLAG:ARG:9 + 1))
+
+;好奇心ボーナス
+SIF TALENT:ARG:好奇心
+	LOCAL += 10
+;金のためボーナス
+SIF TALENT:ARG:成为勇者的契机 == 2
+	LOCAL += 20
+;ホビットボーナス
+SIF TALENT:ARG:种族 == 10
+	LOCAL += 30
+;ドワーフボーナス
+SIF TALENT:ARG:种族 == 11
+	LOCAL += 30
+;盗賊は収入が多い（1.5倍）
+SIF TALENT:ARG:盗贼
+	LOCAL += LOCAL / 2
+
+LOCAL *= CFLAG:ARG:501
+
+SIF LOCAL < 1
+	LOCAL = 1
+SIF FLAG:5 & 32
+	PRINTFORML %SAVESTR:ARG%找到了价值{LOCAL}的财物。
+
+CFLAG:ARG:581 += LOCAL
+
+RETURN 0

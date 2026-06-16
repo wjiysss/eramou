@@ -1,0 +1,588 @@
+﻿;----------------------------------
+@DUNGEON_AFTER
+;----------------------------------
+;ミッションの結果。Aはキャラ
+;------------------------
+
+IF CFLAG:A:1 == 5
+	CALL GOHOUBI
+	CFLAG:A:1 = 0
+ELSEIF CFLAG:A:1 == 6
+	CALL OSIOKI
+	CFLAG:A:1 = 0
+ENDIF
+
+RETURN 0
+
+
+;------------------------------------
+@GOHOUBI
+;------------------------------------
+
+
+PRINTL
+PRINTFORMW %SAVESTR:A%打倒了勇者，凯旋而归，来到你的身边，
+PRINTFORMW 请赐予%SAVESTR:A%奖励。
+
+PRINTL [0] 这是你应份的
+PRINTL [1] 授予勋章
+PRINTL [2] 赐予承诺的东西
+$INPUT_LOOP
+INPUT
+IF RESULT < 0
+	GOTO INPUT_LOOP
+ELSEIF RESULT >= 3
+	GOTO INPUT_LOOP
+ENDIF
+
+
+
+IF ABL:A:10 == 0
+	LOCAL:10 = 150
+ELSEIF ABL:A:10 == 1
+	LOCAL:10 = 300
+ELSEIF ABL:A:10 == 2
+	LOCAL:10 = 600
+ELSEIF ABL:A:10 == 3
+	LOCAL:10 = 1200
+ELSEIF ABL:A:10 == 4
+	LOCAL:10 = 2500
+ELSEIF ABL:A:10 == 5
+	LOCAL:10 = 5000
+ELSEIF ABL:A:10 == 6
+	LOCAL:10 = 10000
+ELSEIF ABL:A:10 == 7
+	LOCAL:10 = 20000
+ELSEIF ABL:A:10 == 8
+	LOCAL:10 = 40000
+ELSEIF ABL:A:10 == 9
+	LOCAL:10 = 80000
+ELSEIF ABL:A:10 == 10
+	LOCAL:10 = 150000
+ENDIF
+
+
+
+IF RESULT == 0
+	TFLAG:18 = 0
+	PRINTFORMW %SAVESTR:A%嘟着嘴回到了自己的房间。
+	PRINTFORMW 否定点数增加{(CFLAG:A:9)*60}
+	JUEL:A:100 += ((CFLAG:A:9) * 60)
+	CALL GOHOUBI_AFTER_KOUJO
+ELSEIF RESULT == 1
+	TFLAG:18 = 1
+	PRINTFORMW %SAVESTR:A%被授予了勋章，
+	SIF CFLAG:A:7&1 == 1
+		PRINTFORMW %SAVESTR:A%毫不犹豫地把乳钉换成了勋章，
+	PRINTFORML %SAVESTR:A%自豪地把勋章戴在身上。
+	PRINTFORMW 勋章经验+1
+	EXP:A:81 += 1
+	CALL GOHOUBI_AFTER_KOUJO
+ELSEIF RESULT == 2
+	TFLAG:18 = 2
+	IF CFLAG:A:504 == 0
+	    IF MONEY >= CFLAG:A:9*100
+		;お金を渡す
+			PRINTFORMW 你赐给%SAVESTR:A%装满{CFLAG:A:9*100}金币的袋子。
+			PRINTFORMW 被抓住的勇者看到%SAVESTR:A%如此堕落，很受打击……
+			MONEY -= CFLAG:A:9*100
+			EX_FLAG:4444 -= CFLAG:A:9*100
+		CALL GOHOUBI_AFTER_KOUJO
+		ELSE
+			PRINTFORMW 你准备赐给%SAVESTR:A%{CFLAG:A:9*100}金币。
+			PRINTFORMW 但是副官突然小声对你说金库里没有那么多钱了……
+			PRINTFORMW 你只好改口说奴隶不需要奖赏
+			PRINTFORMW %SAVESTR:A%嘟着嘴回到了自己的房间。
+			PRINTFORMW 否定点数增加{(CFLAG:A:9)*60}
+			JUEL:A:100 += ((CFLAG:A:9) * 60)
+		ENDIF
+	ELSEIF CFLAG:A:504 == 1
+		;犬と兽奸
+		IF TALENT:A:0 == 1
+			PRINTFORMW %SAVESTR:A%全裸着，撑开尻穴在狗屋前勾引着狗，
+			PRINTFORMW 狗跨到身上开始交配，%SAVESTR:A%发出像野兽一样的娇喘，用尻穴高潮了，
+			PRINTFORMW 由于战斗的余韵，交配比平常更激烈且持久。
+			CALL GOHOUBI_AFTER_KOUJO
+			
+		    PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTFORMW 肛门点数+{LOCAL:10}
+			PRINTL 肛门经验+10
+			PRINTL 绝顶经验+5
+			PRINTW 兽奸经验+10
+			JUEL:A:2 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:1 += 10
+			EXP:A:2 += 5
+			EXP:A:56 += 10
+		ELSE
+			PRINTFORMW %SAVESTR:A%全裸着，摇着屁股在狗屋前勾引着狗，
+			PRINTFORMW 狗跨到身上开始交配，%SAVESTR:A%发出像野兽一样的娇喘，用绝顶高潮了，
+			PRINTFORMW 由于战斗的余韵，交配比平常更激烈且持久。
+			CALL GOHOUBI_AFTER_KOUJO
+			PRINTFORMW 私处点数+{LOCAL:10}
+			PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTL 私处经验+10
+			PRINTL 绝顶经验+5
+			PRINTW 兽奸经验+10
+			JUEL:A:1 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:0 += 10
+			EXP:A:2 += 5
+			EXP:A:56 += 10
+		ENDIF
+	ELSEIF CFLAG:A:504 == 2
+		;豚と兽奸
+		IF TALENT:A:0 == 1
+			PRINTFORMW %SAVESTR:A%全裸身体冲进猪窝，着迷地贪求着钻头一样的猪阴茎，
+			PRINTFORMW 因为母猪的登场，公猪们都兴奋了起来，一头头地爬跨到%SAVESTR:A%身上，
+			PRINTFORMW %SAVESTR:A%发出猪叫，醉心于猪的交配中…
+			CALL GOHOUBI_AFTER_KOUJO
+			PRINTFORMW 肛门点数+{LOCAL:10}
+			PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTL 肛门经验+10
+			PRINTL 绝顶经验+5
+			PRINTW 兽奸经验+10
+			JUEL:A:2 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:1 += 10
+			EXP:A:2 += 5
+			EXP:A:56 += 10
+		ELSE
+			PRINTFORMW %SAVESTR:A%全裸身体冲进猪窝，着迷地贪求着钻头一样的猪阴茎，
+			PRINTFORMW 因为母猪的登场，公猪们都兴奋了起来，一头头地爬跨到%SAVESTR:A%身上，
+			PRINTFORMW %SAVESTR:A%发出猪叫，醉心于猪的交配中…
+			CALL GOHOUBI_AFTER_KOUJO
+			PRINTFORMW 私处点数+{LOCAL:10}
+			PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTL 私处经验+10
+			PRINTL 绝顶经验+5
+			PRINTW 兽奸经验+10
+			JUEL:A:1 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:0 += 10
+			EXP:A:2 += 5
+			EXP:A:56 += 10
+		ENDIF
+	ELSEIF CFLAG:A:504 == 3
+		;馬と兽奸
+		IF TALENT:A:0 == 1
+			PRINTFORMW %SAVESTR:A%脸朝下被固定在台子上，想到接下来的变态性爱，爱液沿着大腿流下来，
+			PRINTFORMW 小个子的馬被牵了进来，跨到了%SAVESTR:A%的身上，股间巨大的马阴茎已经勃起，
+			PRINTFORMW 激烈的交配終于开始了，台上的%SAVESTR:A%口吐泡沫，滴着爱液，沉迷于快感之中。
+			CALL GOHOUBI_AFTER_KOUJO
+			PRINTFORMW 肛门点数+{LOCAL:10}
+			PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTL 肛门经验+10
+			PRINTL 绝顶经验+5
+			PRINTL 兽奸经验+10
+			PRINTW 肛门扩张经验+10
+			JUEL:A:2 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:1 += 10
+			EXP:A:2 += 5
+			EXP:A:53 += 10
+			EXP:A:56 += 10
+		ELSE
+			PRINTFORMW %SAVESTR:A%脸朝下被固定在台子上，想到接下来的变态性爱，爱液沿着大腿流下来，
+			PRINTFORMW 小个子的馬被牵了进来，跨到了%SAVESTR:A%的身上，股间巨大的马阴茎已经勃起，
+			PRINTFORMW 激烈的交配終于开始了，台上的%SAVESTR:A%口吐泡沫，滴着爱液，沉迷于快感之中。
+			CALL GOHOUBI_AFTER_KOUJO
+			PRINTFORMW 私处点数+{LOCAL:10}
+			PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTL 私处经验+10
+			PRINTL 绝顶经验+5
+			PRINTL 兽奸经验+10
+			PRINTW 阴道扩张经验+10
+			JUEL:A:1 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:0 += 10
+			EXP:A:2 += 5
+			EXP:A:52 += 10
+			EXP:A:56 += 10
+		ENDIF
+	ELSEIF CFLAG:A:504 == 4
+		;接吻
+		PRINTFORMW %SAVESTR:A%含情脉脉地闭上眼睛，张开双手，要求和你接吻，
+		PRINTFORMW 你牵起她的手，温柔地吻住了%SAVESTR:A%的嘴唇。
+		CALL GOHOUBI_AFTER_KOUJO
+		PRINTW 爱情经验+10
+		EXP:A:23 += 10
+	ELSEIF CFLAG:A:504 == 5
+		;セックス
+		PRINTFORMW 你抱住了%SAVESTR:A%因为战斗而发热的身体，
+		IF ABL:A:2 > ABL:A:3
+			PRINTFORMW 充满爱意地在她私处中抽插。
+			CALL GOHOUBI_AFTER_KOUJO
+			PRINTFORMW 私处点数+{LOCAL:10}
+			PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTL 私处经验+10
+			PRINTL 性交经验+10
+			PRINTW 绝顶经验+5
+			JUEL:A:1 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:0 += 10
+			EXP:A:5 += 10
+			EXP:A:2 += 5
+		ELSE
+			PRINTFORMW 用阴茎抚慰了饥渴不安的肛门。
+			CALL GOHOUBI_AFTER_KOUJO
+			PRINTFORMW 肛门点数+{LOCAL:10}
+			PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTL 肛门经验+10
+			PRINTL 性交经验+10
+			PRINTW 绝顶经验+5
+			JUEL:A:2 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:1 += 10
+			EXP:A:5 += 10
+			EXP:A:2 += 5
+		ENDIF
+	ELSEIF CFLAG:A:504 == 6
+		;ザーメン
+		PRINTFORMW %SAVESTR:A%顺从地跪下，张开嘴巴，伸出了舌头乞求着精液。看见她这个模样，你射出了精液。
+		PRINTFORMW %SAVESTR:A%用手将洒落的的精液沾起来舔干浄，充满爱意地吮吸起你的阴茎。
+		CALL GOHOUBI_AFTER_KOUJO
+		PRINTFORMW 欲情点数+{LOCAL:10}
+		PRINTL 口交経験+10
+		PRINTW 精液经验+5
+		JUEL:A:5 += LOCAL:10
+		EXP:A:22 += 10
+		EXP:A:20 += 5
+	ELSEIF CFLAG:A:504 == 7
+		;乱交
+		IF TALENT:A:0 == 1
+			PRINTFORMW 怪物和魔族都齐聚的乱交派对开始了，
+			PRINTFORMW %SAVESTR:A%是主角，不管男女都一起疯狂交换着，身上涂满了精液和爱液，
+			PRINTFORMW 最后，所有人在%SAVESTR:A%身上齐射着精液和小便，派对就結束了。
+			CALL GOHOUBI_AFTER_KOUJO
+			PRINTFORMW 肛门点数+{LOCAL:10}
+			PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTL 肛门经验+10
+			PRINTW 绝顶经验+5
+			JUEL:A:2 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:1 += 10
+			EXP:A:2 += 5
+		ELSE
+			PRINTFORMW 怪物和魔族都齐聚的乱交派对开始了，
+			PRINTFORMW %SAVESTR:A%是主角，不管男女都一起疯狂交换着，身上涂满了精液和爱液，
+			PRINTFORMW 最后，所有人在%SAVESTR:A%身上齐射着精液和小便，派对就結束了。
+			CALL GOHOUBI_AFTER_KOUJO
+			PRINTFORMW 私处点数+{LOCAL:10}
+			PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTL 私处经验+10
+			PRINTW 绝顶经验+5
+			JUEL:A:1 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:0 += 10
+			EXP:A:2 += 5
+		ENDIF
+	ELSEIF CFLAG:A:504 == 8
+		;おしっこ
+		PRINTFORMW 在吮吸着\@!TALENT:MASTER:121 && !TALENT:MASTER:122 ? 秘裂 # 阴茎\@的%SAVESTR:A%的嘴里，尿了出来。
+		PRINTFORMW %SAVESTR:A%高兴地地咕嘟咕嘟地喝着，
+		PRINTFORMW 洒在地板上的，也意犹未尽地用舌頭舔干浄……
+		CALL GOHOUBI_AFTER_KOUJO
+		PRINTFORMW 欲情点数+{LOCAL:10}
+		JUEL:A:5 += LOCAL:10
+	ELSEIF CFLAG:A:504 == 9
+		;童贞狩り
+		PRINTFORM %SAVESTR:A%将被选中的魔族处男的肉棒
+		IF ABL:A:2 > ABL:A:3
+			PRINTFORMW 用私处呑入了，
+			PRINTFORMW 教給了他性交的快乐。
+			CALL GOHOUBI_AFTER_KOUJO
+			PRINTFORMW 私处点数+{LOCAL:10}
+			PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTL 私处经验+10
+			PRINTL 性交经验+10
+			PRINTW 绝顶经验+5
+			JUEL:A:1 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:0 += 10
+			EXP:A:5 += 10
+			EXP:A:2 += 5
+		ELSE
+			PRINTFORMW 用肛门呑入着，
+			PRINTFORMW 用尻穴幇他破处了。
+			CALL GOHOUBI_AFTER_KOUJO
+			PRINTFORMW 肛门点数+{LOCAL:10}
+			PRINTFORMW 欲情点数+{LOCAL:10}
+			PRINTL 肛门经验+10
+			PRINTL 性交经验+10
+			PRINTW 绝顶经验+5
+			JUEL:A:2 += LOCAL:10
+			JUEL:A:5 += LOCAL:10
+			EXP:A:1 += 10
+			EXP:A:5 += 10
+			EXP:A:2 += 5
+		ENDIF
+	ELSE
+	ENDIF
+ENDIF
+
+;-------------------------------------
+@OSIOKI
+;-------------------------------------
+PRINTL
+PRINTFORMW %SAVESTR:A%没有发现勇者（或者是输了），失败而归
+PRINTFORMW 要处罚%SAVESTR:A%吗？
+
+ PRINT [0] 什么也不做　
+ PRINT [1] 低压电椅刑　
+PRINTL [2] 当街自慰刑　
+ PRINT [3] 当街脱糞刑　
+ PRINT [4] 鞭刑　　　　
+PRINTL [5] 小便器刑　　
+ PRINT [6] 打扫厕所刑　
+ PRINT [7] 不给吃饭刑　
+PRINTL [8] 媚药放置刑　
+$INPUT_LOOP
+INPUT
+IF RESULT < 0
+	GOTO INPUT_LOOP
+ELSEIF RESULT >= 9
+	GOTO INPUT_LOOP
+ENDIF
+
+;[IF_DEBUG]
+;PRINTFORMW %SAVESTR:A% 顺从等级为 {ABL:A:10}
+;PRINTFORMW %SAVESTR:A% 欲望等级为 {ABL:A:11}
+;[ENDIF]
+
+IF ABL:A:10 == 0
+	LOCAL:10 = 50
+ELSEIF ABL:A:10 == 1
+	LOCAL:10 = 100
+ELSEIF ABL:A:10 == 2
+	LOCAL:10 = 200
+ELSEIF ABL:A:10 == 3
+	LOCAL:10 = 400
+ELSEIF ABL:A:10 == 4
+	LOCAL:10 = 800
+ELSEIF ABL:A:10 == 5
+	LOCAL:10 = 1500
+ELSEIF ABL:A:10 == 6
+	LOCAL:10 = 3000
+ELSEIF ABL:A:10 == 7
+	LOCAL:10 = 6000
+ELSEIF ABL:A:10 == 8
+	LOCAL:10 = 12000
+ELSEIF ABL:A:10 == 9
+	LOCAL:10 = 25000
+ELSEIF ABL:A:10 == 10
+	LOCAL:10 = 50000
+
+ENDIF
+
+IF ABL:A:11 == 0
+	LOCAL:11 = 50
+ELSEIF ABL:A:11 == 1
+	LOCAL:11 = 100
+ELSEIF ABL:A:11 == 2
+	LOCAL:11 = 200
+ELSEIF ABL:A:11 == 3
+	LOCAL:11 = 400
+ELSEIF ABL:A:11 == 4
+	LOCAL:11 = 800
+ELSEIF ABL:A:11 == 5
+	LOCAL:11 = 1500
+ELSEIF ABL:A:11 == 6
+	LOCAL:11 = 3000
+ELSEIF ABL:A:11 == 7
+	LOCAL:11 = 6000
+ELSEIF ABL:A:11 == 8
+	LOCAL:11 = 12000
+ELSEIF ABL:A:11 == 9
+	LOCAL:11 = 25000
+ELSEIF  ABL:A:11 == 10
+    LOCAL:11 = 50000
+
+ENDIF
+
+
+IF RESULT == 0
+	TFLAG:18 = 0
+	;什么也不做
+	PRINTFORMW %SAVESTR:A%露出了放心的表情回到自己房间了。
+	CALL OSIOKI_KOUJO
+ELSEIF RESULT == 1
+	TFLAG:18 = 1
+	;低压電椅刑
+	PRINTFORMW 把%SAVESTR:A%绑在电椅上，用较弱的电流进行折磨，
+	IF ABL:A:21 >= 3
+		PRINTFORMW %SAVESTR:A%帯着恍惚的表情，因为电击的痛苦，两腿间都湿了。
+		CALL OSIOKI_KOUJO
+		PRINTFORMW 苦痛点数+{LOCAL:11}
+		JUEL:A:9 += LOCAL:11
+		PRINTFORMW 欲情点数+{LOCAL:10}
+		JUEL:A:5 += LOCAL:10
+		PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+	ELSE
+		PRINTFORMW %SAVESTR:A%哭叫着，在电击的痛苦中漏出了小便。
+		CALL OSIOKI_KOUJO
+		PRINTFORMW 苦痛点数+{LOCAL:11}
+		JUEL:A:9 += LOCAL:11
+		PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+	ENDIF
+ELSEIF RESULT == 2
+	TFLAG:18 = 2
+	;路上自慰刑
+	PRINTFORMW 让%SAVESTR:A%全裸着，在地下城的主干道正中央自慰。
+	IF ABL:A:17 >= 4
+		PRINTFORMW %SAVESTR:A%不停地説着淫秽不堪的话语，向路过的魔族展示着自己淫乱的姿态。
+		CALL OSIOKI_KOUJO
+		PRINTFORMW 欲情点数+{LOCAL:10}
+		JUEL:A:5 += LOCAL:10
+		PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+		PRINTL 自慰经验+3
+		PRINTW 调教自慰经验+3
+		
+		EXP:A:10 += 3
+		EXP:A:11 += 3
+	ELSE
+		PRINTFORMW %SAVESTR:A%面红耳赤，战战兢兢地自慰着。
+		CALL OSIOKI_KOUJO
+		PRINTFORMW 耻情点数+{LOCAL:11}
+		JUEL:A:8 += LOCAL:11
+		PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+		PRINTL 自慰经验+1
+		PRINTW 调教自慰经验+1
+		
+		EXP:A:10 += 1
+		EXP:A:11 += 1
+	ENDIF
+ELSEIF RESULT == 3
+	TFLAG:18 = 3
+	;路上脱糞刑
+	PRINTFORMW 让%SAVESTR:A%全裸着，在地下城的主干道正中央脱粪。
+	IF ABL:A:17 >= 6
+		PRINTFORMW %SAVESTR:A%感受着当众的开放感，淫荡地自慰了起来，
+		PRINTFORMW 路过的魔族都用轻蔑的表情冷眼看着%SAVESTR:A%。
+		CALL OSIOKI_KOUJO
+		PRINTFORMW 欲情点数+{LOCAL:10}
+		JUEL:A:5 += LOCAL:10
+        PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+		PRINTW 自慰经验+3
+		
+		EXP:A:10 += 3
+	ELSE
+		PRINTFORMW %SAVESTR:A%面红耳赤，一边脱粪，一边因为过度的羞耻失声痛哭。
+		PRINTFORMW 路過的魔族都用侮蔑的表情冷眼看着%SAVESTR:A%
+		CALL OSIOKI_KOUJO
+		PRINTFORMW 耻情点数+{LOCAL:11}
+		JUEL:A:8 += LOCAL:11
+		PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+	ENDIF
+ELSEIF RESULT == 4
+	TFLAG:18 = 4
+	;鞭打ち刑
+	PRINTFORMW 把%SAVESTR:A%绑起来，用鞭子抽打，
+	IF ABL:A:21 >= 3
+		PRINTFORMW %SAVESTR:A%帯着恍惚的表情，欢叫着沉醉在被鞭打的快感中。
+		CALL OSIOKI_KOUJO
+		PRINTFORMW 苦痛点数+{LOCAL:11}
+		JUEL:A:9 += LOCAL:11
+		PRINTFORMW 欲情点数+{LOCAL:10}
+		JUEL:A:5 += LOCAL:10
+        PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+	ELSE
+		PRINTFORMW 被鞭子痛打的%SAVESTR:A%哭喊着，小便都漏了出来。
+		CALL OSIOKI_KOUJO
+		PRINTFORMW 苦痛点数+{LOCAL:11}
+		JUEL:A:9 += LOCAL:11
+		PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+	ENDIF 
+ELSEIF RESULT == 5
+	TFLAG:18 = 5
+	;小便器刑　
+	PRINTFORMW 将%SAVESTR:A%固定在小便器上，让使用者尽情地往她身上撒尿，
+	IF TALENT:A:88 == 1 || TALENT:A:76 == 1
+		PRINTFORMW %SAVESTR:A%十分兴奋，用嘴巴接饮着小便，
+		PRINTFORMW %SAVESTR:A%沾满了尿，带着恍惚的表情，腿间不停地流出爱液。
+		CALL OSIOKI_KOUJO
+		PRINTFORMW 苦痛点数+{LOCAL:11}
+		JUEL:A:9 += LOCAL:11
+        PRINTFORMW 欲情点数+{LOCAL:10}
+		JUEL:A:5 += LOCAL:10
+        PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+	ELSE
+		PRINTFORMW %SAVESTR:A%悲伤地哭喊着，但是使用者仍然毫不留情地把小便淋在她的臉上，
+		PRINTFORMW 结果，%SAVESTR:A%全身沾满小便，带着绝望的表情不断呓语着。
+		CALL OSIOKI_KOUJO
+		PRINTFORMW 苦痛点数+{LOCAL:11}
+		JUEL:A:9 += LOCAL:11
+        
+        PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+	ENDIF
+ELSEIF RESULT == 6
+	TFLAG:18 = 6
+	;打掃厠所刑
+	PRINTFORMW %SAVESTR:A%的处罚是打扫厕所，
+	PRINTFORMW %SAVESTR:A%一脸不满地把厕所打扫干净了。
+	CALL OSIOKI_KOUJO
+	PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+ELSEIF RESULT == 7
+	TFLAG:18 = 7
+	;ご飯抜き刑
+	PRINTFORMW %SAVESTR:A%的处罚是不给饭食，
+	PRINTFORMW %SAVESTR:A%的肚子，发出咕咕的叫声。
+	CALL OSIOKI_KOUJO
+	PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+ELSEIF RESULT == 8
+	TFLAG:18 = 8
+	;媚药放置刑
+	PRINTFORMW 将%SAVESTR:A%的身体固定住，注射了几乎是危险剂量的强力媚药，
+	PRINTFORMW 药效马上就发作了，全身都成了敏感带，令人发狂地痒了起来。
+	PRINTFORMW 让魔族的年轻百合女在旁边待机，桌上放了各种各样的淫具，
+	PRINTFORMW 对女孩下了命令，不时地让%SAVESTR:A%舒服一下免得发疯，但是要做好高潮管理，
+	PRINTFORMW %SAVESTR:A%不断说出各种淫荡和屈辱的话语，乞求着凌辱，旁边的女孩却一副冷淡的表情不为所动。
+	PRINTFORMW 听着%SAVESTR:A%拼命哭喊的声音，你走出了房间。
+	CALL OSIOKI_KOUJO
+	PRINTFORMW 苦痛点数+{LOCAL:11}
+		JUEL:A:9 += LOCAL:11
+    PRINTFORMW 欲情点数+{LOCAL:10}
+		JUEL:A:5 += LOCAL:10
+    PRINTFORMW 屈服点数+{LOCAL:11}
+		JUEL:A:6 += LOCAL:11
+	PRINTW 药物经验+10
+		EXP:A:57 += 10
+ELSEIF RESULT == 9
+	TFLAG:18 = 9
+	;
+	PRINTFORMW 
+ENDIF
+
+RETURN 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

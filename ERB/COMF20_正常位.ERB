@@ -1,0 +1,208 @@
+﻿;eraIM@Sから導入しました(eramaou)
+
+;-------------------------------------------------
+;正常位
+;セックス系コマンド：調教者のペニスを調教対象のヴァギナに挿入
+;-------------------------------------------------
+@COM20
+
+;处女を奪うかどうかの確認
+CALL CONFIRM_LOST_VIRGIN
+SIF RESULT == 0
+	RETURN 0
+
+;安全套を使うかの確認
+CALL CONFIRM_CONDOM
+SIF !RESULT
+	RETURN 0
+
+;-------------------------------------------------
+;跳转到进阶指令
+;-------------------------------------------------
+LOCAL = 20
+CALL GET_ADV_COM,LOCAL
+SIF RESULT != LOCAL
+	JUMPFORM COM{RESULT}
+
+
+
+
+PRINTL 正常位
+;SAVESTR:22 = 正常位
+CALL TRAIN_MESSAGE_B
+
+;私处经验を伴うコマンドのフラグ
+TFLAG:19 = 1
+SIF ASSIPLAY == 0 && EXP:0 == 0 && TEQUIP:89 == 0
+	TFLAG:20 = 1
+
+;調教者の射精チェック
+CALL COM_EJAC_PLAYER_SEX
+
+;-------------------------------------------------
+;ソースの計算
+;-------------------------------------------------
+LOSEBASE:0 += 50
+LOSEBASE:1 += 100
+
+SOURCE:露出 = 400
+
+;ABL:私处感觉をみる
+IF ABL:2 == 0
+	SOURCE:私处快感 = 40
+	SOURCE:情爱 = 150
+ELSEIF ABL:2 == 1
+	SOURCE:私处快感 = 150
+	SOURCE:情爱 = 250
+ELSEIF ABL:2 == 2
+	SOURCE:私处快感 = 400
+	SOURCE:情爱 = 350
+ELSEIF ABL:2 == 3
+	SOURCE:私处快感 = 1000
+	SOURCE:情爱 = 500
+ELSEIF ABL:2 == 4
+	SOURCE:私处快感 = 1700
+	SOURCE:情爱 = 700
+ELSE
+	SOURCE:私处快感 = 2200
+	SOURCE:情爱 = 1000
+ENDIF
+
+;EXP:私处经验をみる
+IF EXP:0 < EXPLV:1
+	TIMES SOURCE:私处快感 , 0.20
+	SOURCE:疼痛 = 5500
+ELSEIF EXP:0 < EXPLV:2
+	TIMES SOURCE:私处快感 , 0.60
+	SOURCE:疼痛 = 300
+ELSEIF EXP:0 < EXPLV:3
+	TIMES SOURCE:私处快感 , 1.00
+	SOURCE:疼痛 = 50
+ELSEIF EXP:0 < EXPLV:4
+	TIMES SOURCE:私处快感 , 1.20
+	SOURCE:疼痛 = 10
+ELSEIF EXP:0 < EXPLV:5
+	TIMES SOURCE:私处快感 , 1.30
+	SOURCE:疼痛 = 0
+ELSE
+	TIMES SOURCE:私处快感 , 1.80
+	SOURCE:疼痛 = 0
+ENDIF
+
+;PALAM:润滑をみる
+IF PALAM:3 < PALAMLV:1
+	TIMES SOURCE:私处快感 , 0.10
+	SOURCE:疼痛 += 1000
+	TIMES SOURCE:疼痛 , 3.00
+ELSEIF PALAM:3 < PALAMLV:2
+	TIMES SOURCE:私处快感 , 0.40
+	SOURCE:疼痛 += 300
+	TIMES SOURCE:疼痛 , 1.00
+ELSEIF PALAM:3 < PALAMLV:3
+	TIMES SOURCE:私处快感 , 1.00
+	TIMES SOURCE:疼痛 , 0.50
+ELSEIF PALAM:3 < PALAMLV:4
+	TIMES SOURCE:私处快感 , 1.40
+	TIMES SOURCE:疼痛 , 0.20
+ELSEIF PALAM:3 >= PALAMLV:4
+	TIMES SOURCE:私处快感 , 1.80
+	TIMES SOURCE:疼痛 , 0.10
+ENDIF
+
+;調教者が扶她
+IF ASSIPLAY
+	SIF TALENT:ASSI:121
+		TIMES SOURCE:私处快感 , 2.50
+ENDIF
+
+;魁梧
+SIF TALENT:99
+	TIMES SOURCE:疼痛 , 0.80
+;小柄体形
+SIF TALENT:100
+	TIMES SOURCE:疼痛 , 2.00
+;未熟
+SIF TALENT:135
+	TIMES SOURCE:疼痛 , 4.00
+
+;看重贞操
+IF TALENT:30
+	IF EXP:0 == 0
+		TIMES SOURCE:情爱 , 0.60
+		SOURCE:反感追加 = 10000
+	ELSE
+		TIMES SOURCE:情爱 , 0.60
+		SOURCE:反感追加 = 1000
+	ENDIF
+;看轻贞操
+ELSEIF TALENT:31
+	IF EXP:0 == 0
+		TIMES SOURCE:情爱 , 0.60
+		SOURCE:反感追加 = 300
+	ENDIF
+ELSE
+	IF EXP:0 == 0
+		SOURCE:反感追加 = 3000
+	ENDIF
+ENDIF
+
+;PALAM:欲情をみる
+IF PALAM:5 < PALAMLV:1
+	TIMES SOURCE:私处快感 , 0.60
+	TIMES SOURCE:情爱 , 0.30
+ELSEIF PALAM:5 < PALAMLV:2
+	TIMES SOURCE:私处快感 , 0.80
+	TIMES SOURCE:情爱 , 0.60
+ELSEIF PALAM:5 < PALAMLV:3
+	TIMES SOURCE:私处快感 , 1.00
+	TIMES SOURCE:情爱 , 1.00
+ELSEIF PALAM:5 < PALAMLV:4
+	TIMES SOURCE:私处快感 , 1.20
+	TIMES SOURCE:情爱 , 1.50
+ELSEIF PALAM:5 >= PALAMLV:4
+	TIMES SOURCE:私处快感 , 1.50
+	TIMES SOURCE:情爱 , 1.80
+ENDIF
+
+;ABL:顺从をみる
+IF ABL:10 == 0
+	TIMES SOURCE:私处快感 , 0.50
+	TIMES SOURCE:情爱 , 0.60
+	TIMES SOURCE:反感追加 , 2.00
+ELSEIF ABL:10 == 1
+	TIMES SOURCE:私处快感 , 0.80
+	TIMES SOURCE:情爱 , 0.80
+	TIMES SOURCE:反感追加 , 1.50
+ELSEIF ABL:10 == 2
+	TIMES SOURCE:私处快感 , 1.00
+	TIMES SOURCE:情爱 , 1.00
+	TIMES SOURCE:反感追加 , 1.00
+ELSEIF ABL:10 == 3
+	TIMES SOURCE:私处快感 , 1.30
+	TIMES SOURCE:情爱 , 1.20
+	TIMES SOURCE:反感追加 , 0.80
+ELSEIF ABL:10 == 4
+	TIMES SOURCE:私处快感 , 1.60
+	TIMES SOURCE:情爱 , 1.40
+	TIMES SOURCE:反感追加 , 0.60
+ELSE
+	TIMES SOURCE:私处快感 , 2.00
+	TIMES SOURCE:情爱 , 1.60
+	TIMES SOURCE:反感追加 , 0.30
+ENDIF
+
+;-----------------------------
+;调教者点数
+;REF eraH @COMF80
+;-----------------------------
+LOCAL = 100 + 10 * MIN(ABL:技巧 + ABL:PLAYER:技巧)
+SOURCE:PLAYER:阴核快感 += 150 * LOCAL /100
+
+
+;セックス後の処理
+CALL COM_AFTER_VAGINA_SEX
+
+RETURN 1
+;
+;
+;

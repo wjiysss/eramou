@@ -1,0 +1,522 @@
+﻿;調教時キャラ別口上を一括管理
+;（eraWIZからお借りしました）
+;-----------------------------------------------------------------------------------
+;口上用システムファイルの存在判定
+;EVENT_K.ERB(つまりこのファイル)が存在しているかを判定
+;口上が使用可能で口上機能を能動的にOFFにしていない場合には、自動的にスイッチが入る
+;各口上ファイル内でキャラフラグを制御するので、
+;EVENT_Kxx.ERB(キャラ別口上ファイル)を途中で削除してもエラーはでない
+;ただし、口上をONにした状態でこのファイルを削除するとエラーが発生する
+;あっても邪魔にはならないので削除しない方が良いだろう
+;-----------------------------------------------------------------------------------
+@EVENTSHOP
+#PRI
+SIF FLAG:7 == 0
+	FLAG:7 = 2
+
+;--------------------------------------------------
+;@KOJO_MESSAGE_COM_MASTER関係
+;EXモードでの調教主の汎用口上を呼び出します。
+;@KOJO_MESSAGE_COM、@KOJO_MESSAGE_COM_ASSIとは排他ではありません。
+;表示順序は、主人→助手→対象 となります。
+;eraWizでは现在使われていない
+;--------------------------------------------------
+@KOJO_MESSAGE_COM_MASTER
+SIF FLAG:7 <= 0
+	RETURN 0
+
+;口上の存在判定
+LOCAL = NO:MASTER + 100
+SIF FLAG:LOCAL == 0
+	RETURN 0
+
+;キャラ別
+;IF NO:MASTER >= 1 && NO:MASTER < 100
+;	TRYCALLFORM MESSAGE_COM_ASSI_{NO:MASTER}
+;ENDIF
+
+;--------------------------------------------------
+;@KOJO_MESSAGE_COM_ASSI関係
+;助手調教中のコマンド実行時に出力されます。
+;@KOJO_MESSAGE_COMとは排他ではありません。
+;eraWizでは现在使われていない
+;--------------------------------------------------
+@KOJO_MESSAGE_COM_ASSI
+SIF FLAG:7 <= 0
+	RETURN 0
+
+SIF ASSI < 0
+	RETURN 0
+
+;口上の存在判定
+LOCAL = NO:ASSI + 100
+SIF FLAG:LOCAL == 0
+	RETURN 0
+
+;キャラ別
+;IF NO:ASSI >= 1 && NO:ASSI < 100
+;		TRYCALLFORM KOJO_MESSAGE_COM_ASSI_{NO:ASSI}
+;ENDIF
+
+;--------------------------------------------------
+;@KOJO_MESSAGE_PLAYERCHANGE関係
+;助手切り替え時に出力されます。
+;eraWizでは现在使われていない
+;--------------------------------------------------
+
+
+@KOJO_MESSAGE_PLAYERCHANGE
+SIF FLAG:7 <= 0
+	RETURN 0
+
+SIF ASSI < 0
+	RETURN 0
+
+;口上の存在判定
+LOCAL = NO:ASSI + 100
+SIF FLAG:LOCAL == 0
+	RETURN 0
+
+;キャラ別
+;IF NO:ASSI >= 1 && NO:ASSI < 100
+;	TRYCALLFORM KOJO_MESSAGE_PLAYERCHANGE_{NO:ASSI}
+;ENDIF
+
+;--------------------------------------------------
+@GET_KOJO_NUM(ARG = -1)
+;--------------------------------------------------
+#FUNCTION
+LOCAL = 0
+SIF ARG < 0
+	ARG = TARGET
+;IF TALENT:ARG:160 == 1
+;	LOCAL = 100
+;ELSEIF TALENT:ARG:161 == 1
+;	LOCAL = 101
+;ELSEIF TALENT:ARG:162 == 1
+;	LOCAL = 102
+;ELSEIF TALENT:ARG:163 == 1
+;	LOCAL = 103
+;ELSEIF TALENT:ARG:164 == 1
+;	LOCAL = 104
+;ELSEIF TALENT:ARG:165 == 1
+;	LOCAL = 105
+;ELSEIF TALENT:ARG:166 == 1
+;	LOCAL = 106
+;ELSEIF TALENT:ARG:167 == 1
+;	LOCAL = 107
+;ELSEIF TALENT:ARG:168 == 1
+;	LOCAL = 108
+;ELSEIF TALENT:ARG:169 == 1
+;	LOCAL = 109
+;ELSEIF TALENT:ARG:170 == 1
+;	LOCAL = 110
+;ELSEIF TALENT:ARG:171 == 1
+;	LOCAL = 111
+;ELSEIF TALENT:ARG:172 == 1
+;	LOCAL = 112
+;ELSEIF TALENT:ARG:173 == 1
+;	LOCAL = 113
+;ELSEIF TALENT:ARG:174 == 1
+;	LOCAL = 114
+;ELSEIF TALENT:ARG:175 == 1
+;	LOCAL = 115
+;ELSEIF TALENT:ARG:176 == 1
+;	LOCAL = 116
+;ELSEIF TALENT:ARG:177 == 1
+;	LOCAL = 117
+;ELSEIF TALENT:ARG:178 == 1
+;	LOCAL = 118
+;ELSEIF TALENT:ARG:179 == 1
+;	LOCAL = 119
+;ENDIF
+
+;EX口上处理
+LOCAL = GET_EX_KOJO_NUM(ARG)
+
+FOR COUNT,160,180
+	SIF TALENT:ARG:COUNT
+		LOCAL = COUNT - 60
+NEXT
+
+;SIF TALENT:199 == 1
+;	LOCAL = 139
+RETURNF LOCAL
+
+;--------------------------------------------------
+;@KOJO_MESSAGE_COM関係
+;コマンド実行時に出力されます
+;--------------------------------------------------
+@KOJO_MESSAGE_COM
+SIF FLAG:7 <= 0
+	RETURN 0
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+SIF FLAG:LOCAL == 0 && EX_FLAG:(LOCAL - 900) == 0
+	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM KOJO_MESSAGE_COM_{LOCAL - 100}
+ENDIF
+
+;-------------------------------------------------
+;@KOJO_MESSAGE_PALAMCNG関係
+;パラメータ変動をトリガーにした口上
+;パラメータ変動後に口上を発動します
+;-------------------------------------------------
+@KOJO_MESSAGE_PALAMCNG
+SIF FLAG:7 <= 0
+	RETURN 0
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+SIF FLAG:LOCAL == 0 && EX_FLAG:(LOCAL - 900) == 0
+	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM KOJO_MESSAGE_PALAMCNG_{LOCAL - 100}
+ENDIF
+
+;-------------------------------------------------
+;@KOJO_MESSAGE_MARKCNG関係
+;刻印変動をトリガーにした口上
+;刻印変動後に口上を発動します
+;-------------------------------------------------
+@KOJO_MESSAGE_MARKCNG
+SIF FLAG:7 <= 0
+	RETURN 0
+
+;口上の存在判定
+LOCAL = 0
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM KOJO_MESSAGE_MARKCNG_{LOCAL - 100}
+ENDIF
+
+;--------------------------------------------------
+;@KOJO_EVENT_COM関係
+;コマンド処理の最後に出力
+;口上をOFFにしても実行する
+;eraWizでは现在使われていない
+;--------------------------------------------------
+@KOJO_EVENT_COM
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM KOJO_EVENT_COM_{LOCAL - 100}
+ENDIF
+
+;-------------------------------------------------
+;@SELF_KOJO関係
+;イベント時の口上、イベント開始時に出力します
+;-------------------------------------------------
+@SELF_KOJO
+IF FLAG:7 <= 0
+	TFLAG:15 = 0
+	RETURN 0
+ENDIF
+
+;口上の存在判定
+LOCAL = 0
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM SELF_KOJO_K{LOCAL - 100}
+ENDIF
+
+;-----------------------------------------
+;eramaou追加
+;-----------------------------------------
+
+;-----------------------------
+;ダンジョン陵辱前
+;-----------------------------
+@DUNGEON_RYOUZYOKU
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM DUNGEON_RYOUZYOKU_K{LOCAL - 100}
+ENDIF
+
+;-----------------------------
+;ダンジョン陵辱後
+;-----------------------------
+@DUNGEON_RYOUZYOKU_AFTER
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM DUNGEON_RYOUZYOKU_AFTER_K{LOCAL - 100}
+ENDIF
+
+;------------------------------
+;肉便器
+;-----------------------------
+@BENKI_KOUJO
+
+TARGET = A
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM BENKI_KOUJO_K{LOCAL - 100}
+ENDIF
+
+;------------------------------
+;戦闘勝利時
+;-----------------------------
+@VICTORY_KOUJO
+
+TARGET = A
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM DUNGEON_VICTORY_K{LOCAL - 100}
+ENDIF
+
+;------------------------------
+;攻撃セリフ
+;-----------------------------
+@ATTACK_KOUJO, ARG:0
+
+TARGET = ARG:0
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM DUNGEON_ATTACK_K{LOCAL - 100}
+ENDIF
+
+@ATTACK_KOUJO_B
+
+TARGET = B
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM DUNGEON_ATTACK_K{LOCAL - 100}
+ENDIF
+
+;------------------------------
+;NTR関連
+;-----------------------------
+@NTR_KOUJO
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM NTR_KOUJO_K{LOCAL - 100}
+ENDIF
+
+;------------------------------
+;処刑関連
+;-----------------------------
+@EXUCUTION_KOUJO
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM EXUCUTION_KOUJO_K{LOCAL - 100}
+ENDIF
+
+;------------------------------
+;彫像関連
+;-----------------------------
+@MUSEUM_KOUJO
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM MUSEUM_KOUJO_K{LOCAL - 100}
+ENDIF
+
+;------------------------------
+;追放処刑関連
+;-----------------------------
+@BANISHMENT_KOUJO
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM BANISHMENT_KOUJO_K{LOCAL - 100}
+ENDIF
+
+;------------------------------
+;公開処刑関連
+;-----------------------------
+@PUBLIC_EXUCUTION_KOUJO
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM PUBLIC_EXUCUTION_KOUJO_K{LOCAL - 100}
+ENDIF
+
+;------------------------------
+;猟奇処刑関連
+;-----------------------------
+@GROTESQUE_KOUJO
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM GROTESQUE_KOUJO_K{LOCAL - 100}
+ENDIF
+
+;------------------------------
+;ダンジョン攻略開始時
+;-----------------------------
+@ENTERENEMY_KOUJO
+SWAP LOCAL:2, TARGET
+TARGET = A
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM ENTERENEMY_KOUJO_K{LOCAL - 100}
+ENDIF
+SWAP LOCAL:2, TARGET
+
+;------------------------------
+;ご褒美リクエスト口上
+;-----------------------------
+@GOHOUBI_REQUEST_KOUJO
+SWAP LOCAL:2, TARGET
+TARGET = A
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM GOHOUBI_REQUEST_KOUJO_K{LOCAL - 100}
+ENDIF
+SWAP LOCAL:2, TARGET
+
+;------------------------------
+;ご褒美口上
+;-----------------------------
+@GOHOUBI_AFTER_KOUJO
+SWAP LOCAL:2, TARGET
+TARGET = A
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM GOHOUBI_AFTER_KOUJO_K{LOCAL - 100}
+ENDIF
+SWAP LOCAL:2, TARGET
+
+;------------------------------
+;お仕置き口上
+;-----------------------------
+@OSIOKI_KOUJO
+SWAP LOCAL:2, TARGET
+TARGET = A
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM OSIOKI_KOUJO_K{LOCAL - 100}
+ENDIF
+SWAP LOCAL:2, TARGET
+
+;------------------------------
+;語尾口上
+;-----------------------------
+@GOBI_KOUJO, ARG:0
+;ARG:0 =  0 デフォ
+;ARG:0 =  1 喜んで誇らしげに
+;ARG:0 =  2 怒って
+;ARG:0 =  3 悲しんで
+;ARG:0 =  4 恥ずかしそうに
+;ARG:0 =  5 情けなさそうに
+
+
+;口上の存在判定
+LOCAL = GET_KOJO_NUM()
+;SIF FLAG:LOCAL == 0
+;	RETURN 0
+
+;キャラ別
+IF LOCAL >= 100 && LOCAL < 140 || LOCAL > 1000
+	TRYCALLFORM GOBI_KOUJO_K{LOCAL - 100}, ARG:0
+ENDIF
+

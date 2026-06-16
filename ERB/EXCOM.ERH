@@ -1,0 +1,17 @@
+﻿#DIM SAVEDATA EX_FLAG,10000
+;将ex独有的FLAG从原版中移出，待将来作者原版稳定以后再重新移回
+
+#DIM SAVEDATA CHARADATA EX_TALENT,1000
+;将ex独有的TALENT从原版中移出，待将来作者原版稳定以后再重新移回
+
+#DIMS EX_TALENTNAME,1000
+;存储ex独有TALENT名称
+
+#DIM SAVEDATA CHARADATA EX_CFLAG,500
+;将ex独有的CFLAG从原版中移出，待将来作者原版稳定以后再重新移回
+;400-449为副职业积极性与等级存储
+;450-499为副职业经验值存储
+
+#DIMS SAVEDATA SUISEI_STR, 20000
+;水晶球书架描述存储。
+
