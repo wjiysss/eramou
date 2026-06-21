@@ -1,5 +1,6 @@
 from __future__ import annotations
 """Module for MiscMixin - Remaining miscellaneous GameEngine methods"""
+import random
 from typing import Dict, List, Any, Optional, Tuple, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from eraMaouEx import Character

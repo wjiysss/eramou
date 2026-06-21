@@ -1,6 +1,7 @@
 from __future__ import annotations
 """Module for ModifyExtMixin - 状态修改"""
 from typing import Dict, List, Any, Optional, Tuple, Union, TYPE_CHECKING
+import random
 if TYPE_CHECKING:
     from eraMaouEx import Character
 

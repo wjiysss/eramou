@@ -12,3 +12,6 @@ _ast_check.py
 _do_extract.py
 _extract_groups.py
 refactor_comf.py
+.env
+.env.local
+llm_config.local.json

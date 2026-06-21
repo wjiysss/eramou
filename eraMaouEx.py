@@ -3758,19 +3758,62 @@ class GameEngine(
         self.talent_catalog = self._load_talent_catalog()
         self.character_template_catalog = self._build_character_template_catalog()
         self.running = True
+def _resolve_erb_dir(argv):
+    """Resolve ERB directory from argv, ignoring --llm and similar flags."""
+    for arg in argv[1:]:
+        if arg.startswith("-"):
+            continue
+        return arg
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def run_llm_mode(erb_dir):
+    """Start the LLM-driven interactive game mode."""
+    from eraMaouEx_modules.llm.config import load_config
+    from eraMaouEx_modules.llm.client import LLMClient
+    from eraMaouEx_modules.llm.context import ContextBuilder
+    from eraMaouEx_modules.llm.skills import SkillRegistry
+    from eraMaouEx_modules.llm.loop import LLMGameLoop
+
+    config = load_config()
+    if config is None:
+        print("[LLM] 配置缺失，回退到终端模式。")
+        engine = GameEngine(erb_dir)
+        engine.run()
+        return
+
+    print(f"Game directory: {erb_dir}")
+    print("[LLM] 初始化游戏引擎...")
+    engine = GameEngine(erb_dir)
+    try:
+        engine._bootstrap_game_runtime()
+        engine._system_init()
+        if not engine.interpreter.vars.chars:
+            engine.interpreter.vars.chars.append(Character())
+            engine.interpreter.vars.chars[0].name = "魔王"
+    except Exception as e:
+        print(f"[LLM] 初始化失败: {e}")
+        return
+
+    client = LLMClient(config)
+    context_builder = ContextBuilder(engine)
+    skill_registry = SkillRegistry(engine, context_builder)
+    loop = LLMGameLoop(engine, client, context_builder, skill_registry)
+    loop.run()
+
+
 def main():
     """Main entry point"""
-    # Get the directory where the script is located
-    if len(sys.argv) > 1:
-        erb_dir = sys.argv[1]
-    else:
-        # Default to the current directory
-        erb_dir = os.path.dirname(os.path.abspath(__file__))
+    use_llm = "--llm" in sys.argv
 
-    # Check for game directory
+    erb_dir = _resolve_erb_dir(sys.argv)
     game_dir = r"F:\code\eraMaouEx"
     if os.path.exists(game_dir):
         erb_dir = game_dir
+
+    if use_llm:
+        run_llm_mode(erb_dir)
+        return
 
     print(f"Game directory: {erb_dir}")
 
